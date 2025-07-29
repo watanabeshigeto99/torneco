@@ -248,7 +248,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   m_Material: {fileID: 0}
-  m_Color: {r: 1, g: 1, b: 1, a: 1}
+  m_Color: {r: 1, g: 0, b: 0.96048546, a: 1}
   m_RaycastTarget: 0
   m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
   m_Maskable: 1
@@ -528,12 +528,13 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 31f08368c29913648a3b7f31f8cba5b2, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  width: 7
-  height: 7
+  width: 10
+  height: 10
   tileSpacing: 1.1
   tilePrefab: {fileID: 1251728311830959209, guid: 5ef040e8ec397d041aceb24ae5e29d2a, type: 3}
   playerPrefab: {fileID: 3780901509913497143, guid: 6b252a14355110a49a6e5078d945639f, type: 3}
   exitPrefab: {fileID: 6697166265036547342, guid: dc4c1c78a3c53804daf28e52abb357c2, type: 3}
+  visionRange: 1
 --- !u!1 &519420028
 GameObject:
   m_ObjectHideFlags: 0
@@ -641,7 +642,7 @@ Camera:
   far clip plane: 1000
   field of view: 34
   orthographic: 1
-  orthographic size: 5
+  orthographic size: 3
   m_Depth: -1
   m_CullingMask:
     serializedVersion: 2

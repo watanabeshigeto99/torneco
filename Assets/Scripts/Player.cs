@@ -15,6 +15,19 @@ public class Player : Unit
         gridPosition = new Vector2Int(2, 2); // 5x5グリッドの中央
     }
 
+    // 初期化完了後に呼ばれるメソッド
+    public void InitializePosition()
+    {
+        Vector3 worldPos = GridManager.Instance.GetWorldPosition(gridPosition);
+        transform.position = worldPos;
+        
+        // 視界範囲を更新（カメラ追従は別途実行されるため除外）
+        if (GridManager.Instance != null)
+        {
+            GridManager.Instance.UpdateVisionRange(gridPosition);
+        }
+    }
+
     public void Move(Vector2Int delta)
     {
         Vector2Int newPos = gridPosition + delta;
@@ -157,12 +170,13 @@ public class Player : Unit
         CameraFollow cameraFollow = FindObjectOfType<CameraFollow>();
         if (cameraFollow != null)
         {
-            Debug.Log($"カメラ追従通知: プレイヤー位置 {transform.position}");
             cameraFollow.OnPlayerMoved(transform.position);
         }
-        else
+        
+        // 視界範囲を更新
+        if (GridManager.Instance != null)
         {
-            Debug.LogWarning("CameraFollowが見つかりません！");
+            GridManager.Instance.UpdateVisionRange(gridPosition);
         }
     }
 

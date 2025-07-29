@@ -80,7 +80,7 @@ public class Player : Unit
                 Attack(card.power);
                 break;
             case CardType.Heal:
-                Heal(card.power);
+                Heal(card.healAmount);
                 break;
             case CardType.Move:
                 MoveWithDistance(card.moveDirection, card.moveDistance);
@@ -91,7 +91,37 @@ public class Player : Unit
     public void Attack(int damage)
     {
         Debug.Log($"攻撃！ダメージ: {damage}");
-        // 前方の敵を攻撃（後で実装）
+        
+        // 隣接マスにいる敵を探して攻撃
+        Enemy[] enemies = FindObjectsOfType<Enemy>();
+        bool hitEnemy = false;
+        
+        foreach (Enemy enemy in enemies)
+        {
+            if (enemy != null && Vector2Int.Distance(gridPosition, enemy.gridPosition) == 1)
+            {
+                enemy.TakeDamage(damage);
+                hitEnemy = true;
+                Debug.Log($"敵に{damage}ダメージを与えた！");
+                
+                // UI更新
+                if (UIManager.Instance != null)
+                {
+                    UIManager.Instance.AddLog($"敵に{damage}ダメージを与えた！");
+                }
+            }
+        }
+        
+        if (!hitEnemy)
+        {
+            Debug.Log("攻撃範囲に敵がいません");
+            
+            // UI更新
+            if (UIManager.Instance != null)
+            {
+                UIManager.Instance.AddLog("攻撃範囲に敵がいません");
+            }
+        }
         
         // 効果音再生
         if (SoundManager.Instance != null)
@@ -100,17 +130,32 @@ public class Player : Unit
         }
     }
 
+    public Vector2Int[] GetAttackRange()
+    {
+        // 攻撃範囲（隣接マス）を返す
+        return new Vector2Int[]
+        {
+            gridPosition + Vector2Int.up,
+            gridPosition + Vector2Int.down,
+            gridPosition + Vector2Int.left,
+            gridPosition + Vector2Int.right
+        };
+    }
+
     public void Heal(int amount)
     {
+        int oldHP = currentHP;
         currentHP += amount;
         currentHP = Mathf.Clamp(currentHP, 0, maxHP);
-        Debug.Log($"回復！HP: {currentHP}/{maxHP}");
+        int actualHeal = currentHP - oldHP;
+        
+        Debug.Log($"回復！回復量: {actualHeal}, HP: {currentHP}/{maxHP}");
         
         // UI更新
         if (UIManager.Instance != null)
         {
             UIManager.Instance.UpdateHP(currentHP, maxHP);
-            UIManager.Instance.AddLog($"回復！HP: {currentHP}/{maxHP}");
+            UIManager.Instance.AddLog($"回復！回復量: {actualHeal}, HP: {currentHP}/{maxHP}");
         }
         
         // 効果音再生

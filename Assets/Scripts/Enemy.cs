@@ -49,6 +49,27 @@ public class Enemy : Unit
         }
     }
 
+    public void TakeDamage(int damage)
+    {
+        int oldHP = currentHP;
+        currentHP -= damage;
+        currentHP = Mathf.Clamp(currentHP, 0, maxHP);
+        int actualDamage = oldHP - currentHP;
+        
+        Debug.Log($"敵が{actualDamage}ダメージを受けた！HP: {currentHP}/{maxHP}");
+        
+        // UI更新
+        if (UIManager.Instance != null)
+        {
+            UIManager.Instance.AddLog($"敵が{actualDamage}ダメージを受けた！HP: {currentHP}/{maxHP}");
+        }
+        
+        if (IsDead)
+        {
+            Die();
+        }
+    }
+
 
 
     protected override void Die()

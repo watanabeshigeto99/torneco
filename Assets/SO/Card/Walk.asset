@@ -15,4 +15,7 @@ MonoBehaviour:
   cardName: Walk
   type: 1
   icon: {fileID: 21300000, guid: e63b5716c2c3c20409395afecc43551f, type: 3}
-  power: 1
+  power: 0
+  moveDirection: {x: 1, y: 1}
+  moveDistance: 1
+  healAmount: 10

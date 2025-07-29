@@ -13,4 +13,7 @@ public class CardDataSO : ScriptableObject
     [Header("Move Settings")]
     public Vector2Int moveDirection = Vector2Int.down; // 移動方向
     public int moveDistance = 1; // 移動距離
+    
+    [Header("Heal Settings")]
+    public int healAmount = 10; // 回復量
 } 

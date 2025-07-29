@@ -27,6 +27,42 @@ public class Player : Unit
         }
     }
 
+    public void MoveWithDistance(Vector2Int direction, int distance)
+    {
+        Vector2Int totalMove = direction * distance;
+        Vector2Int newPos = gridPosition + totalMove;
+        
+        if (GridManager.Instance.IsWalkable(newPos))
+        {
+            gridPosition = newPos;
+            Vector3 worldPos = GridManager.Instance.GetWorldPosition(gridPosition);
+            transform.position = worldPos;
+            Debug.Log($"移動！方向: {direction}, 距離: {distance}");
+            
+            // UI更新
+            if (UIManager.Instance != null)
+            {
+                UIManager.Instance.AddLog($"移動！方向: {direction}, 距離: {distance}");
+            }
+            
+            // 効果音再生（移動用の効果音があれば）
+            if (SoundManager.Instance != null)
+            {
+                SoundManager.Instance.PlaySound("Select"); // 仮でSelect音を使用
+            }
+        }
+        else
+        {
+            Debug.Log($"移動できません！位置: {newPos}");
+            
+            // UI更新
+            if (UIManager.Instance != null)
+            {
+                UIManager.Instance.AddLog($"移動できません！位置: {newPos}");
+            }
+        }
+    }
+
     public void SetPosition(Vector2Int newPos)
     {
         gridPosition = newPos;
@@ -47,7 +83,7 @@ public class Player : Unit
                 Heal(card.power);
                 break;
             case CardType.Move:
-                Move(Vector2Int.down); // 下に移動
+                MoveWithDistance(card.moveDirection, card.moveDistance);
                 break;
         }
     }

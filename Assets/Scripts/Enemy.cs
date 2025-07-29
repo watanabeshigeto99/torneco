@@ -1,0 +1,72 @@
+using UnityEngine;
+
+public class Enemy : Unit
+{
+    public Vector2Int gridPosition;
+    public SpriteRenderer spriteRenderer;
+
+    protected override void Awake()
+    {
+        base.Awake();
+        if (spriteRenderer == null)
+            spriteRenderer = GetComponentInChildren<SpriteRenderer>();
+    }
+
+    public void Initialize(Vector2Int startPos)
+    {
+        gridPosition = startPos;
+        transform.position = GridManager.Instance.GetWorldPosition(gridPosition);
+    }
+
+    public void Act()
+    {
+        Vector2Int[] directions = {
+            Vector2Int.up, Vector2Int.down, Vector2Int.left, Vector2Int.right
+        };
+        Vector2Int dir = directions[Random.Range(0, directions.Length)];
+        Vector2Int newPos = gridPosition + dir;
+
+        if (GridManager.Instance.IsInsideGrid(newPos) && !GridManager.Instance.IsOccupied(newPos))
+        {
+            gridPosition = newPos;
+            transform.position = GridManager.Instance.GetWorldPosition(gridPosition);
+        }
+
+        TryAttackPlayer();
+    }
+
+    private void TryAttackPlayer()
+    {
+        Player player = FindObjectOfType<Player>();
+        if (player != null)
+        {
+            Vector2Int playerPos = player.gridPosition;
+            if (Vector2Int.Distance(playerPos, gridPosition) == 1)
+            {
+                player.TakeDamage(1); // 1ダメージ
+                Debug.Log("敵の攻撃！");
+            }
+        }
+    }
+
+
+
+    protected override void Die()
+    {
+        Debug.Log("敵を倒した！");
+        
+        // 効果音再生
+        if (SoundManager.Instance != null)
+        {
+            SoundManager.Instance.PlaySound("Death");
+        }
+        
+        // スコア加算
+        if (GameManager.Instance != null)
+        {
+            GameManager.Instance.EnemyDefeated();
+        }
+        
+        Destroy(gameObject);
+    }
+} 

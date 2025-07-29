@@ -56,7 +56,23 @@ public class GridManager : MonoBehaviour
     private void SpawnPlayer(Vector2Int position)
     {
         Vector3 pos = new Vector3(position.x * tileSpacing, position.y * tileSpacing, 0);
-        Instantiate(playerPrefab, pos, Quaternion.identity);
+        GameObject playerObj = Instantiate(playerPrefab, pos, Quaternion.identity);
+        
+        // プレイヤー生成後にカメラ追従を開始
+        StartCoroutine(NotifyCameraAfterPlayerSpawn(playerObj));
+    }
+
+    private System.Collections.IEnumerator NotifyCameraAfterPlayerSpawn(GameObject playerObj)
+    {
+        // 1フレーム待ってからカメラに通知
+        yield return null;
+        
+        CameraFollow cameraFollow = FindObjectOfType<CameraFollow>();
+        if (cameraFollow != null)
+        {
+            Debug.Log("プレイヤー生成後、カメラ追従開始");
+            cameraFollow.OnPlayerMoved(playerObj.transform.position);
+        }
     }
 
     private void SpawnExit()

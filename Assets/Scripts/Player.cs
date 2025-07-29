@@ -24,6 +24,9 @@ public class Player : Unit
             gridPosition = newPos;
             Vector3 worldPos = GridManager.Instance.GetWorldPosition(gridPosition);
             transform.position = worldPos;
+            
+            // カメラ追従通知
+            NotifyCameraFollow();
         }
     }
 
@@ -38,6 +41,9 @@ public class Player : Unit
             Vector3 worldPos = GridManager.Instance.GetWorldPosition(gridPosition);
             transform.position = worldPos;
             Debug.Log($"移動！方向: {direction}, 距離: {distance}");
+            
+            // カメラ追従通知
+            NotifyCameraFollow();
             
             // UI更新
             if (UIManager.Instance != null)
@@ -68,6 +74,9 @@ public class Player : Unit
         gridPosition = newPos;
         Vector3 worldPos = GridManager.Instance.GetWorldPosition(gridPosition);
         transform.position = worldPos;
+        
+        // カメラ追従通知
+        NotifyCameraFollow();
     }
 
     public void ExecuteCardEffect(CardDataSO card)
@@ -140,6 +149,21 @@ public class Player : Unit
             gridPosition + Vector2Int.left,
             gridPosition + Vector2Int.right
         };
+    }
+
+    private void NotifyCameraFollow()
+    {
+        // カメラに移動通知
+        CameraFollow cameraFollow = FindObjectOfType<CameraFollow>();
+        if (cameraFollow != null)
+        {
+            Debug.Log($"カメラ追従通知: プレイヤー位置 {transform.position}");
+            cameraFollow.OnPlayerMoved(transform.position);
+        }
+        else
+        {
+            Debug.LogWarning("CameraFollowが見つかりません！");
+        }
     }
 
     public void Heal(int amount)

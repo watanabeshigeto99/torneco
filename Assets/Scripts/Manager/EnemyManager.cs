@@ -34,6 +34,13 @@ public class EnemyManager : MonoBehaviour
             enemy.Initialize(pos);
             enemies.Add(enemy);
         }
+        
+        // 全ての敵のスポーン完了後に視界範囲を更新
+        Player player = FindObjectOfType<Player>();
+        if (player != null && GridManager.Instance != null)
+        {
+            GridManager.Instance.UpdateVisionRange(player.gridPosition);
+        }
     }
 
     public void EnemyTurn()
@@ -48,6 +55,13 @@ public class EnemyManager : MonoBehaviour
         
         // 死亡した敵をリストから削除
         enemies.RemoveAll(e => e == null);
+        
+        // 敵のターン終了後に視界範囲を更新
+        Player player = FindObjectOfType<Player>();
+        if (player != null && GridManager.Instance != null)
+        {
+            GridManager.Instance.UpdateVisionRange(player.gridPosition);
+        }
     }
 
     public void RegisterEnemy(Enemy enemy)

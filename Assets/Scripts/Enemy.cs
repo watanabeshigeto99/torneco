@@ -16,6 +16,13 @@ public class Enemy : Unit
     {
         gridPosition = startPos;
         transform.position = GridManager.Instance.GetWorldPosition(gridPosition);
+        
+        // 敵の初期化後に視界範囲を更新
+        Player player = FindObjectOfType<Player>();
+        if (player != null && GridManager.Instance != null)
+        {
+            GridManager.Instance.UpdateVisionRange(player.gridPosition);
+        }
     }
 
     public void Act()
@@ -30,6 +37,13 @@ public class Enemy : Unit
         {
             gridPosition = newPos;
             transform.position = GridManager.Instance.GetWorldPosition(gridPosition);
+            
+            // 敵の移動後に視界範囲を更新
+            Player player = FindObjectOfType<Player>();
+            if (player != null && GridManager.Instance != null)
+            {
+                GridManager.Instance.UpdateVisionRange(player.gridPosition);
+            }
         }
 
         TryAttackPlayer();

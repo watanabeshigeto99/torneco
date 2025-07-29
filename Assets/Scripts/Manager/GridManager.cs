@@ -20,7 +20,7 @@ public class GridManager : MonoBehaviour
     public int visionRange = 8; // 視界範囲（プレイヤーからの距離）
     
     [Tooltip("視界範囲をデバッグログに表示")]
-    public bool showVisionRange = false; // 視界範囲を視覚的に表示
+    public bool showVisionRange = true; // 視界範囲を視覚的に表示
     private Tile[] allTiles;
     private Enemy[] allEnemies;
     private GameObject exitObject;
@@ -171,6 +171,7 @@ public class GridManager : MonoBehaviour
     // 視界範囲を更新
     public void UpdateVisionRange(Vector2Int playerPosition)
     {
+        Debug.Log($"視界範囲更新: プレイヤー位置 {playerPosition}, 視界範囲 {visionRange}");
         
         // タイルの表示/非表示を更新
         if (allTiles != null)
@@ -193,6 +194,21 @@ public class GridManager : MonoBehaviour
                 if (enemy != null)
                 {
                     bool inVision = IsInVisionRange(enemy.gridPosition, playerPosition);
+                    Debug.Log($"敵 {enemy.gridPosition} の視界範囲内: {inVision}");
+                    enemy.gameObject.SetActive(inVision);
+                }
+            }
+        }
+        else
+        {
+            // allEnemiesがnullの場合は、FindObjectsOfTypeで再取得
+            Enemy[] currentEnemies = FindObjectsOfType<Enemy>();
+            foreach (Enemy enemy in currentEnemies)
+            {
+                if (enemy != null)
+                {
+                    bool inVision = IsInVisionRange(enemy.gridPosition, playerPosition);
+                    Debug.Log($"敵 {enemy.gridPosition} の視界範囲内: {inVision}");
                     enemy.gameObject.SetActive(inVision);
                 }
             }

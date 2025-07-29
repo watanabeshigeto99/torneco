@@ -53,6 +53,12 @@ public class TurnManager : MonoBehaviour
         // プレイヤーのターンに戻る
         playerTurn = true;
 
+        // プレイヤーのターン開始時にログをクリア
+        if (UIManager.Instance != null)
+        {
+            UIManager.Instance.ClearLog();
+        }
+
         // 手札を補充
         if (CardManager.Instance != null)
         {

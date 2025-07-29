@@ -1,6 +1,7 @@
 using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
+using System.Collections.Generic;
 
 public class UIManager : MonoBehaviour
 {
@@ -15,6 +16,10 @@ public class UIManager : MonoBehaviour
 
     [Header("Action Log")]
     public TextMeshProUGUI actionLog;
+    [Tooltip("表示するログの最大行数")]
+    public int maxLogLines = 5; // 最大5行まで表示
+
+    private List<string> logMessages = new List<string>();
 
     private void Awake()
     {
@@ -24,6 +29,12 @@ public class UIManager : MonoBehaviour
             return;
         }
         Instance = this;
+    }
+
+    private void Start()
+    {
+        // ゲーム開始時にログをクリア
+        ClearLog();
     }
 
     public void UpdateHP(int current, int max)
@@ -52,7 +63,26 @@ public class UIManager : MonoBehaviour
     {
         if (actionLog != null)
         {
-            actionLog.text += message + "\n";
+            // 新しいログメッセージを追加
+            logMessages.Add(message);
+            
+            // 最大行数を超えた場合、古いログを削除
+            while (logMessages.Count > maxLogLines)
+            {
+                logMessages.RemoveAt(0);
+            }
+            
+            // ログテキストを更新
+            UpdateLogDisplay();
+        }
+    }
+
+    private void UpdateLogDisplay()
+    {
+        if (actionLog != null)
+        {
+            // 全てのログメッセージを結合
+            actionLog.text = string.Join("\n", logMessages);
         }
     }
 
@@ -60,6 +90,7 @@ public class UIManager : MonoBehaviour
     {
         if (actionLog != null)
         {
+            logMessages.Clear();
             actionLog.text = "";
         }
     }

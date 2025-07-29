@@ -40,13 +40,6 @@ public class TurnManager : MonoBehaviour
         isProcessing = true;
         playerTurn = false;
 
-        Debug.Log("プレイヤーのターン終了");
-        if (UIManager.Instance != null)
-        {
-            UIManager.Instance.SetTurnText(false);
-            UIManager.Instance.AddLog("プレイヤーのターン終了");
-        }
-
         yield return new WaitForSeconds(0.3f);
 
         // 敵のターン
@@ -59,12 +52,6 @@ public class TurnManager : MonoBehaviour
 
         // プレイヤーのターンに戻る
         playerTurn = true;
-        Debug.Log("プレイヤーのターン開始");
-        if (UIManager.Instance != null)
-        {
-            UIManager.Instance.SetTurnText(true);
-            UIManager.Instance.AddLog("プレイヤーのターン開始");
-        }
 
         // 手札を補充
         if (CardManager.Instance != null)

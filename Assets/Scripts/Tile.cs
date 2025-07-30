@@ -1,7 +1,6 @@
 using UnityEngine;
-using UnityEngine.EventSystems;
 
-public class Tile : MonoBehaviour, IPointerClickHandler
+public class Tile : MonoBehaviour
 {
     public int x;
     public int y;
@@ -60,10 +59,14 @@ public class Tile : MonoBehaviour, IPointerClickHandler
         name = $"Tile_{x}_{y}";
     }
 
-    public void OnPointerClick(PointerEventData eventData)
+    // マウスクリックで移動処理を実行
+    private void OnMouseDown()
     {
         Player player = FindObjectOfType<Player>();
-        player?.OnTileClicked(new Vector2Int(x, y));
+        if (player != null)
+        {
+            player.OnTileClicked(new Vector2Int(x, y));
+        }
     }
 
     public void ToggleSelect()

@@ -682,9 +682,14 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   enemyPrefab: {fileID: 2424985937461331734, guid: 20cb8d5f850665148bd5c9e5054f52ff, type: 3}
   enemyCount: 8
+  enemyDataPool:
+  - {fileID: 11400000, guid: 86568b8e4a3b9f64fbccc8a39bba87ef, type: 2}
+  - {fileID: 11400000, guid: 74646899a6da201449cabf612aca24c3, type: 2}
+  - {fileID: 11400000, guid: 668e1790989808a468d32734dc711864, type: 2}
   minDistanceFromPlayer: 3
   maxDistanceFromPlayer: 8
   maxSpawnAttempts: 100
+  useRandomEnemySelection: 1
 --- !u!1 &662713423
 GameObject:
   m_ObjectHideFlags: 0
@@ -1419,6 +1424,7 @@ MonoBehaviour:
   turnLabel: {fileID: 1573287531}
   actionLog: {fileID: 454984125}
   maxLogLines: 5
+  logMessages: []
 --- !u!1 &2015329983
 GameObject:
   m_ObjectHideFlags: 0
@@ -1636,6 +1642,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   score: 0
+  gameOver: 0
+  gameClear: 0
 --- !u!1 &2100520826
 GameObject:
   m_ObjectHideFlags: 0

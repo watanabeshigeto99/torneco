@@ -1,13 +1,20 @@
 using UnityEngine;
 using System.Collections.Generic;
+using System;
 
 [DefaultExecutionOrder(-80)]
 public class EnemyManager : MonoBehaviour
 {
     public static EnemyManager Instance { get; private set; }
+    
+    // イベント定義
+    public static event Action<Enemy[]> OnEnemiesSpawned;
 
     public GameObject enemyPrefab;
     public int enemyCount = 3;
+    
+    [Header("Enemy Data")]
+    public EnemyDataSO[] enemyDataPool; // 敵のデータプール
     
     [Header("Spawn Settings")]
     [Tooltip("プレイヤーからの最小距離（マス数）")]
@@ -18,6 +25,10 @@ public class EnemyManager : MonoBehaviour
     
     [Tooltip("スポーン位置探索の最大試行回数")]
     public int maxSpawnAttempts = 100;
+    
+    [Header("Spawn Strategy")]
+    [Tooltip("ランダムに敵を選択するか、順番に選択するか")]
+    public bool useRandomEnemySelection = true;
 
     private List<Enemy> enemies = new List<Enemy>();
 
@@ -36,6 +47,11 @@ public class EnemyManager : MonoBehaviour
         if (enemyPrefab == null)
         {
             Debug.LogError("EnemyManager: enemyPrefabが設定されていません");
+        }
+        
+        if (enemyDataPool == null || enemyDataPool.Length == 0)
+        {
+            Debug.LogWarning("EnemyManager: enemyDataPoolが設定されていません。デフォルトの敵が使用されます。");
         }
         
         Debug.Log("EnemyManager: Awake完了");
@@ -75,12 +91,12 @@ public class EnemyManager : MonoBehaviour
             bool validPositionFound = false;
             
             // ランダムな距離制限を設定（ばらつきを出す）
-            int minDist = Random.Range(minDistanceFromPlayer, maxDistanceFromPlayer);
+            int minDist = UnityEngine.Random.Range(minDistanceFromPlayer, maxDistanceFromPlayer);
             int maxDist = maxDistanceFromPlayer;
             
             do {
-                pos = new Vector2Int(Random.Range(0, GridManager.Instance.width), 
-                                   Random.Range(0, GridManager.Instance.height));
+                pos = new Vector2Int(UnityEngine.Random.Range(0, GridManager.Instance.width), 
+                                   UnityEngine.Random.Range(0, GridManager.Instance.height));
                 attempts++;
                 
                 // プレイヤーとの距離をチェック
@@ -104,17 +120,23 @@ public class EnemyManager : MonoBehaviour
                 if (enemy == null)
                 {
                     Debug.LogError($"EnemyManager: 敵{i + 1}にEnemyコンポーネントが見つかりません");
+                    Destroy(enemyObj);
                     continue;
                 }
                 
-                enemy.Initialize(pos);
+                // 敵のデータを選択
+                EnemyDataSO selectedData = SelectEnemyData(i);
+                
+                // 敵を初期化
+                enemy.Initialize(pos, selectedData);
                 enemies.Add(enemy);
                 
                 // ターン制システムに敵を登録
                 RegisterEnemy(enemy);
                 
                 spawnedCount++;
-                Debug.Log($"EnemyManager: 敵{i + 1}スポーン完了 位置: {pos}");
+                string enemyName = selectedData != null ? selectedData.enemyName : "敵";
+                Debug.Log($"EnemyManager: 敵{i + 1}スポーン完了 位置: {pos}, 種類: {enemyName}");
             }
             else
             {
@@ -123,9 +145,32 @@ public class EnemyManager : MonoBehaviour
         }
         
         Debug.Log($"EnemyManager: 敵スポーン完了 成功数: {spawnedCount}/{enemyCount}");
+        
+        // 敵スポーン完了イベントを発行
+        OnEnemiesSpawned?.Invoke(enemies.ToArray());
+        Debug.Log($"EnemyManager: 敵スポーン完了 スポーン数: {spawnedCount}");
     }
     
-
+    // 敵のデータを選択
+    private EnemyDataSO SelectEnemyData(int enemyIndex)
+    {
+        if (enemyDataPool == null || enemyDataPool.Length == 0)
+        {
+            Debug.LogWarning("EnemyManager: enemyDataPoolが空のため、デフォルトの敵を使用します");
+            return null;
+        }
+        
+        if (useRandomEnemySelection)
+        {
+            // ランダムに選択
+            return enemyDataPool[UnityEngine.Random.Range(0, enemyDataPool.Length)];
+        }
+        else
+        {
+            // 順番に選択（インデックスをループ）
+            return enemyDataPool[enemyIndex % enemyDataPool.Length];
+        }
+    }
 
     public void EnemyTurn()
     {

@@ -117,7 +117,7 @@ public class CardManager : MonoBehaviour
         int createdCount = 0;
         for (int i = 0; i < handSize; i++)
         {
-            CardDataSO randomCard = cardPool[Random.Range(0, cardPool.Length)];
+            CardDataSO randomCard = cardPool[UnityEngine.Random.Range(0, cardPool.Length)];
             GameObject cardObj = Instantiate(cardUIPrefab, handArea);
             CardUI ui = cardObj.GetComponent<CardUI>();
             

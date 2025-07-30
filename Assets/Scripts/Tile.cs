@@ -10,6 +10,7 @@ public class Tile : MonoBehaviour
     public Color normalColor = Color.white;
     public Color highlightColor = Color.yellow;
     public Color selectedColor = Color.blue;
+    public Color attackableColor = Color.red; // 攻撃可能タイル用の色
     public Color transparentColor = new Color(1f, 1f, 1f, 0.5f); // 半透明色
 
     private bool isSelected = false;
@@ -45,11 +46,14 @@ public class Tile : MonoBehaviour
             }
         }
     }
+    
+
 
     private void Awake()
     {
         if (spriteRenderer == null)
             spriteRenderer = GetComponentInChildren<SpriteRenderer>();
+        
         ResetColor();
     }
 
@@ -63,6 +67,28 @@ public class Tile : MonoBehaviour
     // マウスクリックで移動処理を実行
     private void OnMouseDown()
     {
+        Debug.Log($"Tile: クリックされました 位置: ({x}, {y})");
+        
+        // この位置に敵がいるかチェック
+        if (EnemyManager.Instance != null)
+        {
+            var enemies = EnemyManager.Instance.GetEnemies();
+            foreach (Enemy enemy in enemies)
+            {
+                if (enemy != null && enemy.gridPosition == new Vector2Int(x, y))
+                {
+                    Debug.Log($"Tile: この位置に敵がいます。敵のクリック処理を優先します");
+                    // 敵のクリック処理を優先
+                    if (Player.Instance != null)
+                    {
+                        Player.Instance.OnEnemyClicked(new Vector2Int(x, y));
+                    }
+                    return; // タイルのクリック処理をスキップ
+                }
+            }
+        }
+        
+        // 敵がいない場合は通常のタイルクリック処理
         if (Player.Instance != null)
         {
             Player.Instance.OnTileClicked(new Vector2Int(x, y));
@@ -83,6 +109,12 @@ public class Tile : MonoBehaviour
     public void Highlight()
     {
         spriteRenderer.color = highlightColor;
+    }
+    
+    // 攻撃可能タイルをハイライト
+    public void HighlightAttackable()
+    {
+        spriteRenderer.color = attackableColor;
     }
     
     // 表示状態を設定
@@ -132,4 +164,4 @@ public class Tile : MonoBehaviour
                 break;
         }
     }
-} 
+}

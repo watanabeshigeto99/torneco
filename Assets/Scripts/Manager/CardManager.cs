@@ -154,8 +154,14 @@ public class CardManager : MonoBehaviour
         {
             Player.Instance.StartMoveSelection(card.moveDistance);
         }
+        else if (card.type == CardType.Attack)
+        {
+            // 攻撃カードは方向選択を開始（ターン終了は方向選択後に実行）
+            Player.Instance.StartAttackSelection(card.power);
+        }
         else
         {
+            // Healカードなどは即座に実行してターン終了
             Player.Instance.ExecuteCardEffect(card);
             
             if (TurnManager.Instance != null)

@@ -158,6 +158,8 @@ public class GridManager : MonoBehaviour
         Debug.Log("GridManager: 全オブジェクト初期化完了");
     }
     
+
+    
     private void GenerateGrid()
     {
         Debug.Log($"GridManager: グリッド生成開始 ({width}x{height})");
@@ -517,6 +519,65 @@ public class GridManager : MonoBehaviour
         }
         
         Debug.Log($"GridManager: 移動可能タイルハイライト完了 ハイライト数: {highlightedCount}");
+    }
+    
+    // 攻撃可能タイルをハイライト表示
+    public void HighlightAttackableTiles(Vector2Int center)
+    {
+        Debug.Log($"GridManager: 攻撃可能タイルハイライト開始 中心: {center}");
+        
+        int highlightedCount = 0;
+        
+        // キャッシュされたallTilesを使用
+        if (allTiles == null || allTiles.Length == 0)
+        {
+            Debug.LogWarning("GridManager: タイルが見つかりません");
+            return;
+        }
+        
+        // 攻撃範囲（隣接マス + 斜め）を定義
+        Vector2Int[] attackDirections = new Vector2Int[]
+        {
+            Vector2Int.up,
+            Vector2Int.down,
+            Vector2Int.left,
+            Vector2Int.right,
+            new Vector2Int(1, 1),   // 右上
+            new Vector2Int(-1, 1),  // 左上
+            new Vector2Int(1, -1),  // 右下
+            new Vector2Int(-1, -1)  // 左下
+        };
+        
+        foreach (var tile in allTiles)
+        {
+            if (tile == null) continue;
+            
+            // 攻撃範囲内かチェック
+            bool isInAttackRange = false;
+            foreach (Vector2Int direction in attackDirections)
+            {
+                Vector2Int attackPos = center + direction;
+                if (tile.x == attackPos.x && tile.y == attackPos.y)
+                {
+                    isInAttackRange = true;
+                    break;
+                }
+            }
+            
+            if (isInAttackRange)
+            {
+                // 攻撃可能なタイルは必ず表示する（非表示でも表示に変更）
+                tile.gameObject.SetActive(true);
+                tile.HighlightAttackable();
+                highlightedCount++;
+            }
+            else
+            {
+                tile.ResetColor();
+            }
+        }
+        
+        Debug.Log($"GridManager: 攻撃可能タイルハイライト完了 ハイライト数: {highlightedCount}");
     }
     
     // 全てのタイルの色をリセット

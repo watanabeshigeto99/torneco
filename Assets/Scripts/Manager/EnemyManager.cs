@@ -124,6 +124,8 @@ public class EnemyManager : MonoBehaviour
         
         Debug.Log($"EnemyManager: 敵スポーン完了 成功数: {spawnedCount}/{enemyCount}");
     }
+    
+
 
     public void EnemyTurn()
     {

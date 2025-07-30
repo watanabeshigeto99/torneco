@@ -17,6 +17,10 @@ public class Player : Unit
 
     private bool isAwaitingMoveInput = false;
     private int allowedMoveDistance = 0;
+    
+    // 攻撃方向選択用の変数
+    private bool isAwaitingAttackInput = false;
+    private int attackPower = 0;
 
     protected override void Awake()
     {
@@ -47,6 +51,8 @@ public class Player : Unit
         gridPosition = new Vector2Int(2, 2); // 5x5グリッドの中央
         isAwaitingMoveInput = false;
         allowedMoveDistance = 0;
+        isAwaitingAttackInput = false;
+        attackPower = 0;
         
         Debug.Log("Player: Awake完了");
     }
@@ -78,6 +84,8 @@ public class Player : Unit
         
         Debug.Log($"Player: 位置初期化完了 ワールド位置: {transform.position}");
     }
+    
+
 
     public void StartMoveSelection(int moveDistance)
     {
@@ -95,15 +103,27 @@ public class Player : Unit
         
         Debug.Log($"Player: 移動選択完了 現在位置: {gridPosition}");
     }
+    
+    // 攻撃方向選択を開始
+    public void StartAttackSelection(int power)
+    {
+        Debug.Log($"Player: 攻撃方向選択開始 攻撃力: {power}");
+        
+        if (GridManager.Instance == null)
+        {
+            Debug.LogError("Player: GridManager.Instanceが見つかりません");
+            return;
+        }
+        
+        isAwaitingAttackInput = true;
+        attackPower = power;
+        GridManager.Instance.HighlightAttackableTiles(gridPosition);
+        
+        Debug.Log($"Player: 攻撃方向選択完了 現在位置: {gridPosition}");
+    }
 
     public void OnTileClicked(Vector2Int clickedPos)
     {
-        if (!isAwaitingMoveInput)
-        {
-            Debug.Log("Player: 移動待ち状態ではないためクリックを無視");
-            return;
-        }
-
         Debug.Log($"Player: タイルクリック受信 位置: {clickedPos}");
         
         if (GridManager.Instance == null)
@@ -112,6 +132,139 @@ public class Player : Unit
             return;
         }
 
+        // 攻撃方向選択中の場合
+        if (isAwaitingAttackInput)
+        {
+            HandleAttackDirectionSelection(clickedPos);
+            return;
+        }
+        
+        // 移動選択中の場合
+        if (isAwaitingMoveInput)
+        {
+            HandleMoveSelection(clickedPos);
+            return;
+        }
+        
+        Debug.Log("Player: 選択待ち状態ではないためクリックを無視");
+    }
+    
+    // 攻撃方向選択の処理
+    private void HandleAttackDirectionSelection(Vector2Int clickedPos)
+    {
+        Debug.Log($"Player: 攻撃方向選択処理 クリック位置: {clickedPos}");
+        
+        // 攻撃可能範囲内かチェック
+        Vector2Int[] attackRange = GetAttackRange();
+        bool isValidAttackTarget = false;
+        
+        foreach (Vector2Int attackPos in attackRange)
+        {
+            if (attackPos == clickedPos)
+            {
+                isValidAttackTarget = true;
+                break;
+            }
+        }
+        
+        if (isValidAttackTarget)
+        {
+            // 攻撃実行
+            Vector2Int attackDirection = clickedPos - gridPosition;
+            ExecuteAttack(attackDirection, attackPower);
+            
+            // 状態をリセット
+            isAwaitingAttackInput = false;
+            attackPower = 0;
+            GridManager.Instance.ResetAllTileColors();
+            
+            // ターン終了
+            if (TurnManager.Instance != null)
+            {
+                TurnManager.Instance.OnPlayerCardUsed();
+                Debug.Log($"Player: 攻撃完了 方向: {attackDirection}");
+            }
+            else
+            {
+                Debug.LogError("Player: TurnManager.Instanceが見つかりません");
+            }
+        }
+        else
+        {
+            Debug.Log($"Player: 攻撃範囲外 クリック位置: {clickedPos}");
+            
+            // UI更新
+            if (UIManager.Instance != null)
+            {
+                UIManager.Instance.AddLog("攻撃範囲外です");
+            }
+        }
+    }
+    
+    // 敵クリック時の処理
+    public void OnEnemyClicked(Vector2Int enemyPos)
+    {
+        Debug.Log($"Player: 敵クリック受信 敵位置: {enemyPos}");
+        
+        // 攻撃選択中でない場合は無視
+        if (!isAwaitingAttackInput)
+        {
+            Debug.Log("Player: 攻撃選択中ではないため敵クリックを無視");
+            return;
+        }
+        
+        // 攻撃可能範囲内かチェック
+        Vector2Int[] attackRange = GetAttackRange();
+        bool isValidAttackTarget = false;
+        
+        foreach (Vector2Int attackPos in attackRange)
+        {
+            if (attackPos == enemyPos)
+            {
+                isValidAttackTarget = true;
+                break;
+            }
+        }
+        
+        if (isValidAttackTarget)
+        {
+            // 攻撃実行
+            Vector2Int attackDirection = enemyPos - gridPosition;
+            ExecuteAttack(attackDirection, attackPower);
+            
+            // 状態をリセット
+            isAwaitingAttackInput = false;
+            attackPower = 0;
+            GridManager.Instance.ResetAllTileColors();
+            
+            // ターン終了
+            if (TurnManager.Instance != null)
+            {
+                TurnManager.Instance.OnPlayerCardUsed();
+                Debug.Log($"Player: 敵への攻撃完了 方向: {attackDirection}");
+            }
+            else
+            {
+                Debug.LogError("Player: TurnManager.Instanceが見つかりません");
+            }
+        }
+        else
+        {
+            Debug.Log($"Player: 攻撃範囲外の敵 敵位置: {enemyPos}");
+            
+            // UI更新
+            if (UIManager.Instance != null)
+            {
+                UIManager.Instance.AddLog("攻撃範囲外の敵です");
+            }
+        }
+    }
+    
+    // 移動選択の処理
+    private void HandleMoveSelection(Vector2Int clickedPos)
+    {
+        Debug.Log($"Player: 移動選択処理 クリック位置: {clickedPos}");
+        
         int dist = Mathf.Abs(clickedPos.x - gridPosition.x) + Mathf.Abs(clickedPos.y - gridPosition.y);
         
         if (dist <= allowedMoveDistance && GridManager.Instance.IsWalkable(clickedPos))
@@ -218,7 +371,7 @@ public class Player : Unit
         switch (card.type)
         {
             case CardType.Attack:
-                Attack(card.power);
+                StartAttackSelection(card.power);
                 break;
             case CardType.Heal:
                 Heal(card.healAmount);
@@ -227,6 +380,83 @@ public class Player : Unit
                 MoveWithDistance(card.moveDirection, card.moveDistance);
                 break;
         }
+    }
+    
+    // 攻撃実行（方向指定）
+    public void ExecuteAttack(Vector2Int direction, int damage)
+    {
+        Vector2Int targetPos = gridPosition + direction;
+        Debug.Log($"攻撃実行！方向: {direction}, 目標位置: {targetPos}, ダメージ: {damage}");
+        
+        // 攻撃イベントを発行
+        OnPlayerAttacked?.Invoke(damage);
+        Debug.Log($"Player: 攻撃イベント発行 ダメージ: {damage}");
+        
+        // 目標位置にいる敵を探して攻撃
+        bool hitEnemy = false;
+        
+        if (EnemyManager.Instance != null)
+        {
+            var enemies = EnemyManager.Instance.GetEnemies();
+            foreach (Enemy enemy in enemies)
+            {
+                if (enemy != null && enemy.gridPosition == targetPos)
+                {
+                    enemy.TakeDamage(damage);
+                    hitEnemy = true;
+                    Debug.Log($"敵に{damage}ダメージを与えた！位置: {targetPos}");
+                    
+                    // UI更新
+                    if (UIManager.Instance != null)
+                    {
+                        UIManager.Instance.AddLog($"敵に{damage}ダメージを与えた！");
+                    }
+                    
+                    // 攻撃エフェクト再生
+                    PlayAttackEffect(targetPos);
+                    break;
+                }
+            }
+        }
+        else
+        {
+            Debug.LogWarning("Player: EnemyManager.Instanceが見つからないため攻撃をスキップ");
+        }
+        
+        if (!hitEnemy)
+        {
+            Debug.Log($"攻撃範囲に敵がいません 目標位置: {targetPos}");
+            
+            // UI更新
+            if (UIManager.Instance != null)
+            {
+                UIManager.Instance.AddLog("攻撃範囲に敵がいません");
+            }
+            
+            // 空振りエフェクト再生
+            PlayMissEffect(targetPos);
+        }
+        
+        // 効果音再生
+        if (SoundManager.Instance != null)
+        {
+            SoundManager.Instance.PlaySound("Attack");
+        }
+    }
+    
+    // 攻撃エフェクト再生
+    private void PlayAttackEffect(Vector2Int targetPos)
+    {
+        // Unity標準のエフェクトシステムを使用
+        // 将来的にパーティクルシステムなどを追加可能
+        Debug.Log($"攻撃エフェクト再生 位置: {targetPos}");
+    }
+    
+    // 空振りエフェクト再生
+    private void PlayMissEffect(Vector2Int targetPos)
+    {
+        // Unity標準のエフェクトシステムを使用
+        Debug.Log($"空振りエフェクト再生 位置: {targetPos}");
     }
 
     public void Attack(int damage)
@@ -285,13 +515,17 @@ public class Player : Unit
 
     public Vector2Int[] GetAttackRange()
     {
-        // 攻撃範囲（隣接マス）を返す
+        // 攻撃範囲（隣接マス + 斜め）を返す
         return new Vector2Int[]
         {
             gridPosition + Vector2Int.up,
             gridPosition + Vector2Int.down,
             gridPosition + Vector2Int.left,
-            gridPosition + Vector2Int.right
+            gridPosition + Vector2Int.right,
+            gridPosition + new Vector2Int(1, 1),   // 右上
+            gridPosition + new Vector2Int(-1, 1),  // 左上
+            gridPosition + new Vector2Int(1, -1),  // 右下
+            gridPosition + new Vector2Int(-1, -1)  // 左下
         };
     }
 

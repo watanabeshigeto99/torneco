@@ -182,4 +182,5 @@ public class UIManager : MonoBehaviour
             actionLog.text = "";
         }
     }
+    
 } 

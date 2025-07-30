@@ -11,12 +11,54 @@ public class Enemy : Unit
         base.Awake();
         if (spriteRenderer == null)
             spriteRenderer = GetComponentInChildren<SpriteRenderer>();
+            
+        // 敵のクリックを確実にするための設定
+        SetupForClicking();
+    }
+    
+    // クリック可能にするための設定
+    private void SetupForClicking()
+    {
+        // Collider2Dの設定を確認・調整
+        BoxCollider2D collider = GetComponent<BoxCollider2D>();
+        if (collider != null)
+        {
+            collider.isTrigger = true; // トリガーとして設定
+            collider.size = new Vector2(1f, 1f); // サイズを確実に設定
+        }
+        else
+        {
+            // Collider2Dがない場合は追加
+            collider = gameObject.AddComponent<BoxCollider2D>();
+            collider.isTrigger = true;
+            collider.size = new Vector2(1f, 1f);
+        }
+        
+        // SpriteRendererのSortingOrderをタイルより高く設定
+        if (spriteRenderer != null)
+        {
+            spriteRenderer.sortingOrder = 10; // タイル（通常0-5）より高い値
+        }
+        
+        Debug.Log("Enemy: クリック設定完了");
     }
 
     public void Initialize(Vector2Int startPos)
     {
         gridPosition = startPos;
         transform.position = GridManager.Instance.GetWorldPosition(gridPosition);
+    }
+    
+    // マウスクリックで攻撃対象として選択
+    private void OnMouseDown()
+    {
+        Debug.Log($"Enemy: クリックされました 位置: {gridPosition}");
+        
+        if (Player.Instance != null)
+        {
+            // プレイヤーが攻撃選択中の場合、敵をクリックしたらその位置を攻撃対象として処理
+            Player.Instance.OnEnemyClicked(gridPosition);
+        }
     }
 
     public void Act()
@@ -96,4 +138,5 @@ public class Enemy : Unit
         
         Destroy(gameObject);
     }
-} 
+    
+}

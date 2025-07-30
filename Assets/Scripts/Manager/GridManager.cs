@@ -59,13 +59,13 @@ public class GridManager : MonoBehaviour
     private System.Collections.IEnumerator InitializeGame()
     {
         // 1. グリッド生成
-        GenerateGrid();
+        yield return StartCoroutine(GenerateGridCoroutine());
         
         // 2. プレイヤー生成
-        SpawnPlayer(new Vector2Int(width / 2, height / 2));
+        yield return StartCoroutine(SpawnPlayerCoroutine(new Vector2Int(width / 2, height / 2)));
         
         // 3. Exit生成
-        SpawnExit();
+        yield return StartCoroutine(SpawnExitCoroutine());
         
         // 4. 他のオブジェクトの初期化完了を待つ
         yield return StartCoroutine(WaitForOtherManagers());
@@ -88,13 +88,7 @@ public class GridManager : MonoBehaviour
         }
     }
     
-    private System.Collections.IEnumerator WaitForOtherManagers()
-    {
-        // 他のManagerの初期化完了を待つ
-        yield return new WaitForEndOfFrame();
-    }
-
-    private void GenerateGrid()
+    private System.Collections.IEnumerator GenerateGridCoroutine()
     {
         for (int x = 0; x < width; x++)
         {
@@ -106,14 +100,23 @@ public class GridManager : MonoBehaviour
 
                 Tile tileScript = tile.GetComponent<Tile>();
                 tileScript.Initialize(x, y);
+                
+                // 各タイル生成後に1フレーム待機
+                yield return null;
             }
         }
+        
+        // グリッド生成完了後に1フレーム待機
+        yield return new WaitForEndOfFrame();
     }
-
-    private void SpawnPlayer(Vector2Int position)
+    
+    private System.Collections.IEnumerator SpawnPlayerCoroutine(Vector2Int position)
     {
         Vector3 pos = new Vector3(position.x * tileSpacing, position.y * tileSpacing, 0);
         GameObject playerObj = Instantiate(playerPrefab, pos, Quaternion.identity);
+        
+        // プレイヤー生成後に1フレーム待機
+        yield return new WaitForEndOfFrame();
         
         // プレイヤーの初期化を実行
         Player playerScript = playerObj.GetComponent<Player>();
@@ -125,6 +128,34 @@ public class GridManager : MonoBehaviour
         // プレイヤー生成後にカメラ追従を開始
         StartCoroutine(NotifyCameraAfterPlayerSpawn(playerObj));
     }
+    
+    private System.Collections.IEnumerator SpawnExitCoroutine()
+    {
+        Vector2Int exitPos;
+        do
+        {
+            exitPos = new Vector2Int(Random.Range(0, width), Random.Range(0, height));
+        }
+        while (exitPos == new Vector2Int(width / 2, height / 2)); // プレイヤー位置と被らない
+
+        Vector3 pos = new Vector3(exitPos.x * tileSpacing, exitPos.y * tileSpacing, 0);
+        GameObject exitObj = Instantiate(exitPrefab, pos, Quaternion.identity);
+        
+        // Exit生成後に1フレーム待機
+        yield return new WaitForEndOfFrame();
+        
+        // Exit位置を記録
+        exitObject = exitObj;
+        exitPosition = exitPos;
+    }
+    
+    private System.Collections.IEnumerator WaitForOtherManagers()
+    {
+        // 他のManagerの初期化完了を待つ
+        yield return new WaitForEndOfFrame();
+    }
+
+
 
     private System.Collections.IEnumerator NotifyCameraAfterPlayerSpawn(GameObject playerObj)
     {
@@ -138,22 +169,7 @@ public class GridManager : MonoBehaviour
         }
     }
 
-    private void SpawnExit()
-    {
-        Vector2Int exitPos;
-        do
-        {
-            exitPos = new Vector2Int(Random.Range(0, width), Random.Range(0, height));
-        }
-        while (exitPos == new Vector2Int(width / 2, height / 2)); // プレイヤー位置と被らない
 
-        Vector3 pos = new Vector3(exitPos.x * tileSpacing, exitPos.y * tileSpacing, 0);
-        GameObject exitObj = Instantiate(exitPrefab, pos, Quaternion.identity);
-        
-        // Exit位置を記録
-        exitPosition = exitPos;
-        exitObject = exitObj;
-    }
 
     public Vector3 GetWorldPosition(Vector2Int gridPos)
     {

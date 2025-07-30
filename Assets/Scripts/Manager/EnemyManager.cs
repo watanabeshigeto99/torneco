@@ -7,6 +7,16 @@ public class EnemyManager : MonoBehaviour
 
     public GameObject enemyPrefab;
     public int enemyCount = 3;
+    
+    [Header("Spawn Settings")]
+    [Tooltip("プレイヤーからの最小距離（マス数）")]
+    public int minDistanceFromPlayer = 3;
+    
+    [Tooltip("プレイヤーからの最大距離（マス数）")]
+    public int maxDistanceFromPlayer = 5;
+    
+    [Tooltip("スポーン位置探索の最大試行回数")]
+    public int maxSpawnAttempts = 100;
 
     private List<Enemy> enemies = new List<Enemy>();
 
@@ -22,25 +32,62 @@ public class EnemyManager : MonoBehaviour
 
     public void SpawnEnemies()
     {
+        Player player = FindObjectOfType<Player>();
+        if (player == null)
+        {
+            Debug.LogError("プレイヤーが見つかりません");
+            return;
+        }
+        
+        Vector2Int playerPos = player.gridPosition;
+        
         for (int i = 0; i < enemyCount; i++)
         {
             Vector2Int pos;
+            int attempts = 0;
+            bool validPositionFound = false;
+            
+            // ランダムな距離制限を設定（ばらつきを出す）
+            int minDist = Random.Range(minDistanceFromPlayer, maxDistanceFromPlayer);
+            int maxDist = maxDistanceFromPlayer;
+            
             do {
-                pos = new Vector2Int(Random.Range(0, 5), Random.Range(0, 5));
-            } while (!GridManager.Instance.IsWalkable(pos));
-
-            GameObject enemyObj = Instantiate(enemyPrefab);
-            Enemy enemy = enemyObj.GetComponent<Enemy>();
-            enemy.Initialize(pos);
-            enemies.Add(enemy);
+                pos = new Vector2Int(Random.Range(0, GridManager.Instance.width), 
+                                   Random.Range(0, GridManager.Instance.height));
+                attempts++;
+                
+                // プレイヤーとの距離をチェック
+                float distanceFromPlayer = Vector2Int.Distance(pos, playerPos);
+                
+                // 条件を満たすかチェック
+                if (distanceFromPlayer >= minDist && 
+                    distanceFromPlayer <= maxDist && 
+                    GridManager.Instance.IsWalkable(pos))
+                {
+                    validPositionFound = true;
+                    Debug.Log($"敵{i + 1}をスポーン: 位置{pos}, プレイヤーからの距離{distanceFromPlayer:F1}");
+                }
+                
+            } while (!validPositionFound && attempts < maxSpawnAttempts);
+            
+            if (validPositionFound)
+            {
+                GameObject enemyObj = Instantiate(enemyPrefab);
+                Enemy enemy = enemyObj.GetComponent<Enemy>();
+                enemy.Initialize(pos);
+                enemies.Add(enemy);
+                
+                // ターン制システムに敵を登録
+                RegisterEnemy(enemy);
+            }
+            else
+            {
+                Debug.LogWarning($"敵{i + 1}のスポーン位置が見つかりませんでした（試行回数: {attempts}）");
+            }
         }
         
-        // 全ての敵のスポーン完了後に視界範囲を更新
-        Player player = FindObjectOfType<Player>();
-        if (player != null && GridManager.Instance != null)
-        {
-            GridManager.Instance.UpdateVisionRange(player.gridPosition);
-        }
+        // 視界範囲更新はGridManagerに任せる（初期化タイミングの問題を回避）
+        Debug.Log($"敵のスポーン完了: {enemyCount}体");
     }
 
     public void EnemyTurn()
@@ -60,7 +107,7 @@ public class EnemyManager : MonoBehaviour
         Player player = FindObjectOfType<Player>();
         if (player != null && GridManager.Instance != null)
         {
-            GridManager.Instance.UpdateVisionRange(player.gridPosition);
+            GridManager.Instance.UpdateTileVisibility(player.gridPosition);
         }
     }
 

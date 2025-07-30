@@ -50,12 +50,6 @@ public class GridManager : MonoBehaviour
         SpawnPlayer(new Vector2Int(width / 2, height / 2));
         SpawnExit();
         
-        // 敵をスポーン
-        if (EnemyManager.Instance != null)
-        {
-            EnemyManager.Instance.SpawnEnemies();
-        }
-        
         // 全オブジェクトの参照を保存
         StartCoroutine(StoreObjectsAfterSpawn());
     }
@@ -65,6 +59,14 @@ public class GridManager : MonoBehaviour
         // 全てのオブジェクトが生成されるまで待機
         yield return new WaitForSeconds(0.1f);
         
+        // 敵をスポーン（StoreAllObjectsの前に実行）
+        if (EnemyManager.Instance != null)
+        {
+            EnemyManager.Instance.SpawnEnemies();
+        }
+        
+        // 敵のスポーン完了後に全オブジェクトの参照を保存
+        yield return new WaitForSeconds(0.1f);
         StoreAllObjects();
         
         // 初期視界範囲を設定

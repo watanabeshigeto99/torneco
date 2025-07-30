@@ -17,12 +17,8 @@ public class Enemy : Unit
         gridPosition = startPos;
         transform.position = GridManager.Instance.GetWorldPosition(gridPosition);
         
-        // 敵の初期化後に視界範囲を更新
-        Player player = FindObjectOfType<Player>();
-        if (player != null && GridManager.Instance != null)
-        {
-            GridManager.Instance.UpdateVisionRange(player.gridPosition);
-        }
+        // 視界範囲更新はGridManagerに任せる（初期化タイミングの問題を回避）
+        Debug.Log($"敵を初期化: 位置{startPos}");
     }
 
     public void Act()
@@ -42,7 +38,7 @@ public class Enemy : Unit
             Player player = FindObjectOfType<Player>();
             if (player != null && GridManager.Instance != null)
             {
-                GridManager.Instance.UpdateVisionRange(player.gridPosition);
+                GridManager.Instance.UpdateTileVisibility(player.gridPosition);
             }
         }
 

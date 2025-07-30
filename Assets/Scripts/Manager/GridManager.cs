@@ -44,51 +44,20 @@ public class GridManager : MonoBehaviour
             return;
         }
         Instance = this;
-        
-        // 基本的な変数の初期化
-        allTiles = null;
-        allEnemies = null;
-        exitObject = null;
     }
 
     private void Start()
     {
-        // 実際の初期化処理を開始
-        StartCoroutine(InitializeGame());
-    }
-    
-    private System.Collections.IEnumerator InitializeGame()
-    {
-        // 1. グリッド生成
-        yield return StartCoroutine(GenerateGridCoroutine());
-        
-        // 2. プレイヤー生成
-        yield return StartCoroutine(SpawnPlayerCoroutine(new Vector2Int(width / 2, height / 2)));
-        
-        // 3. Exit生成
-        yield return StartCoroutine(SpawnExitCoroutine());
-        
-        // 4. 他のオブジェクトの初期化完了を待つ
-        yield return StartCoroutine(WaitForOtherManagers());
-        
-        // 5. 敵のスポーン
-        if (EnemyManager.Instance != null)
-        {
-            EnemyManager.Instance.SpawnEnemies();
-        }
-        
-        // 6. 全オブジェクトの参照を保存
-        yield return new WaitForSeconds(0.1f);
+        // 基本的な初期化処理
+        GenerateGrid();
+        SpawnPlayer(new Vector2Int(width / 2, height / 2));
+        SpawnExit();
+        SpawnEnemies();
         StoreAllObjects();
-        
-        // 7. 初期視界範囲を設定
-        if (Player.Instance != null)
-        {
-            UpdateTileVisibility(Player.Instance.gridPosition);
-        }
+        UpdateTileVisibility(Player.Instance.gridPosition);
     }
     
-    private System.Collections.IEnumerator GenerateGridCoroutine()
+    private void GenerateGrid()
     {
         for (int x = 0; x < width; x++)
         {
@@ -100,36 +69,29 @@ public class GridManager : MonoBehaviour
 
                 Tile tileScript = tile.GetComponent<Tile>();
                 tileScript.Initialize(x, y);
-                
-                // 各タイル生成後に1フレーム待機
-                yield return null;
             }
         }
-        
-        // グリッド生成完了後に1フレーム待機
-        yield return new WaitForEndOfFrame();
     }
     
-    private System.Collections.IEnumerator SpawnPlayerCoroutine(Vector2Int position)
+    private void SpawnPlayer(Vector2Int position)
     {
         Vector3 pos = new Vector3(position.x * tileSpacing, position.y * tileSpacing, 0);
         GameObject playerObj = Instantiate(playerPrefab, pos, Quaternion.identity);
         
-        // プレイヤー生成後に1フレーム待機
-        yield return new WaitForEndOfFrame();
-        
-        // プレイヤーの初期化を実行
         Player playerScript = playerObj.GetComponent<Player>();
         if (playerScript != null)
         {
             playerScript.InitializePosition();
         }
         
-        // プレイヤー生成後にカメラ追従を開始
-        StartCoroutine(NotifyCameraAfterPlayerSpawn(playerObj));
+        // カメラ追従を開始
+        if (CameraFollow.Instance != null)
+        {
+            CameraFollow.Instance.OnPlayerMoved(playerObj.transform.position);
+        }
     }
     
-    private System.Collections.IEnumerator SpawnExitCoroutine()
+    private void SpawnExit()
     {
         Vector2Int exitPos;
         do
@@ -141,30 +103,16 @@ public class GridManager : MonoBehaviour
         Vector3 pos = new Vector3(exitPos.x * tileSpacing, exitPos.y * tileSpacing, 0);
         GameObject exitObj = Instantiate(exitPrefab, pos, Quaternion.identity);
         
-        // Exit生成後に1フレーム待機
-        yield return new WaitForEndOfFrame();
-        
         // Exit位置を記録
         exitObject = exitObj;
         exitPosition = exitPos;
     }
     
-    private System.Collections.IEnumerator WaitForOtherManagers()
+    private void SpawnEnemies()
     {
-        // 他のManagerの初期化完了を待つ
-        yield return new WaitForEndOfFrame();
-    }
-
-
-
-    private System.Collections.IEnumerator NotifyCameraAfterPlayerSpawn(GameObject playerObj)
-    {
-        // プレイヤーの初期化が完了するまで待機
-        yield return new WaitForEndOfFrame();
-        
-        if (CameraFollow.Instance != null)
+        if (EnemyManager.Instance != null)
         {
-            CameraFollow.Instance.OnPlayerMoved(playerObj.transform.position);
+            EnemyManager.Instance.SpawnEnemies();
         }
     }
 
@@ -241,6 +189,13 @@ public class GridManager : MonoBehaviour
                     // 非表示の場合のみSetActive(false)、それ以外は表示
                     bool shouldBeVisible = (visibility != Tile.VisibilityState.Hidden);
                     enemy.gameObject.SetActive(shouldBeVisible);
+                    
+                    // 透明度も更新
+                    if (shouldBeVisible)
+                    {
+                        float alpha = (visibility == Tile.VisibilityState.Transparent) ? 0.4f : 1.0f;
+                        UpdateSpriteTransparency(enemy.gameObject, alpha);
+                    }
                 }
             }
         }
@@ -258,6 +213,13 @@ public class GridManager : MonoBehaviour
                     // 非表示の場合のみSetActive(false)、それ以外は表示
                     bool shouldBeVisible = (visibility != Tile.VisibilityState.Hidden);
                     enemy.gameObject.SetActive(shouldBeVisible);
+                    
+                    // 透明度も更新
+                    if (shouldBeVisible)
+                    {
+                        float alpha = (visibility == Tile.VisibilityState.Transparent) ? 0.4f : 1.0f;
+                        UpdateSpriteTransparency(enemy.gameObject, alpha);
+                    }
                 }
             }
         }

@@ -33,15 +33,10 @@ public class EnemyManager : MonoBehaviour
 
     public void SpawnEnemies()
     {
-        StartCoroutine(SpawnEnemiesCoroutine());
-    }
-    
-    private System.Collections.IEnumerator SpawnEnemiesCoroutine()
-    {
         if (Player.Instance == null)
         {
             Debug.LogError("プレイヤーが見つかりません");
-            yield break;
+            return;
         }
         
         Vector2Int playerPos = Player.Instance.gridPosition;
@@ -77,10 +72,6 @@ public class EnemyManager : MonoBehaviour
             if (validPositionFound)
             {
                 GameObject enemyObj = Instantiate(enemyPrefab);
-                
-                // 敵生成後に1フレーム待機
-                yield return new WaitForEndOfFrame();
-                
                 Enemy enemy = enemyObj.GetComponent<Enemy>();
                 enemy.Initialize(pos);
                 enemies.Add(enemy);
@@ -93,9 +84,6 @@ public class EnemyManager : MonoBehaviour
                 Debug.LogWarning($"敵{i + 1}のスポーン位置が見つかりませんでした（試行回数: {attempts}）");
             }
         }
-        
-        // 全敵の生成完了後に1フレーム待機
-        yield return new WaitForEndOfFrame();
     }
 
     public void EnemyTurn()
@@ -112,10 +100,9 @@ public class EnemyManager : MonoBehaviour
         enemies.RemoveAll(e => e == null);
         
         // 敵のターン終了後に視界範囲を更新
-        Player player = FindObjectOfType<Player>();
-        if (player != null && GridManager.Instance != null)
+        if (Player.Instance != null && GridManager.Instance != null)
         {
-            GridManager.Instance.UpdateTileVisibility(player.gridPosition);
+            GridManager.Instance.UpdateTileVisibility(Player.Instance.gridPosition);
         }
     }
 

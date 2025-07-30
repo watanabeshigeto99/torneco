@@ -33,21 +33,6 @@ public class Player : Unit
         isAwaitingMoveInput = false;
         allowedMoveDistance = 0;
     }
-    
-    private void Start()
-    {
-        // 他のオブジェクトとの連携を開始
-        StartCoroutine(InitializePlayer());
-    }
-    
-    private System.Collections.IEnumerator InitializePlayer()
-    {
-        // GridManagerの初期化完了を待つ
-        yield return new WaitUntil(() => GridManager.Instance != null);
-        
-        // 位置の初期化
-        InitializePosition();
-    }
 
     // 初期化完了後に呼ばれるメソッド
     public void InitializePosition()
@@ -55,7 +40,7 @@ public class Player : Unit
         Vector3 worldPos = GridManager.Instance.GetWorldPosition(gridPosition);
         transform.position = worldPos;
         
-        // 視界範囲を更新（カメラ追従は別途実行されるため除外）
+        // 視界範囲を更新
         if (GridManager.Instance != null)
         {
             GridManager.Instance.UpdateTileVisibility(gridPosition);

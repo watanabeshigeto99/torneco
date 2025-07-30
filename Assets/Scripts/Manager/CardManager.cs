@@ -23,6 +23,7 @@ public class CardManager : MonoBehaviour
 
     private void Start()
     {
+        // 初期手札を引く
         DrawHand();
     }
 

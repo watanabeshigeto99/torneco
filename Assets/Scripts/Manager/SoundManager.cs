@@ -32,6 +32,7 @@ public class SoundManager : MonoBehaviour
 
     private void Start()
     {
+        // BGM再生開始
         PlayBGM(bgmMain);
     }
 

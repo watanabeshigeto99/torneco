@@ -23,6 +23,7 @@ public class CardManager : MonoBehaviour
         }
         Instance = this;
         
+        // 設定項目のnullチェック
         if (handArea == null)
         {
             Debug.LogError("CardManager: handAreaが設定されていません");

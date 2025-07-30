@@ -24,6 +24,10 @@ public class TurnManager : MonoBehaviour
         }
         Instance = this;
         
+        // 基本的な変数の初期化
+        playerTurn = true;
+        isProcessing = false;
+        
         Debug.Log("TurnManager: Awake完了");
     }
 
@@ -31,6 +35,7 @@ public class TurnManager : MonoBehaviour
     {
         Debug.Log("TurnManager: Start開始");
         
+        // 参照を取得（Start時点で他のManagerは既に存在しているはず）
         player = Player.Instance;
         enemyManager = EnemyManager.Instance;
         

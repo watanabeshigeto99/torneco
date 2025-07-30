@@ -222,24 +222,32 @@ public class Player : Unit
     {
         Debug.Log($"攻撃！ダメージ: {damage}");
         
-        // 隣接マスにいる敵を探して攻撃
-        Enemy[] enemies = FindObjectsOfType<Enemy>();
+        // 隣接マスにいる敵を探して攻撃（EnemyManagerから取得）
         bool hitEnemy = false;
         
-        foreach (Enemy enemy in enemies)
+        if (EnemyManager.Instance != null)
         {
-            if (enemy != null && Vector2Int.Distance(gridPosition, enemy.gridPosition) == 1)
+            // EnemyManagerから敵リストを取得
+            var enemies = EnemyManager.Instance.GetEnemies();
+            foreach (Enemy enemy in enemies)
             {
-                enemy.TakeDamage(damage);
-                hitEnemy = true;
-                Debug.Log($"敵に{damage}ダメージを与えた！");
-                
-                // UI更新
-                if (UIManager.Instance != null)
+                if (enemy != null && Vector2Int.Distance(gridPosition, enemy.gridPosition) == 1)
                 {
-                    UIManager.Instance.AddLog($"敵に{damage}ダメージを与えた！");
+                    enemy.TakeDamage(damage);
+                    hitEnemy = true;
+                    Debug.Log($"敵に{damage}ダメージを与えた！");
+                    
+                    // UI更新
+                    if (UIManager.Instance != null)
+                    {
+                        UIManager.Instance.AddLog($"敵に{damage}ダメージを与えた！");
+                    }
                 }
             }
+        }
+        else
+        {
+            Debug.LogWarning("Player: EnemyManager.Instanceが見つからないため攻撃をスキップ");
         }
         
         if (!hitEnemy)

@@ -19,21 +19,53 @@ public class SoundManager : MonoBehaviour
 
     private void Awake()
     {
+        Debug.Log("SoundManager: Awake開始");
+        
         if (Instance == null)
         {
             Instance = this;
             DontDestroyOnLoad(gameObject);
+            
+            // AudioSourceコンポーネントの取得とキャッシュ
+            seSource = GetComponent<AudioSource>();
+            if (seSource == null)
+            {
+                seSource = gameObject.AddComponent<AudioSource>();
+            }
+            
+            // BGM用のAudioSourceを追加
+            GameObject bgmObject = new GameObject("BGM Source");
+            bgmObject.transform.SetParent(transform);
+            bgmSource = bgmObject.AddComponent<AudioSource>();
+            bgmSource.loop = true;
+            
+            Debug.Log("SoundManager: AudioSource設定完了");
         }
         else 
         {
+            Debug.LogWarning("SoundManager: 重複するSoundManagerインスタンスを破棄");
             Destroy(gameObject);
         }
+        
+        Debug.Log("SoundManager: Awake完了");
     }
 
     private void Start()
     {
+        Debug.Log("SoundManager: Start開始");
+        
         // BGM再生開始
-        PlayBGM(bgmMain);
+        if (bgmMain != null)
+        {
+            PlayBGM(bgmMain);
+            Debug.Log("SoundManager: BGM再生開始");
+        }
+        else
+        {
+            Debug.LogWarning("SoundManager: bgmMainが設定されていません");
+        }
+        
+        Debug.Log("SoundManager: Start完了");
     }
 
     public void PlaySound(string type)

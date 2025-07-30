@@ -189,4 +189,16 @@ public class EnemyManager : MonoBehaviour
             Debug.LogWarning("EnemyManager: 既に登録済みの敵です");
         }
     }
+    
+    // 外部から敵リストを取得するためのメソッド
+    public List<Enemy> GetEnemies()
+    {
+        return enemies;
+    }
+    
+    // 敵の数を取得
+    public int GetEnemyCount()
+    {
+        return enemies?.Count ?? 0;
+    }
 } 

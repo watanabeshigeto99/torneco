@@ -196,12 +196,14 @@ public class GridManager : MonoBehaviour
         if (Player.Instance != null && Player.Instance.gridPosition == pos)
             return true;
 
-        // 敵の位置チェック
-        Enemy[] enemies = FindObjectsOfType<Enemy>();
-        foreach (var enemy in enemies)
+        // 敵の位置チェック（キャッシュされたallEnemiesを使用）
+        if (allEnemies != null)
         {
-            if (enemy.gridPosition == pos)
-                return true;
+            foreach (var enemy in allEnemies)
+            {
+                if (enemy != null && enemy.gridPosition == pos)
+                    return true;
+            }
         }
 
         return false;
@@ -397,14 +399,14 @@ public class GridManager : MonoBehaviour
         
         int highlightedCount = 0;
         
-        Tile[] tiles = FindObjectsOfType<Tile>();
-        if (tiles == null || tiles.Length == 0)
+        // キャッシュされたallTilesを使用
+        if (allTiles == null || allTiles.Length == 0)
         {
             Debug.LogWarning("GridManager: タイルが見つかりません");
             return;
         }
         
-        foreach (var tile in tiles)
+        foreach (var tile in allTiles)
         {
             if (tile == null) continue;
             
@@ -430,14 +432,14 @@ public class GridManager : MonoBehaviour
     {
         Debug.Log("GridManager: タイル色リセット開始");
         
-        Tile[] tiles = FindObjectsOfType<Tile>();
-        if (tiles == null || tiles.Length == 0)
+        // キャッシュされたallTilesを使用
+        if (allTiles == null || allTiles.Length == 0)
         {
             Debug.LogWarning("GridManager: リセット対象のタイルが見つかりません");
             return;
         }
         
-        foreach (var tile in tiles)
+        foreach (var tile in allTiles)
         {
             if (tile != null)
             {

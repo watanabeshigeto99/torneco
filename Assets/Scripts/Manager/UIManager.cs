@@ -15,6 +15,9 @@ public class UIManager : MonoBehaviour
 
     [Header("Turn UI")]
     public TextMeshProUGUI turnLabel;
+    
+    [Header("Floor UI")]
+    public TextMeshProUGUI floorLabel;
 
     [Header("Action Log")]
     public TextMeshProUGUI actionLog;
@@ -102,8 +105,11 @@ public class UIManager : MonoBehaviour
             UpdateHP(Player.Instance.currentHP, Player.Instance.maxHP);
         }
         
-        // ターン表示を初期化
-        SetTurnText(true);
+        // 階層表示を更新
+        if (GameManager.Instance != null)
+        {
+            UpdateFloorDisplay(GameManager.Instance.currentFloor);
+        }
     }
 
     public void UpdateHP(int current, int max)
@@ -124,7 +130,15 @@ public class UIManager : MonoBehaviour
     {
         if (turnLabel != null)
         {
-            turnLabel.text = isPlayerTurn ? "プレイヤーのターン" : "敵のターン";
+            turnLabel.text = isPlayerTurn ? "プレイヤーターン" : "敵ターン";
+        }
+    }
+    
+    public void UpdateFloorDisplay(int floor)
+    {
+        if (floorLabel != null)
+        {
+            floorLabel.text = $"階層: {floor}";
         }
     }
 

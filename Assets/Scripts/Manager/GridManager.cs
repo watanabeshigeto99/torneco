@@ -14,8 +14,8 @@ public class GridManager : MonoBehaviour
     public static event Action OnAllObjectsInitialized; // 全オブジェクト初期化完了イベント
 
     [Header("Grid Settings")]
-    public int width = 5;
-    public int height = 5;
+    public int width = 10;
+    public int height = 10;
     public float tileSpacing = 1.1f;
     public GameObject tilePrefab;
 
@@ -41,7 +41,7 @@ public class GridManager : MonoBehaviour
     private Tile[] allTiles;
     private Enemy[] allEnemies;
     private GameObject exitObject;
-    private Vector2Int exitPosition; // Exitの位置を記録
+    public Vector2Int exitPosition; // Exitの位置を記録（publicに変更）
 
     // 初期化完了フラグ
     private bool isGridGenerated = false;
@@ -222,14 +222,15 @@ public class GridManager : MonoBehaviour
     
     private void SpawnExit()
     {
-        Debug.Log("GridManager: Exit生成開始");
+        Debug.Log($"GridManager: Exit生成開始 - グリッドサイズ: {width}x{height}");
         
         Vector2Int exitPos;
         do
         {
             exitPos = new Vector2Int(UnityEngine.Random.Range(0, width), UnityEngine.Random.Range(0, height));
         }
-        while (exitPos == new Vector2Int(width / 2, height / 2)); // プレイヤー位置と被らない
+        while (exitPos == new Vector2Int(width / 2, height / 2) || 
+               (Player.Instance != null && exitPos == Player.Instance.gridPosition)); // プレイヤー位置と被らない
 
         Vector3 pos = new Vector3(exitPos.x * tileSpacing, exitPos.y * tileSpacing, 0);
         GameObject exitObj = Instantiate(exitPrefab, pos, Quaternion.identity);
@@ -242,7 +243,40 @@ public class GridManager : MonoBehaviour
         OnExitSpawned?.Invoke(exitObj);
         Debug.Log("GridManager: Exit生成完了イベント発行");
         
-        Debug.Log($"GridManager: Exit生成完了 位置: {exitPos}");
+        Debug.Log($"GridManager: Exit生成完了 位置: {exitPos}, グリッド内: {IsInsideGrid(exitPos)}");
+    }
+    
+    // 新しい階層を生成
+    public void GenerateNewFloor()
+    {
+        Debug.Log("GridManager: 新しい階層を生成開始");
+        
+        // 古いタイルを消去
+        foreach (Transform child in transform)
+        {
+            Destroy(child.gameObject);
+        }
+        
+        // 古いExitを消去
+        if (exitObject != null)
+        {
+            Destroy(exitObject);
+            exitObject = null;
+        }
+        
+        // グリッドを再生成
+        GenerateGrid();
+        
+        // Exitを再生成
+        SpawnExit();
+        
+        // プレイヤー位置をリセット
+        if (Player.Instance != null)
+        {
+            Player.Instance.ResetPlayerPosition();
+        }
+        
+        Debug.Log("GridManager: 新しい階層の生成完了");
     }
     
     private void SpawnEnemies()
@@ -285,6 +319,10 @@ public class GridManager : MonoBehaviour
 
     public bool IsOccupied(Vector2Int pos)
     {
+        // Exit位置は常に歩行可能
+        if (exitPosition == pos)
+            return false;
+
         // プレイヤーの位置チェック
         if (Player.Instance != null && Player.Instance.gridPosition == pos)
             return true;
@@ -304,7 +342,17 @@ public class GridManager : MonoBehaviour
 
     public bool IsWalkable(Vector2Int pos)
     {
-        return IsInsideGrid(pos) && !IsOccupied(pos);
+        bool insideGrid = IsInsideGrid(pos);
+        bool occupied = IsOccupied(pos);
+        bool walkable = insideGrid && !occupied;
+        
+        // Exit位置の場合は特別なデバッグログ
+        if (pos == exitPosition)
+        {
+            Debug.Log($"GridManager: Exit位置チェック - 位置: {pos}, グリッドサイズ: {width}x{height}, グリッド内: {insideGrid}, 占有: {occupied}, 歩行可能: {walkable}");
+        }
+        
+        return walkable;
     }
 
     // 視界範囲内かどうかをチェック

@@ -8,6 +8,11 @@ public class GameManager : MonoBehaviour
     public int score = 0;
     public bool gameOver = false;
     public bool gameClear = false;
+    
+    // 階層管理
+    [Header("Floor Management")]
+    public int currentFloor = 1;
+    public int maxFloor = 10; // 最大階層数（ゲームクリア条件）
 
     private void Awake()
     {
@@ -21,10 +26,14 @@ public class GameManager : MonoBehaviour
         }
         Instance = this;
         
+        // 永続化（次の階層でも保持）
+        DontDestroyOnLoad(gameObject);
+        
         // 基本的な変数の初期化
         score = 0;
         gameOver = false;
         gameClear = false;
+        currentFloor = 1;
         
         Debug.Log("GameManager: Awake完了");
     }
@@ -61,6 +70,45 @@ public class GameManager : MonoBehaviour
         if (UIManager.Instance != null)
         {
             UIManager.Instance.AddLog($"敵を倒した！スコア: {score}");
+        }
+    }
+    
+    // 次の階層に進む
+    public void GoToNextFloor()
+    {
+        currentFloor++;
+        Debug.Log($"階層: {currentFloor}");
+        
+        // UI更新
+        if (UIManager.Instance != null)
+        {
+            UIManager.Instance.AddLog($"階層 {currentFloor} に進みました！");
+            UIManager.Instance.UpdateFloorDisplay(currentFloor);
+        }
+        
+        // 最大階層に到達したらゲームクリア
+        if (currentFloor > maxFloor)
+        {
+            GameClear();
+            return;
+        }
+        
+        // 新しい階層を生成
+        if (GridManager.Instance != null)
+        {
+            GridManager.Instance.GenerateNewFloor();
+        }
+        
+        // 敵を再スポーン
+        if (EnemyManager.Instance != null)
+        {
+            EnemyManager.Instance.RespawnEnemies();
+        }
+        
+        // プレイヤー位置をリセット
+        if (Player.Instance != null)
+        {
+            Player.Instance.ResetPlayerPosition();
         }
     }
 } 

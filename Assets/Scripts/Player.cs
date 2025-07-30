@@ -79,6 +79,52 @@ public class Player : Unit
             UIManager.Instance.UpdateHP(currentHP, maxHP);
         }
     }
+    
+    // プレイヤー位置をリセット（新しい階層用）
+    public void ResetPlayerPosition()
+    {
+        gridPosition = new Vector2Int(2, 2); // 中央の固定座標
+        Vector3 worldPos = GridManager.Instance.GetWorldPosition(gridPosition);
+        transform.position = worldPos;
+        
+        // HPを全回復
+        currentHP = maxHP;
+        
+        // 視界範囲を更新
+        if (GridManager.Instance != null)
+        {
+            GridManager.Instance.UpdateTileVisibility(gridPosition);
+        }
+        
+        // UI更新
+        if (UIManager.Instance != null)
+        {
+            UIManager.Instance.UpdateHP(currentHP, maxHP);
+        }
+        
+        Debug.Log("Player: 位置とHPをリセットしました");
+    }
+    
+    // Exit判定
+    private void CheckExit(Vector2Int newPos)
+    {
+        if (GridManager.Instance != null && GridManager.Instance.exitPosition == newPos)
+        {
+            Debug.Log($"Player: Exitに到達！位置: {newPos}, Exit位置: {GridManager.Instance.exitPosition}");
+            
+            // UI更新
+            if (UIManager.Instance != null)
+            {
+                UIManager.Instance.AddLog("Exitに到達しました！");
+            }
+            
+            // 次の階層に進む
+            if (GameManager.Instance != null)
+            {
+                GameManager.Instance.GoToNextFloor();
+            }
+        }
+    }
 
     public void StartMoveSelection(int moveDistance)
     {
@@ -212,6 +258,8 @@ public class Player : Unit
     {
         int dist = Mathf.Abs(clickedPos.x - gridPosition.x) + Mathf.Abs(clickedPos.y - gridPosition.y);
         
+        Debug.Log($"Player: 移動選択 - クリック位置: {clickedPos}, 距離: {dist}, 最大距離: {allowedMoveDistance}, 歩行可能: {GridManager.Instance.IsWalkable(clickedPos)}");
+        
         if (dist <= allowedMoveDistance && GridManager.Instance.IsWalkable(clickedPos))
         {
             Vector2Int oldPos = gridPosition;
@@ -229,11 +277,18 @@ public class Player : Unit
             // カメラ追従と視界範囲更新
             NotifyCameraFollow();
             
+            // Exit判定
+            CheckExit(clickedPos);
+            
             // ターン終了
             if (TurnManager.Instance != null)
             {
                 TurnManager.Instance.OnPlayerCardUsed();
             }
+        }
+        else
+        {
+            Debug.Log($"Player: 移動できません - 距離: {dist}, 最大距離: {allowedMoveDistance}, 歩行可能: {GridManager.Instance.IsWalkable(clickedPos)}");
         }
     }
 
@@ -251,6 +306,9 @@ public class Player : Unit
             
             // カメラ追従通知
             NotifyCameraFollow();
+            
+            // Exit判定
+            CheckExit(newPos);
         }
     }
 
@@ -281,6 +339,9 @@ public class Player : Unit
             {
                 SoundManager.Instance.PlaySound("Select");
             }
+            
+            // Exit判定
+            CheckExit(newPos);
         }
         else
         {

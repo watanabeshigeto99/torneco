@@ -26,4 +26,4 @@ MonoBehaviour:
   canMove: 1
   canAttack: 1
   isRanged: 0
-  rangedAttackRange: 2
+  rangedAttackRange: 1

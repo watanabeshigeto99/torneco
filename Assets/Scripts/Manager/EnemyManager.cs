@@ -260,6 +260,27 @@ public class EnemyManager : MonoBehaviour
     // 敵の数を取得
     public int GetEnemyCount()
     {
-        return enemies?.Count ?? 0;
+        return enemies.Count;
+    }
+    
+    // 敵を再スポーン（新しい階層用）
+    public void RespawnEnemies()
+    {
+        Debug.Log("EnemyManager: 敵の再スポーン開始");
+        
+        // 既存の敵を全て削除
+        foreach (var enemy in enemies)
+        {
+            if (enemy != null)
+            {
+                Destroy(enemy.gameObject);
+            }
+        }
+        enemies.Clear();
+        
+        // 新しい敵をスポーン
+        SpawnEnemies();
+        
+        Debug.Log("EnemyManager: 敵の再スポーン完了");
     }
 } 

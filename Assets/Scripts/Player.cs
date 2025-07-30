@@ -1,5 +1,6 @@
 using UnityEngine;
 using System;
+using System.Collections;
 
 [DefaultExecutionOrder(-30)]
 public class Player : Unit
@@ -21,6 +22,14 @@ public class Player : Unit
     // 攻撃方向選択用の変数
     private bool isAwaitingAttackInput = false;
     private int attackPower = 0;
+    
+    // 演出用の変数
+    [Header("Effects")]
+    public ParticleSystem moveEffect;
+    public ParticleSystem attackEffect;
+    public float moveAnimationDuration = 0.3f;
+    public float attackAnimationDuration = 0.2f;
+    public float jumpHeight = 0.5f;
 
     protected override void Awake()
     {
@@ -207,7 +216,9 @@ public class Player : Unit
         {
             Vector2Int oldPos = gridPosition;
             gridPosition = clickedPos;
-            transform.position = GridManager.Instance.GetWorldPosition(gridPosition);
+            
+            // 移動演出を実行
+            StartCoroutine(AnimateMove(oldPos, clickedPos));
 
             isAwaitingMoveInput = false;
             GridManager.Instance.ResetAllTileColors();
@@ -232,9 +243,11 @@ public class Player : Unit
         
         if (GridManager.Instance.IsWalkable(newPos))
         {
+            Vector2Int oldPos = gridPosition;
             gridPosition = newPos;
-            Vector3 worldPos = GridManager.Instance.GetWorldPosition(gridPosition);
-            transform.position = worldPos;
+            
+            // 移動演出を実行
+            StartCoroutine(AnimateMove(oldPos, newPos));
             
             // カメラ追従通知
             NotifyCameraFollow();
@@ -248,9 +261,11 @@ public class Player : Unit
         
         if (GridManager.Instance.IsWalkable(newPos))
         {
+            Vector2Int oldPos = gridPosition;
             gridPosition = newPos;
-            Vector3 worldPos = GridManager.Instance.GetWorldPosition(gridPosition);
-            transform.position = worldPos;
+            
+            // 移動演出を実行
+            StartCoroutine(AnimateMove(oldPos, newPos));
             
             // カメラ追従通知
             NotifyCameraFollow();
@@ -313,6 +328,9 @@ public class Player : Unit
         // 攻撃イベントを発行
         OnPlayerAttacked?.Invoke(damage);
         
+        // 攻撃演出を実行
+        StartCoroutine(AnimateAttack(direction, damage));
+        
         // 目標位置にいる敵を探して攻撃
         bool hitEnemy = false;
         
@@ -359,17 +377,163 @@ public class Player : Unit
         }
     }
     
+    // 移動演出
+    private IEnumerator AnimateMove(Vector2Int fromPos, Vector2Int toPos)
+    {
+        Vector3 startPos = GridManager.Instance.GetWorldPosition(fromPos);
+        Vector3 endPos = GridManager.Instance.GetWorldPosition(toPos);
+        
+        // 移動エフェクトを再生
+        if (moveEffect != null)
+        {
+            moveEffect.transform.position = startPos;
+            moveEffect.Play();
+        }
+        
+        // ジャンプしながら移動するアニメーション
+        Vector3 midPos = (startPos + endPos) / 2f + Vector3.up * jumpHeight;
+        
+        float elapsed = 0f;
+        float halfDuration = moveAnimationDuration / 2f;
+        
+        // 前半：開始位置から中間位置へ
+        while (elapsed < halfDuration)
+        {
+            elapsed += Time.deltaTime;
+            float t = elapsed / halfDuration;
+            float easeT = 1f - (1f - t) * (1f - t); // EaseOutQuad
+            
+            transform.position = Vector3.Lerp(startPos, midPos, easeT);
+            spriteRenderer.transform.localScale = Vector3.Lerp(Vector3.one, Vector3.one * 1.2f, easeT);
+            
+            yield return null;
+        }
+        
+        // 後半：中間位置から終了位置へ
+        elapsed = 0f;
+        while (elapsed < halfDuration)
+        {
+            elapsed += Time.deltaTime;
+            float t = elapsed / halfDuration;
+            float easeT = t * t; // EaseInQuad
+            
+            transform.position = Vector3.Lerp(midPos, endPos, easeT);
+            spriteRenderer.transform.localScale = Vector3.Lerp(Vector3.one * 1.2f, Vector3.one, easeT);
+            
+            yield return null;
+        }
+        
+        // 最終位置を確実に設定
+        transform.position = endPos;
+        spriteRenderer.transform.localScale = Vector3.one;
+    }
+    
+    // 攻撃演出
+    private IEnumerator AnimateAttack(Vector2Int direction, int damage)
+    {
+        // 攻撃方向に向かって少し移動するアニメーション
+        Vector3 attackOffset = new Vector3(direction.x, direction.y, 0) * 0.3f;
+        Vector3 originalPos = transform.position;
+        Vector3 attackPos = originalPos + attackOffset;
+        
+        float elapsed = 0f;
+        float halfDuration = attackAnimationDuration / 2f;
+        
+        // 前半：攻撃位置へ移動
+        while (elapsed < halfDuration)
+        {
+            elapsed += Time.deltaTime;
+            float t = elapsed / halfDuration;
+            float easeT = 1f - (1f - t) * (1f - t); // EaseOutQuad
+            
+            transform.position = Vector3.Lerp(originalPos, attackPos, easeT);
+            spriteRenderer.transform.localScale = Vector3.Lerp(Vector3.one, Vector3.one * 1.3f, easeT);
+            
+            yield return null;
+        }
+        
+        // 攻撃エフェクトを再生
+        if (attackEffect != null)
+        {
+            attackEffect.transform.position = originalPos + attackOffset;
+            attackEffect.Play();
+        }
+        
+        // 後半：元の位置へ戻る
+        elapsed = 0f;
+        while (elapsed < halfDuration)
+        {
+            elapsed += Time.deltaTime;
+            float t = elapsed / halfDuration;
+            float easeT = t * t; // EaseInQuad
+            
+            transform.position = Vector3.Lerp(attackPos, originalPos, easeT);
+            spriteRenderer.transform.localScale = Vector3.Lerp(Vector3.one * 1.3f, Vector3.one, easeT);
+            
+            yield return null;
+        }
+        
+        // 最終位置を確実に設定
+        transform.position = originalPos;
+        spriteRenderer.transform.localScale = Vector3.one;
+    }
+    
     // 攻撃エフェクト再生
     private void PlayAttackEffect(Vector2Int targetPos)
     {
-        // Unity標準のエフェクトシステムを使用
-        // 将来的にパーティクルシステムなどを追加可能
+        Vector3 worldPos = GridManager.Instance.GetWorldPosition(targetPos);
+        
+        // ヒットエフェクトを生成
+        GameObject hitEffect = new GameObject("HitEffect");
+        hitEffect.transform.position = worldPos;
+        
+        // パーティクルシステムを追加
+        ParticleSystem hitParticles = hitEffect.AddComponent<ParticleSystem>();
+        var main = hitParticles.main;
+        main.startLifetime = 0.5f;
+        main.startSpeed = 2f;
+        main.startSize = 0.2f;
+        main.maxParticles = 10;
+        
+        var emission = hitParticles.emission;
+        emission.rateOverTime = 20;
+        
+        var shape = hitParticles.shape;
+        shape.enabled = true;
+        shape.shapeType = ParticleSystemShapeType.Sphere;
+        shape.radius = 0.5f;
+        
+        // 0.5秒後に削除
+        Destroy(hitEffect, 0.5f);
     }
     
     // 空振りエフェクト再生
     private void PlayMissEffect(Vector2Int targetPos)
     {
-        // Unity標準のエフェクトシステムを使用
+        Vector3 worldPos = GridManager.Instance.GetWorldPosition(targetPos);
+        
+        // 空振りエフェクトを生成
+        GameObject missEffect = new GameObject("MissEffect");
+        missEffect.transform.position = worldPos;
+        
+        ParticleSystem missParticles = missEffect.AddComponent<ParticleSystem>();
+        var main = missParticles.main;
+        main.startLifetime = 0.3f;
+        main.startSpeed = 1f;
+        main.startSize = 0.1f;
+        main.maxParticles = 5;
+        main.startColor = Color.gray;
+        
+        var emission = missParticles.emission;
+        emission.rateOverTime = 10;
+        
+        var shape = missParticles.shape;
+        shape.enabled = true;
+        shape.shapeType = ParticleSystemShapeType.Sphere;
+        shape.radius = 0.3f;
+        
+        // 0.3秒後に削除
+        Destroy(missEffect, 0.3f);
     }
 
     public void Attack(int damage)
@@ -474,6 +638,9 @@ public class Player : Unit
         // 回復イベントを発行
         OnPlayerHealed?.Invoke(actualHeal);
         
+        // 回復演出を実行
+        StartCoroutine(AnimateHeal());
+        
         // UI更新
         if (UIManager.Instance != null)
         {
@@ -487,15 +654,109 @@ public class Player : Unit
             SoundManager.Instance.PlaySound("Heal");
         }
     }
+    
+    // 回復演出
+    private IEnumerator AnimateHeal()
+    {
+        // 回復中はスプライトを緑色に光らせる
+        float elapsed = 0f;
+        float duration = 0.4f;
+        
+        while (elapsed < duration)
+        {
+            elapsed += Time.deltaTime;
+            float t = elapsed / duration;
+            
+            Color targetColor = Color.Lerp(Color.white, Color.green, Mathf.Sin(t * Mathf.PI * 2));
+            spriteRenderer.color = targetColor;
+            
+            yield return null;
+        }
+        
+        spriteRenderer.color = Color.white;
+        
+        // 回復エフェクトを生成
+        GameObject healEffect = new GameObject("HealEffect");
+        healEffect.transform.position = transform.position;
+        
+        ParticleSystem healParticles = healEffect.AddComponent<ParticleSystem>();
+        var main = healParticles.main;
+        main.startLifetime = 1f;
+        main.startSpeed = 1f;
+        main.startSize = 0.1f;
+        main.maxParticles = 20;
+        main.startColor = Color.green;
+        
+        var emission = healParticles.emission;
+        emission.rateOverTime = 30;
+        
+        var shape = healParticles.shape;
+        shape.enabled = true;
+        shape.shapeType = ParticleSystemShapeType.Sphere;
+        shape.radius = 0.5f;
+        
+        // 1秒後に削除
+        Destroy(healEffect, 1f);
+    }
 
     protected override void Die()
     {
         // 死亡イベントを発行
         OnPlayerDied?.Invoke();
         
+        // 死亡演出を実行
+        StartCoroutine(AnimateDeath());
+        
         if (GameManager.Instance != null)
         {
             GameManager.Instance.GameOver();
         }
+    }
+    
+    // 死亡演出
+    private IEnumerator AnimateDeath()
+    {
+        // フェードアウト
+        float elapsed = 0f;
+        float duration = 1f;
+        
+        while (elapsed < duration)
+        {
+            elapsed += Time.deltaTime;
+            float t = elapsed / duration;
+            
+            Color color = spriteRenderer.color;
+            color.a = 1f - t;
+            spriteRenderer.color = color;
+            
+            transform.localScale = Vector3.Lerp(Vector3.one, Vector3.one * 0.5f, t);
+            
+            yield return null;
+        }
+        
+        // 死亡エフェクトを生成
+        GameObject deathEffect = new GameObject("DeathEffect");
+        deathEffect.transform.position = transform.position;
+        
+        ParticleSystem deathParticles = deathEffect.AddComponent<ParticleSystem>();
+        var main = deathParticles.main;
+        main.startLifetime = 2f;
+        main.startSpeed = 2f;
+        main.startSize = 0.3f;
+        main.maxParticles = 50;
+        main.startColor = Color.red;
+        
+        var emission = deathParticles.emission;
+        emission.rateOverTime = 50;
+        
+        var shape = deathParticles.shape;
+        shape.enabled = true;
+        shape.shapeType = ParticleSystemShapeType.Sphere;
+        shape.radius = 1f;
+        
+        // 2秒後に削除
+        Destroy(deathEffect, 2f);
+        
+        gameObject.SetActive(false);
     }
 } 

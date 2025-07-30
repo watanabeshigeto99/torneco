@@ -14,59 +14,82 @@ public class TurnManager : MonoBehaviour
 
     private void Awake()
     {
+        Debug.Log("TurnManager: Awake開始");
+        
         if (Instance != null && Instance != this)
         {
+            Debug.LogWarning("TurnManager: 重複するTurnManagerインスタンスを破棄");
             Destroy(gameObject);
             return;
         }
         Instance = this;
+        
+        Debug.Log("TurnManager: Awake完了");
     }
 
     private void Start()
     {
+        Debug.Log("TurnManager: Start開始");
+        
         player = Player.Instance;
         enemyManager = EnemyManager.Instance;
+        
+        if (player == null)
+        {
+            Debug.LogError("TurnManager: Player.Instanceが見つかりません");
+        }
+        
+        if (enemyManager == null)
+        {
+            Debug.LogError("TurnManager: EnemyManager.Instanceが見つかりません");
+        }
+        
+        Debug.Log("TurnManager: Start完了");
     }
 
     public void OnPlayerCardUsed()
     {
-        if (playerTurn && !isProcessing)
+        Debug.Log("TurnManager: プレイヤーカード使用");
+        
+        if (player == null)
         {
-            StartCoroutine(HandleTurnSequence());
+            Debug.LogError("TurnManager: playerがnullです");
+            return;
         }
+        
+        if (enemyManager == null)
+        {
+            Debug.LogError("TurnManager: enemyManagerがnullです");
+            return;
+        }
+        
+        playerTurn = false;
+        isProcessing = true;
+        
+        // 敵のターンを実行
+        StartCoroutine(EnemyTurnCoroutine());
     }
 
-    private IEnumerator HandleTurnSequence()
+    private IEnumerator EnemyTurnCoroutine()
     {
-        isProcessing = true;
-        playerTurn = false;
-
-        yield return new WaitForSeconds(0.3f);
-
-        // 敵のターン
+        Debug.Log("TurnManager: 敵ターン開始");
+        
+        yield return new WaitForSeconds(0.5f);
+        
         if (enemyManager != null)
         {
             enemyManager.EnemyTurn();
         }
-
-        yield return new WaitForSeconds(0.3f);
-
+        else
+        {
+            Debug.LogError("TurnManager: enemyManagerがnullのため敵ターンをスキップ");
+        }
+        
         // プレイヤーのターンに戻る
         playerTurn = true;
-
-        // プレイヤーのターン開始時にログをクリア
-        if (UIManager.Instance != null)
-        {
-            UIManager.Instance.ClearLog();
-        }
-
-        // 手札を補充
-        if (CardManager.Instance != null)
-        {
-            CardManager.Instance.DrawHand();
-        }
-
         isProcessing = false;
+        
+        Debug.Log("TurnManager: 敵ターン完了、プレイヤーターンに戻る");
     }
 
     public bool IsPlayerTurn()

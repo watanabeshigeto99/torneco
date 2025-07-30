@@ -49,16 +49,47 @@ public class GridManager : MonoBehaviour
     private void Start()
     {
         // 基本的な初期化処理
+        Debug.Log("GridManager: 初期化開始");
+        
+        if (tilePrefab == null)
+        {
+            Debug.LogError("GridManager: tilePrefabが設定されていません");
+            return;
+        }
+        
+        if (playerPrefab == null)
+        {
+            Debug.LogError("GridManager: playerPrefabが設定されていません");
+            return;
+        }
+        
+        if (exitPrefab == null)
+        {
+            Debug.LogError("GridManager: exitPrefabが設定されていません");
+            return;
+        }
+        
         GenerateGrid();
         SpawnPlayer(new Vector2Int(width / 2, height / 2));
         SpawnExit();
         SpawnEnemies();
         StoreAllObjects();
-        UpdateTileVisibility(Player.Instance.gridPosition);
+        
+        if (Player.Instance != null)
+        {
+            UpdateTileVisibility(Player.Instance.gridPosition);
+            Debug.Log("GridManager: 初期化完了");
+        }
+        else
+        {
+            Debug.LogError("GridManager: Player.Instanceが見つかりません");
+        }
     }
     
     private void GenerateGrid()
     {
+        Debug.Log($"GridManager: グリッド生成開始 ({width}x{height})");
+        
         for (int x = 0; x < width; x++)
         {
             for (int y = 0; y < height; y++)
@@ -68,31 +99,53 @@ public class GridManager : MonoBehaviour
                 tile.name = $"Tile_{x}_{y}";
 
                 Tile tileScript = tile.GetComponent<Tile>();
+                if (tileScript == null)
+                {
+                    Debug.LogError($"GridManager: Tile_{x}_{y}にTileコンポーネントが見つかりません");
+                    continue;
+                }
+                
                 tileScript.Initialize(x, y);
             }
         }
+        
+        Debug.Log("GridManager: グリッド生成完了");
     }
     
     private void SpawnPlayer(Vector2Int position)
     {
+        Debug.Log($"GridManager: プレイヤー生成開始 位置: {position}");
+        
         Vector3 pos = new Vector3(position.x * tileSpacing, position.y * tileSpacing, 0);
         GameObject playerObj = Instantiate(playerPrefab, pos, Quaternion.identity);
         
         Player playerScript = playerObj.GetComponent<Player>();
-        if (playerScript != null)
+        if (playerScript == null)
         {
-            playerScript.InitializePosition();
+            Debug.LogError("GridManager: プレイヤーオブジェクトにPlayerコンポーネントが見つかりません");
+            return;
         }
+        
+        playerScript.InitializePosition();
         
         // カメラ追従を開始
         if (CameraFollow.Instance != null)
         {
             CameraFollow.Instance.OnPlayerMoved(playerObj.transform.position);
+            Debug.Log("GridManager: カメラ追従開始");
         }
+        else
+        {
+            Debug.LogWarning("GridManager: CameraFollow.Instanceが見つかりません");
+        }
+        
+        Debug.Log("GridManager: プレイヤー生成完了");
     }
     
     private void SpawnExit()
     {
+        Debug.Log("GridManager: Exit生成開始");
+        
         Vector2Int exitPos;
         do
         {
@@ -106,13 +159,22 @@ public class GridManager : MonoBehaviour
         // Exit位置を記録
         exitObject = exitObj;
         exitPosition = exitPos;
+        
+        Debug.Log($"GridManager: Exit生成完了 位置: {exitPos}");
     }
     
     private void SpawnEnemies()
     {
+        Debug.Log("GridManager: 敵スポーン開始");
+        
         if (EnemyManager.Instance != null)
         {
             EnemyManager.Instance.SpawnEnemies();
+            Debug.Log("GridManager: 敵スポーン完了");
+        }
+        else
+        {
+            Debug.LogError("GridManager: EnemyManager.Instanceが見つかりません");
         }
     }
 
@@ -157,9 +219,36 @@ public class GridManager : MonoBehaviour
         return distance <= visionRange;
     }
 
+    // 全オブジェクトの参照を保存
+    public void StoreAllObjects()
+    {
+        Debug.Log("GridManager: オブジェクト参照保存開始");
+        
+        allTiles = FindObjectsOfType<Tile>();
+        allEnemies = FindObjectsOfType<Enemy>();
+        
+        Debug.Log($"GridManager: タイル数: {allTiles?.Length ?? 0}, 敵数: {allEnemies?.Length ?? 0}");
+        
+        // exitObjectはSpawnExitで既に設定済み
+        if (exitObject == null)
+        {
+            Debug.LogWarning("GridManager: exitObjectが設定されていません");
+        }
+        
+        Debug.Log("GridManager: オブジェクト参照保存完了");
+    }
+    
     // 新しいタイル表示制御システム
     public void UpdateTileVisibility(Vector2Int playerPosition)
     {
+        Debug.Log($"GridManager: 視界範囲更新開始 プレイヤー位置: {playerPosition}");
+        
+        if (allTiles == null)
+        {
+            Debug.LogError("GridManager: allTilesがnullです");
+            return;
+        }
+        
         if (allTiles != null)
         {
             foreach (Tile tile in allTiles)
@@ -301,21 +390,24 @@ public class GridManager : MonoBehaviour
         return exitPosition;
     }
 
-    // 全オブジェクトの参照を保存
-    public void StoreAllObjects()
-    {
-        allTiles = FindObjectsOfType<Tile>();
-        allEnemies = FindObjectsOfType<Enemy>();
-        // exitObjectはSpawnExitで既に設定済み
-    }
-    
     // 移動可能なタイルをハイライト表示
     public void HighlightMovableTiles(Vector2Int center, int range)
     {
+        Debug.Log($"GridManager: 移動可能タイルハイライト開始 中心: {center}, 範囲: {range}");
+        
         int highlightedCount = 0;
         
-        foreach (var tile in FindObjectsOfType<Tile>())
+        Tile[] tiles = FindObjectsOfType<Tile>();
+        if (tiles == null || tiles.Length == 0)
         {
+            Debug.LogWarning("GridManager: タイルが見つかりません");
+            return;
+        }
+        
+        foreach (var tile in tiles)
+        {
+            if (tile == null) continue;
+            
             int dist = Mathf.Abs(tile.x - center.x) + Mathf.Abs(tile.y - center.y);
             if (dist <= range)
             {
@@ -329,14 +421,28 @@ public class GridManager : MonoBehaviour
                 tile.ResetColor();
             }
         }
+        
+        Debug.Log($"GridManager: 移動可能タイルハイライト完了 ハイライト数: {highlightedCount}");
     }
     
     // 全てのタイルの色をリセット
     public void ResetAllTileColors()
     {
-        foreach (var tile in FindObjectsOfType<Tile>())
+        Debug.Log("GridManager: タイル色リセット開始");
+        
+        Tile[] tiles = FindObjectsOfType<Tile>();
+        if (tiles == null || tiles.Length == 0)
         {
-            tile.ResetColor();
+            Debug.LogWarning("GridManager: リセット対象のタイルが見つかりません");
+            return;
+        }
+        
+        foreach (var tile in tiles)
+        {
+            if (tile != null)
+            {
+                tile.ResetColor();
+            }
         }
         
         // 色をリセットした後に視界範囲を更新
@@ -344,6 +450,12 @@ public class GridManager : MonoBehaviour
         {
             UpdateTileVisibility(Player.Instance.gridPosition);
         }
+        else
+        {
+            Debug.LogWarning("GridManager: Player.Instanceが見つからないため視界範囲更新をスキップ");
+        }
+        
+        Debug.Log("GridManager: タイル色リセット完了");
     }
 
     // 指定されたマス上のオブジェクトの透明度を更新

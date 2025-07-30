@@ -16,9 +16,12 @@ public class Player : Unit
         // 親クラスのAwakeを呼び出し
         base.Awake();
         
+        Debug.Log("Player: Awake開始");
+        
         // Singletonパターンの実装
         if (Instance != null && Instance != this)
         {
+            Debug.LogWarning("Player: 重複するPlayerインスタンスを破棄");
             Destroy(gameObject);
             return;
         }
@@ -28,15 +31,30 @@ public class Player : Unit
         if (spriteRenderer == null)
             spriteRenderer = GetComponentInChildren<SpriteRenderer>();
         
+        if (spriteRenderer == null)
+        {
+            Debug.LogError("Player: SpriteRendererが見つかりません");
+        }
+        
         // 基本的な変数の初期化
         gridPosition = new Vector2Int(2, 2); // 5x5グリッドの中央
         isAwaitingMoveInput = false;
         allowedMoveDistance = 0;
+        
+        Debug.Log("Player: Awake完了");
     }
 
     // 初期化完了後に呼ばれるメソッド
     public void InitializePosition()
     {
+        Debug.Log($"Player: 位置初期化開始 位置: {gridPosition}");
+        
+        if (GridManager.Instance == null)
+        {
+            Debug.LogError("Player: GridManager.Instanceが見つかりません");
+            return;
+        }
+        
         Vector3 worldPos = GridManager.Instance.GetWorldPosition(gridPosition);
         transform.position = worldPos;
         
@@ -44,24 +62,54 @@ public class Player : Unit
         if (GridManager.Instance != null)
         {
             GridManager.Instance.UpdateTileVisibility(gridPosition);
+            Debug.Log("Player: 視界範囲更新完了");
         }
+        else
+        {
+            Debug.LogError("Player: GridManager.Instanceが見つからないため視界範囲更新をスキップ");
+        }
+        
+        Debug.Log($"Player: 位置初期化完了 ワールド位置: {transform.position}");
     }
 
     public void StartMoveSelection(int moveDistance)
     {
+        Debug.Log($"Player: 移動選択開始 距離: {moveDistance}");
+        
+        if (GridManager.Instance == null)
+        {
+            Debug.LogError("Player: GridManager.Instanceが見つかりません");
+            return;
+        }
+        
         isAwaitingMoveInput = true;
         allowedMoveDistance = moveDistance;
         GridManager.Instance.HighlightMovableTiles(gridPosition, allowedMoveDistance);
+        
+        Debug.Log($"Player: 移動選択完了 現在位置: {gridPosition}");
     }
 
     public void OnTileClicked(Vector2Int clickedPos)
     {
-        if (!isAwaitingMoveInput) return;
+        if (!isAwaitingMoveInput)
+        {
+            Debug.Log("Player: 移動待ち状態ではないためクリックを無視");
+            return;
+        }
+
+        Debug.Log($"Player: タイルクリック受信 位置: {clickedPos}");
+        
+        if (GridManager.Instance == null)
+        {
+            Debug.LogError("Player: GridManager.Instanceが見つかりません");
+            return;
+        }
 
         int dist = Mathf.Abs(clickedPos.x - gridPosition.x) + Mathf.Abs(clickedPos.y - gridPosition.y);
         
         if (dist <= allowedMoveDistance && GridManager.Instance.IsWalkable(clickedPos))
         {
+            Vector2Int oldPos = gridPosition;
             gridPosition = clickedPos;
             transform.position = GridManager.Instance.GetWorldPosition(gridPosition);
 
@@ -72,7 +120,19 @@ public class Player : Unit
             NotifyCameraFollow();
             
             // ターン終了
-            TurnManager.Instance.OnPlayerCardUsed();
+            if (TurnManager.Instance != null)
+            {
+                TurnManager.Instance.OnPlayerCardUsed();
+                Debug.Log($"Player: 移動完了 {oldPos} → {gridPosition}");
+            }
+            else
+            {
+                Debug.LogError("Player: TurnManager.Instanceが見つかりません");
+            }
+        }
+        else
+        {
+            Debug.Log($"Player: 移動不可 距離: {dist}, 最大距離: {allowedMoveDistance}, 歩行可能: {GridManager.Instance.IsWalkable(clickedPos)}");
         }
     }
 

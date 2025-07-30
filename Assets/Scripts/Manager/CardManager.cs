@@ -13,39 +13,109 @@ public class CardManager : MonoBehaviour
 
     private void Awake()
     {
+        Debug.Log("CardManager: Awake開始");
+        
         if (Instance != null && Instance != this)
         {
+            Debug.LogWarning("CardManager: 重複するCardManagerインスタンスを破棄");
             Destroy(gameObject);
             return;
         }
         Instance = this;
+        
+        if (handArea == null)
+        {
+            Debug.LogError("CardManager: handAreaが設定されていません");
+        }
+        
+        if (cardUIPrefab == null)
+        {
+            Debug.LogError("CardManager: cardUIPrefabが設定されていません");
+        }
+        
+        if (cardPool == null || cardPool.Length == 0)
+        {
+            Debug.LogError("CardManager: cardPoolが設定されていません");
+        }
+        
+        Debug.Log("CardManager: Awake完了");
     }
 
     private void Start()
     {
+        Debug.Log("CardManager: Start開始");
+        
         // 初期手札を引く
         DrawHand();
+        
+        Debug.Log("CardManager: Start完了");
     }
 
     public void DrawHand()
     {
+        Debug.Log($"CardManager: 手札を引く開始 手札サイズ: {handSize}");
+        
+        if (handArea == null)
+        {
+            Debug.LogError("CardManager: handAreaが設定されていません");
+            return;
+        }
+        
+        if (cardUIPrefab == null)
+        {
+            Debug.LogError("CardManager: cardUIPrefabが設定されていません");
+            return;
+        }
+        
+        if (cardPool == null || cardPool.Length == 0)
+        {
+            Debug.LogError("CardManager: cardPoolが設定されていません");
+            return;
+        }
+        
         // 既存のカードを削除
+        int childCount = handArea.childCount;
         foreach (Transform child in handArea)
             Destroy(child.gameObject);
+        
+        Debug.Log($"CardManager: 既存カード削除完了 削除数: {childCount}");
 
         // 新しいカードを生成
+        int createdCount = 0;
         for (int i = 0; i < handSize; i++)
         {
             CardDataSO randomCard = cardPool[Random.Range(0, cardPool.Length)];
             GameObject cardObj = Instantiate(cardUIPrefab, handArea);
             CardUI ui = cardObj.GetComponent<CardUI>();
+            
+            if (ui == null)
+            {
+                Debug.LogError($"CardManager: カード{i + 1}にCardUIコンポーネントが見つかりません");
+                continue;
+            }
+            
             ui.Setup(randomCard, OnCardClicked);
+            createdCount++;
         }
+        
+        Debug.Log($"CardManager: 手札を引く完了 作成数: {createdCount}/{handSize}");
     }
 
     private void OnCardClicked(CardDataSO card)
     {
-        if (Player.Instance == null) return;
+        if (card == null)
+        {
+            Debug.LogError("CardManager: クリックされたカードがnullです");
+            return;
+        }
+        
+        Debug.Log($"CardManager: カードクリック {card.cardName} ({card.type})");
+        
+        if (Player.Instance == null)
+        {
+            Debug.LogError("CardManager: Player.Instanceが見つかりません");
+            return;
+        }
 
         if (card.type == CardType.Move)
         {
@@ -54,8 +124,18 @@ public class CardManager : MonoBehaviour
         else
         {
             Player.Instance.ExecuteCardEffect(card);
-            TurnManager.Instance.OnPlayerCardUsed();
+            
+            if (TurnManager.Instance != null)
+            {
+                TurnManager.Instance.OnPlayerCardUsed();
+            }
+            else
+            {
+                Debug.LogError("CardManager: TurnManager.Instanceが見つかりません");
+            }
         }
+        
+        Debug.Log($"CardManager: カード効果実行完了 {card.cardName}");
     }
 
     private IEnumerator ExecuteCardEffect(CardDataSO card)

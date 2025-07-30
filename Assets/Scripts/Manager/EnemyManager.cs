@@ -1,6 +1,7 @@
 using UnityEngine;
 using System.Collections.Generic;
 
+[DefaultExecutionOrder(-80)]
 public class EnemyManager : MonoBehaviour
 {
     public static EnemyManager Instance { get; private set; }

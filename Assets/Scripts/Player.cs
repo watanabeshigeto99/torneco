@@ -1,5 +1,6 @@
 using UnityEngine;
 
+[DefaultExecutionOrder(-30)]
 public class Player : Unit
 {
     public Vector2Int gridPosition;

@@ -3,6 +3,7 @@ using UnityEngine.UI;
 using TMPro;
 using System.Collections.Generic;
 
+[DefaultExecutionOrder(-50)]
 public class UIManager : MonoBehaviour
 {
     public static UIManager Instance { get; private set; }

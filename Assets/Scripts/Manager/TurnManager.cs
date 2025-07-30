@@ -1,6 +1,7 @@
 using System.Collections;
 using UnityEngine;
 
+[DefaultExecutionOrder(-70)]
 public class TurnManager : MonoBehaviour
 {
     public static TurnManager Instance { get; private set; }

@@ -1,6 +1,7 @@
 using UnityEngine;
 using System.Collections;
 
+[DefaultExecutionOrder(-60)]
 public class CardManager : MonoBehaviour
 {
     public static CardManager Instance { get; private set; }

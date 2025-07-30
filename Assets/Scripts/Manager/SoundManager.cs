@@ -1,5 +1,6 @@
 using UnityEngine;
 
+[DefaultExecutionOrder(-40)]
 public class SoundManager : MonoBehaviour
 {
     public static SoundManager Instance { get; private set; }

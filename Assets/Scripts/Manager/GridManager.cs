@@ -1,5 +1,6 @@
 using UnityEngine;
 
+[DefaultExecutionOrder(-90)]
 public class GridManager : MonoBehaviour
 {
     public static GridManager Instance { get; private set; }

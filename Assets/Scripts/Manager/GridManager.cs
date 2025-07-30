@@ -1,5 +1,6 @@
 using UnityEngine;
 using System;
+using System.Collections;
 
 [DefaultExecutionOrder(-90)]
 public class GridManager : MonoBehaviour
@@ -246,38 +247,7 @@ public class GridManager : MonoBehaviour
         Debug.Log($"GridManager: Exit生成完了 位置: {exitPos}, グリッド内: {IsInsideGrid(exitPos)}");
     }
     
-    // 新しい階層を生成
-    public void GenerateNewFloor()
-    {
-        Debug.Log("GridManager: 新しい階層を生成開始");
-        
-        // 古いタイルを消去
-        foreach (Transform child in transform)
-        {
-            Destroy(child.gameObject);
-        }
-        
-        // 古いExitを消去
-        if (exitObject != null)
-        {
-            Destroy(exitObject);
-            exitObject = null;
-        }
-        
-        // グリッドを再生成
-        GenerateGrid();
-        
-        // Exitを再生成
-        SpawnExit();
-        
-        // プレイヤー位置をリセット
-        if (Player.Instance != null)
-        {
-            Player.Instance.ResetPlayerPosition();
-        }
-        
-        Debug.Log("GridManager: 新しい階層の生成完了");
-    }
+
     
     private void SpawnEnemies()
     {
@@ -368,8 +338,8 @@ public class GridManager : MonoBehaviour
         Debug.Log("GridManager: オブジェクト参照保存開始");
         
         allTiles = FindObjectsOfType<Tile>();
-        // 敵はまだ生成されていないので、allEnemiesは後で設定
-        allEnemies = new Enemy[0]; // 空配列で初期化
+        // 敵の参照も保存（既に生成されている場合があるため）
+        allEnemies = FindObjectsOfType<Enemy>();
         
         Debug.Log($"GridManager: タイル数: {allTiles?.Length ?? 0}, 敵数: {allEnemies?.Length ?? 0}");
         
@@ -412,6 +382,7 @@ public class GridManager : MonoBehaviour
         // 敵の表示/非表示を更新（新しい表示制御システムに合わせる）
         if (allEnemies != null)
         {
+            Debug.Log($"GridManager: 敵の透明度更新開始 - 敵数: {allEnemies.Length}");
             foreach (Enemy enemy in allEnemies)
             {
                 if (enemy != null)
@@ -423,11 +394,12 @@ public class GridManager : MonoBehaviour
                     bool shouldBeVisible = (visibility != Tile.VisibilityState.Hidden);
                     enemy.gameObject.SetActive(shouldBeVisible);
                     
-                    // 透明度も更新
+                    // 透明度も更新（タイルの透明度に依存せず、直接計算）
                     if (shouldBeVisible)
                     {
                         float alpha = (visibility == Tile.VisibilityState.Transparent) ? 0.4f : 1.0f;
                         UpdateSpriteTransparency(enemy.gameObject, alpha);
+                        Debug.Log($"GridManager: 敵透明度更新 - 位置: {enemyPos}, 状態: {visibility}, 透明度: {alpha}");
                     }
                 }
             }
@@ -436,6 +408,7 @@ public class GridManager : MonoBehaviour
         {
             // allEnemiesがnullの場合は、FindObjectsOfTypeで再取得
             Enemy[] currentEnemies = FindObjectsOfType<Enemy>();
+            Debug.Log($"GridManager: allEnemiesがnull - 再取得した敵数: {currentEnemies.Length}");
             foreach (Enemy enemy in currentEnemies)
             {
                 if (enemy != null)
@@ -452,6 +425,7 @@ public class GridManager : MonoBehaviour
                     {
                         float alpha = (visibility == Tile.VisibilityState.Transparent) ? 0.4f : 1.0f;
                         UpdateSpriteTransparency(enemy.gameObject, alpha);
+                        Debug.Log($"GridManager: 敵透明度更新（再取得） - 位置: {enemyPos}, 状態: {visibility}, 透明度: {alpha}");
                     }
                 }
             }
@@ -664,17 +638,8 @@ public class GridManager : MonoBehaviour
     // 指定されたマス上のオブジェクトの透明度を更新
     private void UpdateObjectTransparencyAt(Vector2Int position, float alpha)
     {
-        // 敵の透明度を更新
-        if (allEnemies != null)
-        {
-            foreach (Enemy enemy in allEnemies)
-            {
-                if (enemy != null && enemy.gridPosition == position)
-                {
-                    UpdateSpriteTransparency(enemy.gameObject, alpha);
-                }
-            }
-        }
+        // 敵の透明度はUpdateTileVisibility内で直接計算するため、ここでは更新しない
+        // （タイルの透明度に依存すると、敵の透明度が正しく設定されない可能性がある）
         
         // Exitの透明度を更新
         if (exitObject != null)
@@ -692,12 +657,142 @@ public class GridManager : MonoBehaviour
     {
         if (obj == null) return;
         
+        // 敵の場合は直接spriteRendererフィールドを使用
+        Enemy enemy = obj.GetComponent<Enemy>();
+        if (enemy != null && enemy.spriteRenderer != null)
+        {
+            Color color = enemy.spriteRenderer.color;
+            color.a = alpha;
+            enemy.spriteRenderer.color = color;
+            Debug.Log($"GridManager: 敵SpriteRenderer透明度更新 - オブジェクト: {obj.name}, 透明度: {alpha}");
+            return;
+        }
+        
+        // その他のオブジェクトの場合はGetComponentInChildrenを使用
         SpriteRenderer spriteRenderer = obj.GetComponentInChildren<SpriteRenderer>();
         if (spriteRenderer != null)
         {
             Color color = spriteRenderer.color;
             color.a = alpha;
             spriteRenderer.color = color;
+            Debug.Log($"GridManager: SpriteRenderer透明度更新 - オブジェクト: {obj.name}, 透明度: {alpha}");
         }
+        else
+        {
+            Debug.LogWarning($"GridManager: SpriteRendererが見つかりません - オブジェクト: {obj.name}");
+        }
+    }
+
+    // 新しい階層を生成（段階1実装）
+    public void GenerateNewFloor()
+    {
+        Debug.Log("GridManager: 新しい階層の生成を開始");
+        
+        // 初期化フラグをリセット
+        ResetInitializationFlags();
+        
+        // 段階的に初期化を実行
+        StartCoroutine(InitializeFloorCoroutine());
+    }
+    
+    // 初期化フラグをリセット
+    private void ResetInitializationFlags()
+    {
+        isGridGenerated = false;
+        isPlayerSpawned = false;
+        isExitSpawned = false;
+        isEnemiesSpawned = false;
+        isAllObjectsStored = false;
+    }
+    
+    private IEnumerator InitializeFloorCoroutine()
+    {
+        Debug.Log("GridManager: 段階的初期化開始");
+        
+        // 1. 古いオブジェクトを削除
+        ClearOldObjects();
+        yield return null;
+        
+        // 2. グリッド生成
+        GenerateGrid();
+        isGridGenerated = true;
+        Debug.Log("GridManager: グリッド生成完了");
+        yield return new WaitForSeconds(0.1f);
+        
+        // 3. オブジェクト参照保存
+        StoreAllObjects();
+        isAllObjectsStored = true;
+        Debug.Log("GridManager: オブジェクト参照保存完了");
+        yield return new WaitForSeconds(0.1f);
+        
+        // 4. プレイヤー生成
+        SpawnPlayer(new Vector2Int(width / 2, height / 2));
+        isPlayerSpawned = true;
+        Debug.Log("GridManager: プレイヤー生成完了");
+        yield return new WaitForSeconds(0.1f);
+        
+        // 5. Exit生成
+        SpawnExit();
+        isExitSpawned = true;
+        Debug.Log("GridManager: Exit生成完了");
+        yield return new WaitForSeconds(0.1f);
+        
+        // 6. 敵生成
+        SpawnEnemies();
+        isEnemiesSpawned = true;
+        Debug.Log("GridManager: 敵生成完了");
+        yield return new WaitForSeconds(0.1f);
+        
+        // 7. 全オブジェクト初期化完了チェック
+        yield return StartCoroutine(WaitForAllObjectsInitialized());
+        
+        // 8. 最終的な初期化処理
+        if (Player.Instance != null)
+        {
+            UpdateTileVisibility(Player.Instance.gridPosition);
+            Debug.Log("GridManager: 初期化完了");
+            
+            // グリッド初期化完了イベントを発行
+            OnGridInitialized?.Invoke();
+            
+            // 全オブジェクト初期化完了イベントを発行
+            OnAllObjectsInitialized?.Invoke();
+            Debug.Log("GridManager: 全オブジェクト初期化完了イベント発行");
+        }
+        else
+        {
+            Debug.LogError("GridManager: Player.Instanceが見つかりません");
+        }
+    }
+    
+    // 古いオブジェクトを削除
+    private void ClearOldObjects()
+    {
+        Debug.Log("GridManager: 古いオブジェクトを削除中");
+        
+        // 古いタイルを削除
+        if (allTiles != null)
+        {
+            foreach (Tile tile in allTiles)
+            {
+                if (tile != null)
+                {
+                    DestroyImmediate(tile.gameObject);
+                }
+            }
+        }
+        
+        // 古いExitを削除
+        if (exitObject != null)
+        {
+            DestroyImmediate(exitObject);
+            exitObject = null;
+        }
+        
+        // 配列をクリア
+        allTiles = null;
+        allEnemies = null;
+        
+        Debug.Log("GridManager: 古いオブジェクトの削除完了");
     }
 } 

@@ -9,128 +9,129 @@ public class UIManager : MonoBehaviour
 {
     public static UIManager Instance { get; private set; }
 
-    [Header("HP UI")]
-    public Slider hpSlider;
+    [Header("HP Display")]
+    public UnityEngine.UI.Slider hpSlider;
     public TextMeshProUGUI hpText;
-
-    [Header("Turn UI")]
+    
+    [Header("Turn Display")]
     public TextMeshProUGUI turnLabel;
     
-    [Header("Floor UI")]
-    public TextMeshProUGUI floorLabel;
-
-    [Header("Action Log")]
-    public TextMeshProUGUI actionLog;
-    [Tooltip("表示するログの最大行数")]
+    [Header("Floor Display")]
+    public TextMeshProUGUI floorLabel; // 階層表示用
+    
+    [Header("Log Display")]
+    public TextMeshProUGUI logText;
     public int maxLogLines = 5;
-
-    private List<string> logMessages = new List<string>();
 
     private void Awake()
     {
+        Debug.Log("UIManager: Awake開始");
+        
         if (Instance != null && Instance != this)
         {
+            Debug.LogWarning("UIManager: 重複するUIManagerインスタンスを破棄");
             Destroy(gameObject);
             return;
         }
         Instance = this;
+        
+        Debug.Log("UIManager: Awake完了");
     }
 
     private void Start()
     {
-        ClearLog();
+        Debug.Log("UIManager: Start開始");
+        
+        // イベントを購読
         SubscribeToEvents();
+        
+        // 初期表示を設定
+        UpdateFloorDisplay(1);
+        
+        Debug.Log("UIManager: Start完了");
     }
     
     private void OnDestroy()
     {
+        // イベントの購読を解除
         UnsubscribeFromEvents();
     }
     
     private void SubscribeToEvents()
     {
-        Player.OnPlayerMoved += OnPlayerMoved;
-        Player.OnPlayerAttacked += OnPlayerAttacked;
-        Player.OnPlayerHealed += OnPlayerHealed;
-        Player.OnPlayerDied += OnPlayerDied;
-        
-        GridManager.OnGridInitialized += OnGridInitialized;
+        // 全オブジェクト初期化完了イベントを購読
         GridManager.OnAllObjectsInitialized += OnAllObjectsInitialized;
+        
+        // 階層システムイベントを購読（準備段階）
+        GameManager.OnFloorChanged += OnFloorChanged;
+        GameManager.OnGameClear += OnGameClear;
+        GameManager.OnGameOver += OnGameOver;
+        
+        Debug.Log("UIManager: イベント購読完了");
     }
     
     private void UnsubscribeFromEvents()
     {
-        Player.OnPlayerMoved -= OnPlayerMoved;
-        Player.OnPlayerAttacked -= OnPlayerAttacked;
-        Player.OnPlayerHealed -= OnPlayerHealed;
-        Player.OnPlayerDied -= OnPlayerDied;
-        
-        GridManager.OnGridInitialized -= OnGridInitialized;
+        // イベントの購読を解除
         GridManager.OnAllObjectsInitialized -= OnAllObjectsInitialized;
-    }
-    
-    // イベントハンドラー
-    private void OnPlayerMoved(Vector2Int newPosition)
-    {
-        AddLog($"プレイヤーが移動しました: {newPosition}");
-    }
-    
-    private void OnPlayerAttacked(int damage)
-    {
-        AddLog($"攻撃しました！ダメージ: {damage}");
-    }
-    
-    private void OnPlayerHealed(int healAmount)
-    {
-        AddLog($"回復しました！回復量: {healAmount}");
-    }
-    
-    private void OnPlayerDied()
-    {
-        AddLog("プレイヤーが死亡しました...");
-    }
-    
-    private void OnGridInitialized()
-    {
-        AddLog("ゲーム開始！");
+        
+        // 階層システムイベントの購読を解除
+        GameManager.OnFloorChanged -= OnFloorChanged;
+        GameManager.OnGameClear -= OnGameClear;
+        GameManager.OnGameOver -= OnGameOver;
     }
     
     private void OnAllObjectsInitialized()
     {
-        AddLog("全てのオブジェクトが初期化完了しました");
+        Debug.Log("UIManager: 全オブジェクト初期化完了イベントを受信");
         
-        // プレイヤーのHPを初期表示
+        // 初期表示を更新
         if (Player.Instance != null)
         {
             UpdateHP(Player.Instance.currentHP, Player.Instance.maxHP);
         }
         
-        // 階層表示を更新
-        if (GameManager.Instance != null)
-        {
-            UpdateFloorDisplay(GameManager.Instance.currentFloor);
-        }
+        // 階層表示を更新（準備段階）
+        UpdateFloorDisplay(GameManager.Instance.currentFloor);
     }
-
-    public void UpdateHP(int current, int max)
+    
+    // 階層システム準備メソッド
+    private void OnFloorChanged(int newFloor)
+    {
+        Debug.Log($"UIManager: 階層変更イベントを受信 - 新しい階層: {newFloor}");
+        UpdateFloorDisplay(newFloor);
+    }
+    
+    private void OnGameClear()
+    {
+        Debug.Log("UIManager: ゲームクリアイベントを受信");
+        // TODO: ゲームクリア時のUI更新
+    }
+    
+    private void OnGameOver()
+    {
+        Debug.Log("UIManager: ゲームオーバーイベントを受信");
+        // TODO: ゲームオーバー時のUI更新
+    }
+    
+    public void UpdateHP(int currentHP, int maxHP)
     {
         if (hpSlider != null)
         {
-            hpSlider.maxValue = max;
-            hpSlider.value = current;
+            hpSlider.value = (float)currentHP / maxHP;
         }
         
         if (hpText != null)
         {
-            hpText.text = $"HP: {current} / {max}";
+            hpText.text = $"HP: {currentHP}/{maxHP}";
         }
     }
-
-    public void SetTurnText(bool isPlayerTurn)
+    
+    public void UpdateTurnLabel(string turnText)
     {
         if (turnLabel != null)
         {
-            turnLabel.text = isPlayerTurn ? "プレイヤーターン" : "敵ターン";
+            turnLabel.text = turnText;
         }
     }
     
@@ -141,36 +142,21 @@ public class UIManager : MonoBehaviour
             floorLabel.text = $"階層: {floor}";
         }
     }
-
+    
     public void AddLog(string message)
     {
-        if (actionLog != null)
+        if (logText != null)
         {
-            logMessages.Add(message);
+            // 新しいログを追加
+            string newLog = $"[{System.DateTime.Now:HH:mm:ss}] {message}\n";
+            logText.text = newLog + logText.text;
             
-            while (logMessages.Count > maxLogLines)
+            // 最大行数を制限
+            string[] lines = logText.text.Split('\n');
+            if (lines.Length > maxLogLines)
             {
-                logMessages.RemoveAt(0);
+                logText.text = string.Join("\n", lines, 0, maxLogLines);
             }
-            
-            UpdateLogDisplay();
-        }
-    }
-
-    private void UpdateLogDisplay()
-    {
-        if (actionLog != null)
-        {
-            actionLog.text = string.Join("\n", logMessages);
-        }
-    }
-
-    public void ClearLog()
-    {
-        if (actionLog != null)
-        {
-            logMessages.Clear();
-            actionLog.text = "";
         }
     }
 } 

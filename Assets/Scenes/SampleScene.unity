@@ -1560,7 +1560,7 @@ MonoBehaviour:
   hpText: {fileID: 2067928020}
   turnLabel: {fileID: 1573287531}
   floorLabel: {fileID: 110489219}
-  actionLog: {fileID: 454984125}
+  logText: {fileID: 454984125}
   maxLogLines: 5
 --- !u!1 &2015329983
 GameObject:

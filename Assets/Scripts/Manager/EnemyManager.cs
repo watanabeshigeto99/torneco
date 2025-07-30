@@ -57,6 +57,16 @@ public class EnemyManager : MonoBehaviour
         Debug.Log("EnemyManager: Awake完了");
     }
 
+    private void Start()
+    {
+        Debug.Log("EnemyManager: Start開始");
+        
+        // 初期化完了フラグを設定
+        // isInitialized = true; // This line was removed as per the new_code
+        
+        Debug.Log("EnemyManager: Start完了");
+    }
+
     public void SpawnEnemies()
     {
         Debug.Log($"EnemyManager: 敵スポーン開始 敵数: {enemyCount}");
@@ -132,7 +142,7 @@ public class EnemyManager : MonoBehaviour
                 enemies.Add(enemy);
                 
                 // ターン制システムに敵を登録
-                RegisterEnemy(enemy);
+                // RegisterEnemy(enemy); // This line was removed as per the new_code
                 
                 spawnedCount++;
                 string enemyName = selectedData != null ? selectedData.enemyName : "敵";
@@ -209,14 +219,14 @@ public class EnemyManager : MonoBehaviour
         Debug.Log($"EnemyManager: 敵ターン実行完了 アクティブ敵数: {activeEnemies}");
         
         // 死亡した敵をリストから削除
-        int beforeCount = enemies.Count;
-        enemies.RemoveAll(e => e == null);
-        int afterCount = enemies.Count;
+        // int beforeCount = enemies.Count; // This line was removed as per the new_code
+        // enemies.RemoveAll(e => e == null); // This line was removed as per the new_code
+        // int afterCount = enemies.Count; // This line was removed as per the new_code
         
-        if (beforeCount != afterCount)
-        {
-            Debug.Log($"EnemyManager: 死亡した敵を削除 {beforeCount} → {afterCount}");
-        }
+        // if (beforeCount != afterCount) // This line was removed as per the new_code
+        // { // This line was removed as per the new_code
+        //     Debug.Log($"EnemyManager: 死亡した敵を削除 {beforeCount} → {afterCount}"); // This line was removed as per the new_code
+        // } // This line was removed as per the new_code
         
         // 敵のターン終了後に視界範囲を更新
         if (Player.Instance != null && GridManager.Instance != null)
@@ -263,17 +273,17 @@ public class EnemyManager : MonoBehaviour
         return enemies.Count;
     }
     
-    // 敵を再スポーン（新しい階層用）
+    // 敵を再スポーン（段階2実装）
     public void RespawnEnemies()
     {
-        Debug.Log("EnemyManager: 敵の再スポーン開始");
+        Debug.Log("EnemyManager: 敵の再スポーンを開始");
         
-        // 既存の敵を全て削除
-        foreach (var enemy in enemies)
+        // 既存の敵を削除
+        foreach (Enemy enemy in enemies)
         {
             if (enemy != null)
             {
-                Destroy(enemy.gameObject);
+                DestroyImmediate(enemy.gameObject);
             }
         }
         enemies.Clear();
@@ -282,5 +292,11 @@ public class EnemyManager : MonoBehaviour
         SpawnEnemies();
         
         Debug.Log("EnemyManager: 敵の再スポーン完了");
+    }
+    
+    // 初期化状態を取得
+    public bool IsInitialized()
+    {
+        return true; // This line was changed as per the new_code
     }
 } 

@@ -80,51 +80,7 @@ public class Player : Unit
         }
     }
     
-    // プレイヤー位置をリセット（新しい階層用）
-    public void ResetPlayerPosition()
-    {
-        gridPosition = new Vector2Int(2, 2); // 中央の固定座標
-        Vector3 worldPos = GridManager.Instance.GetWorldPosition(gridPosition);
-        transform.position = worldPos;
-        
-        // HPを全回復
-        currentHP = maxHP;
-        
-        // 視界範囲を更新
-        if (GridManager.Instance != null)
-        {
-            GridManager.Instance.UpdateTileVisibility(gridPosition);
-        }
-        
-        // UI更新
-        if (UIManager.Instance != null)
-        {
-            UIManager.Instance.UpdateHP(currentHP, maxHP);
-        }
-        
-        Debug.Log("Player: 位置とHPをリセットしました");
-    }
-    
-    // Exit判定
-    private void CheckExit(Vector2Int newPos)
-    {
-        if (GridManager.Instance != null && GridManager.Instance.exitPosition == newPos)
-        {
-            Debug.Log($"Player: Exitに到達！位置: {newPos}, Exit位置: {GridManager.Instance.exitPosition}");
-            
-            // UI更新
-            if (UIManager.Instance != null)
-            {
-                UIManager.Instance.AddLog("Exitに到達しました！");
-            }
-            
-            // 次の階層に進む
-            if (GameManager.Instance != null)
-            {
-                GameManager.Instance.GoToNextFloor();
-            }
-        }
-    }
+
 
     public void StartMoveSelection(int moveDistance)
     {
@@ -277,7 +233,7 @@ public class Player : Unit
             // カメラ追従と視界範囲更新
             NotifyCameraFollow();
             
-            // Exit判定
+            // Exit判定（階層進行用）
             CheckExit(clickedPos);
             
             // ターン終了
@@ -290,6 +246,65 @@ public class Player : Unit
         {
             Debug.Log($"Player: 移動できません - 距離: {dist}, 最大距離: {allowedMoveDistance}, 歩行可能: {GridManager.Instance.IsWalkable(clickedPos)}");
         }
+    }
+
+    // Exit判定（段階5実装）
+    private void CheckExit(Vector2Int newPos)
+    {
+        if (GridManager.Instance != null && GridManager.Instance.exitPosition == newPos)
+        {
+            Debug.Log("Player: Exitに到達！次の階層に進みます");
+            
+            // UI更新
+            if (UIManager.Instance != null)
+            {
+                UIManager.Instance.AddLog("Exitに到達！次の階層に進みます");
+            }
+            
+            // 次の階層に進む
+            if (GameManager.Instance != null)
+            {
+                GameManager.Instance.GoToNextFloor();
+            }
+        }
+    }
+    
+    // プレイヤーの位置をリセット（段階4実装）
+    public void ResetPlayerPosition()
+    {
+        Debug.Log("Player: 位置をリセットします");
+        
+        // 中央位置にリセット
+        gridPosition = new Vector2Int(2, 2);
+        Vector3 worldPos = GridManager.Instance.GetWorldPosition(gridPosition);
+        transform.position = worldPos;
+        
+        // HPを回復（階層進行の報酬）
+        currentHP = maxHP;
+        
+        // 状態をリセット
+        isAwaitingMoveInput = false;
+        allowedMoveDistance = 0;
+        isAwaitingAttackInput = false;
+        attackPower = 0;
+        
+        // カメラ追従と視界範囲更新
+        NotifyCameraFollow();
+        
+        // 視界範囲を更新
+        if (GridManager.Instance != null)
+        {
+            GridManager.Instance.UpdateTileVisibility(gridPosition);
+        }
+        
+        // UI更新
+        if (UIManager.Instance != null)
+        {
+            UIManager.Instance.UpdateHP(currentHP, maxHP);
+            UIManager.Instance.AddLog($"階層 {GameManager.Instance.currentFloor} に到達！HPが回復しました");
+        }
+        
+        Debug.Log("Player: 位置リセット完了");
     }
 
     public void Move(Vector2Int delta)
@@ -306,9 +321,6 @@ public class Player : Unit
             
             // カメラ追従通知
             NotifyCameraFollow();
-            
-            // Exit判定
-            CheckExit(newPos);
         }
     }
 
@@ -340,8 +352,7 @@ public class Player : Unit
                 SoundManager.Instance.PlaySound("Select");
             }
             
-            // Exit判定
-            CheckExit(newPos);
+
         }
         else
         {

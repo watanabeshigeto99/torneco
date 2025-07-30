@@ -1,9 +1,16 @@
 using UnityEngine;
+using System;
 
 [DefaultExecutionOrder(-30)]
 public class Player : Unit
 {
     public static Player Instance { get; private set; }
+    
+    // イベント定義
+    public static event Action<Vector2Int> OnPlayerMoved;
+    public static event Action<int> OnPlayerAttacked;
+    public static event Action<int> OnPlayerHealed;
+    public static event Action OnPlayerDied;
     
     public Vector2Int gridPosition;
     public SpriteRenderer spriteRenderer;
@@ -116,6 +123,10 @@ public class Player : Unit
             isAwaitingMoveInput = false;
             GridManager.Instance.ResetAllTileColors();
 
+            // 移動イベントを発行
+            OnPlayerMoved?.Invoke(gridPosition);
+            Debug.Log($"Player: 移動イベント発行 {oldPos} → {gridPosition}");
+
             // カメラ追従と視界範囲更新
             NotifyCameraFollow();
             
@@ -222,6 +233,10 @@ public class Player : Unit
     {
         Debug.Log($"攻撃！ダメージ: {damage}");
         
+        // 攻撃イベントを発行
+        OnPlayerAttacked?.Invoke(damage);
+        Debug.Log($"Player: 攻撃イベント発行 ダメージ: {damage}");
+        
         // 隣接マスにいる敵を探して攻撃（EnemyManagerから取得）
         bool hitEnemy = false;
         
@@ -303,6 +318,10 @@ public class Player : Unit
         
         Debug.Log($"回復！回復量: {actualHeal}, HP: {currentHP}/{maxHP}");
         
+        // 回復イベントを発行
+        OnPlayerHealed?.Invoke(actualHeal);
+        Debug.Log($"Player: 回復イベント発行 回復量: {actualHeal}");
+        
         // UI更新
         if (UIManager.Instance != null)
         {
@@ -320,6 +339,11 @@ public class Player : Unit
     protected override void Die()
     {
         Debug.Log("Game Over!");
+        
+        // 死亡イベントを発行
+        OnPlayerDied?.Invoke();
+        Debug.Log("Player: 死亡イベント発行");
+        
         if (GameManager.Instance != null)
         {
             GameManager.Instance.GameOver();

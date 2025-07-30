@@ -1,9 +1,16 @@
 using UnityEngine;
+using System;
 
 [DefaultExecutionOrder(-90)]
 public class GridManager : MonoBehaviour
 {
     public static GridManager Instance { get; private set; }
+
+    // イベント定義
+    public static event Action<Player> OnPlayerSpawned;
+    public static event Action<Enemy[]> OnEnemiesSpawned;
+    public static event Action<GameObject> OnExitSpawned;
+    public static event Action OnGridInitialized;
 
     [Header("Grid Settings")]
     public int width = 5;
@@ -70,15 +77,18 @@ public class GridManager : MonoBehaviour
         }
         
         GenerateGrid();
+        StoreAllObjects(); // 先にオブジェクト参照を保存
         SpawnPlayer(new Vector2Int(width / 2, height / 2));
         SpawnExit();
         SpawnEnemies();
-        StoreAllObjects();
         
         if (Player.Instance != null)
         {
             UpdateTileVisibility(Player.Instance.gridPosition);
             Debug.Log("GridManager: 初期化完了");
+            
+            // グリッド初期化完了イベントを発行
+            OnGridInitialized?.Invoke();
         }
         else
         {
@@ -128,6 +138,10 @@ public class GridManager : MonoBehaviour
         
         playerScript.InitializePosition();
         
+        // プレイヤー生成完了イベントを発行
+        OnPlayerSpawned?.Invoke(playerScript);
+        Debug.Log("GridManager: プレイヤー生成完了イベント発行");
+        
         // カメラ追従を開始
         if (CameraFollow.Instance != null)
         {
@@ -149,7 +163,7 @@ public class GridManager : MonoBehaviour
         Vector2Int exitPos;
         do
         {
-            exitPos = new Vector2Int(Random.Range(0, width), Random.Range(0, height));
+            exitPos = new Vector2Int(UnityEngine.Random.Range(0, width), UnityEngine.Random.Range(0, height));
         }
         while (exitPos == new Vector2Int(width / 2, height / 2)); // プレイヤー位置と被らない
 
@@ -159,6 +173,10 @@ public class GridManager : MonoBehaviour
         // Exit位置を記録
         exitObject = exitObj;
         exitPosition = exitPos;
+        
+        // Exit生成完了イベントを発行
+        OnExitSpawned?.Invoke(exitObj);
+        Debug.Log("GridManager: Exit生成完了イベント発行");
         
         Debug.Log($"GridManager: Exit生成完了 位置: {exitPos}");
     }
@@ -170,6 +188,17 @@ public class GridManager : MonoBehaviour
         if (EnemyManager.Instance != null)
         {
             EnemyManager.Instance.SpawnEnemies();
+            
+            // 敵生成後にallEnemiesを更新
+            allEnemies = FindObjectsOfType<Enemy>();
+            
+            // 敵生成完了イベントを発行
+            if (allEnemies != null)
+            {
+                OnEnemiesSpawned?.Invoke(allEnemies);
+                Debug.Log("GridManager: 敵生成完了イベント発行");
+            }
+            
             Debug.Log("GridManager: 敵スポーン完了");
         }
         else
@@ -227,7 +256,8 @@ public class GridManager : MonoBehaviour
         Debug.Log("GridManager: オブジェクト参照保存開始");
         
         allTiles = FindObjectsOfType<Tile>();
-        allEnemies = FindObjectsOfType<Enemy>();
+        // 敵はまだ生成されていないので、allEnemiesは後で設定
+        allEnemies = new Enemy[0]; // 空配列で初期化
         
         Debug.Log($"GridManager: タイル数: {allTiles?.Length ?? 0}, 敵数: {allEnemies?.Length ?? 0}");
         

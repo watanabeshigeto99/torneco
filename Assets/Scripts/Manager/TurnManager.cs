@@ -1,5 +1,6 @@
 using System.Collections;
 using UnityEngine;
+using System;
 
 [DefaultExecutionOrder(-70)]
 public class TurnManager : MonoBehaviour
@@ -49,7 +50,63 @@ public class TurnManager : MonoBehaviour
             Debug.LogError("TurnManager: EnemyManager.Instanceが見つかりません");
         }
         
+        // イベントを購読
+        SubscribeToEvents();
+        
         Debug.Log("TurnManager: Start完了");
+    }
+    
+    private void OnDestroy()
+    {
+        // イベントの購読を解除
+        UnsubscribeFromEvents();
+    }
+    
+    private void SubscribeToEvents()
+    {
+        // プレイヤーの行動イベントを購読
+        Player.OnPlayerMoved += OnPlayerMoved;
+        Player.OnPlayerAttacked += OnPlayerAttacked;
+        Player.OnPlayerHealed += OnPlayerHealed;
+        Player.OnPlayerDied += OnPlayerDied;
+        
+        Debug.Log("TurnManager: イベント購読完了");
+    }
+    
+    private void UnsubscribeFromEvents()
+    {
+        // イベントの購読を解除
+        Player.OnPlayerMoved -= OnPlayerMoved;
+        Player.OnPlayerAttacked -= OnPlayerAttacked;
+        Player.OnPlayerHealed -= OnPlayerHealed;
+        Player.OnPlayerDied -= OnPlayerDied;
+        
+        Debug.Log("TurnManager: イベント購読解除完了");
+    }
+    
+    // イベントハンドラー
+    private void OnPlayerMoved(Vector2Int newPosition)
+    {
+        Debug.Log($"TurnManager: プレイヤー移動イベント受信 位置: {newPosition}");
+        // 移動後の処理（必要に応じて）
+    }
+    
+    private void OnPlayerAttacked(int damage)
+    {
+        Debug.Log($"TurnManager: プレイヤー攻撃イベント受信 ダメージ: {damage}");
+        // 攻撃後の処理（必要に応じて）
+    }
+    
+    private void OnPlayerHealed(int healAmount)
+    {
+        Debug.Log($"TurnManager: プレイヤー回復イベント受信 回復量: {healAmount}");
+        // 回復後の処理（必要に応じて）
+    }
+    
+    private void OnPlayerDied()
+    {
+        Debug.Log("TurnManager: プレイヤー死亡イベント受信");
+        // 死亡時の処理（必要に応じて）
     }
 
     public void OnPlayerCardUsed()

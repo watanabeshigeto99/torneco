@@ -46,10 +46,42 @@ public class CardManager : MonoBehaviour
     {
         Debug.Log("CardManager: Start開始");
         
-        // 初期手札を引く
-        DrawHand();
+        // イベントを購読
+        SubscribeToEvents();
         
         Debug.Log("CardManager: Start完了");
+    }
+    
+    private void OnDestroy()
+    {
+        // イベントの購読を解除
+        UnsubscribeFromEvents();
+    }
+    
+    private void SubscribeToEvents()
+    {
+        // 全オブジェクト初期化完了イベントを購読
+        GridManager.OnAllObjectsInitialized += OnAllObjectsInitialized;
+        
+        Debug.Log("CardManager: イベント購読完了");
+    }
+    
+    private void UnsubscribeFromEvents()
+    {
+        // イベントの購読を解除
+        GridManager.OnAllObjectsInitialized -= OnAllObjectsInitialized;
+        
+        Debug.Log("CardManager: イベント購読解除完了");
+    }
+    
+    private void OnAllObjectsInitialized()
+    {
+        Debug.Log("CardManager: 全オブジェクト初期化完了イベント受信");
+        
+        // カード管理の初期化
+        DrawHand();
+        
+        Debug.Log("CardManager: カード管理初期化完了");
     }
 
     public void DrawHand()

@@ -105,7 +105,7 @@ MonoBehaviour:
   y: 0
   spriteRenderer: {fileID: 2278844048365970251}
   normalColor: {r: 1, g: 1, b: 1, a: 1}
-  highlightColor: {r: 0.015686274, g: 0.10567569, b: 1, a: 1}
+  highlightColor: {r: 1, g: 0.015686274, b: 0.18673746, a: 1}
   selectedColor: {r: 0, g: 0, b: 1, a: 1}
   transparentColor: {r: 1, g: 1, b: 1, a: 0.5}
 --- !u!61 &-1705375260162635665

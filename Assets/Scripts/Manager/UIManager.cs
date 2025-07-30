@@ -59,6 +59,9 @@ public class UIManager : MonoBehaviour
         // グリッド初期化イベントを購読
         GridManager.OnGridInitialized += OnGridInitialized;
         
+        // 全オブジェクト初期化完了イベントを購読
+        GridManager.OnAllObjectsInitialized += OnAllObjectsInitialized;
+        
         Debug.Log("UIManager: イベント購読完了");
     }
     
@@ -71,6 +74,7 @@ public class UIManager : MonoBehaviour
         Player.OnPlayerDied -= OnPlayerDied;
         
         GridManager.OnGridInitialized -= OnGridInitialized;
+        GridManager.OnAllObjectsInitialized -= OnAllObjectsInitialized;
         
         Debug.Log("UIManager: イベント購読解除完了");
     }
@@ -104,6 +108,21 @@ public class UIManager : MonoBehaviour
     {
         Debug.Log("UIManager: グリッド初期化イベント受信");
         AddLog("ゲーム開始！");
+    }
+    
+    private void OnAllObjectsInitialized()
+    {
+        Debug.Log("UIManager: 全オブジェクト初期化完了イベント受信");
+        AddLog("全てのオブジェクトが初期化完了しました");
+        
+        // プレイヤーのHPを初期表示
+        if (Player.Instance != null)
+        {
+            UpdateHP(Player.Instance.currentHP, Player.Instance.maxHP);
+        }
+        
+        // ターン表示を初期化
+        SetTurnText(true); // プレイヤーターンから開始
     }
 
     public void UpdateHP(int current, int max)

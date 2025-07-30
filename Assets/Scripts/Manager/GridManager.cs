@@ -11,6 +11,7 @@ public class GridManager : MonoBehaviour
     public static event Action<Enemy[]> OnEnemiesSpawned;
     public static event Action<GameObject> OnExitSpawned;
     public static event Action OnGridInitialized;
+    public static event Action OnAllObjectsInitialized; // 全オブジェクト初期化完了イベント
 
     [Header("Grid Settings")]
     public int width = 5;
@@ -41,6 +42,13 @@ public class GridManager : MonoBehaviour
     private Enemy[] allEnemies;
     private GameObject exitObject;
     private Vector2Int exitPosition; // Exitの位置を記録
+
+    // 初期化完了フラグ
+    private bool isGridGenerated = false;
+    private bool isPlayerSpawned = false;
+    private bool isExitSpawned = false;
+    private bool isEnemiesSpawned = false;
+    private bool isAllObjectsStored = false;
 
     private void Awake()
     {
@@ -76,12 +84,48 @@ public class GridManager : MonoBehaviour
             return;
         }
         
-        GenerateGrid();
-        StoreAllObjects(); // 先にオブジェクト参照を保存
-        SpawnPlayer(new Vector2Int(width / 2, height / 2));
-        SpawnExit();
-        SpawnEnemies();
+        // 段階的に初期化を実行
+        StartCoroutine(InitializeGameCoroutine());
+    }
+    
+    private System.Collections.IEnumerator InitializeGameCoroutine()
+    {
+        Debug.Log("GridManager: 段階的初期化開始");
         
+        // 1. グリッド生成
+        GenerateGrid();
+        isGridGenerated = true;
+        Debug.Log("GridManager: グリッド生成完了");
+        yield return null; // 1フレーム待機
+        
+        // 2. オブジェクト参照保存
+        StoreAllObjects();
+        isAllObjectsStored = true;
+        Debug.Log("GridManager: オブジェクト参照保存完了");
+        yield return null; // 1フレーム待機
+        
+        // 3. プレイヤー生成
+        SpawnPlayer(new Vector2Int(width / 2, height / 2));
+        isPlayerSpawned = true;
+        Debug.Log("GridManager: プレイヤー生成完了");
+        yield return null; // 1フレーム待機
+        
+        // 4. Exit生成
+        SpawnExit();
+        isExitSpawned = true;
+        Debug.Log("GridManager: Exit生成完了");
+        yield return null; // 1フレーム待機
+        
+        // 5. 敵生成
+        SpawnEnemies();
+        isEnemiesSpawned = true;
+        Debug.Log("GridManager: 敵生成完了");
+        yield return null; // 1フレーム待機
+        
+        // 6. 全オブジェクト初期化完了チェック
+        yield return StartCoroutine(WaitForAllObjectsInitialized());
+        
+        // 7. 最終的な初期化処理
         if (Player.Instance != null)
         {
             UpdateTileVisibility(Player.Instance.gridPosition);
@@ -89,11 +133,29 @@ public class GridManager : MonoBehaviour
             
             // グリッド初期化完了イベントを発行
             OnGridInitialized?.Invoke();
+            
+            // 全オブジェクト初期化完了イベントを発行
+            OnAllObjectsInitialized?.Invoke();
+            Debug.Log("GridManager: 全オブジェクト初期化完了イベント発行");
         }
         else
         {
             Debug.LogError("GridManager: Player.Instanceが見つかりません");
         }
+    }
+    
+    private System.Collections.IEnumerator WaitForAllObjectsInitialized()
+    {
+        Debug.Log("GridManager: 全オブジェクト初期化完了待機開始");
+        
+        // 全ての初期化フラグがtrueになるまで待機
+        while (!isGridGenerated || !isPlayerSpawned || !isExitSpawned || !isEnemiesSpawned || !isAllObjectsStored)
+        {
+            Debug.Log($"GridManager: 初期化状態 - グリッド: {isGridGenerated}, プレイヤー: {isPlayerSpawned}, Exit: {isExitSpawned}, 敵: {isEnemiesSpawned}, オブジェクト保存: {isAllObjectsStored}");
+            yield return new WaitForSeconds(0.1f); // 0.1秒待機
+        }
+        
+        Debug.Log("GridManager: 全オブジェクト初期化完了");
     }
     
     private void GenerateGrid()

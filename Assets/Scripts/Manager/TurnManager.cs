@@ -36,20 +36,6 @@ public class TurnManager : MonoBehaviour
     {
         Debug.Log("TurnManager: Start開始");
         
-        // 参照を取得（Start時点で他のManagerは既に存在しているはず）
-        player = Player.Instance;
-        enemyManager = EnemyManager.Instance;
-        
-        if (player == null)
-        {
-            Debug.LogError("TurnManager: Player.Instanceが見つかりません");
-        }
-        
-        if (enemyManager == null)
-        {
-            Debug.LogError("TurnManager: EnemyManager.Instanceが見つかりません");
-        }
-        
         // イベントを購読
         SubscribeToEvents();
         
@@ -70,6 +56,9 @@ public class TurnManager : MonoBehaviour
         Player.OnPlayerHealed += OnPlayerHealed;
         Player.OnPlayerDied += OnPlayerDied;
         
+        // 全オブジェクト初期化完了イベントを購読
+        GridManager.OnAllObjectsInitialized += OnAllObjectsInitialized;
+        
         Debug.Log("TurnManager: イベント購読完了");
     }
     
@@ -80,6 +69,8 @@ public class TurnManager : MonoBehaviour
         Player.OnPlayerAttacked -= OnPlayerAttacked;
         Player.OnPlayerHealed -= OnPlayerHealed;
         Player.OnPlayerDied -= OnPlayerDied;
+        
+        GridManager.OnAllObjectsInitialized -= OnAllObjectsInitialized;
         
         Debug.Log("TurnManager: イベント購読解除完了");
     }
@@ -108,10 +99,46 @@ public class TurnManager : MonoBehaviour
         Debug.Log("TurnManager: プレイヤー死亡イベント受信");
         // 死亡時の処理（必要に応じて）
     }
+    
+    private void OnAllObjectsInitialized()
+    {
+        Debug.Log("TurnManager: 全オブジェクト初期化完了イベント受信");
+        
+        // 参照を取得（全オブジェクト初期化完了後に取得）
+        player = Player.Instance;
+        enemyManager = EnemyManager.Instance;
+        
+        if (player == null)
+        {
+            Debug.LogError("TurnManager: Player.Instanceが見つかりません");
+        }
+        
+        if (enemyManager == null)
+        {
+            Debug.LogError("TurnManager: EnemyManager.Instanceが見つかりません");
+        }
+        
+        // ターン管理の初期化
+        playerTurn = true;
+        isProcessing = false;
+        
+        Debug.Log("TurnManager: ターン管理初期化完了 - プレイヤーターン開始");
+    }
 
     public void OnPlayerCardUsed()
     {
         Debug.Log("TurnManager: プレイヤーカード使用");
+        
+        // 実行時に参照を再取得（安全のため）
+        if (player == null)
+        {
+            player = Player.Instance;
+        }
+        
+        if (enemyManager == null)
+        {
+            enemyManager = EnemyManager.Instance;
+        }
         
         if (player == null)
         {

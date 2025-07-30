@@ -82,10 +82,9 @@ public class GridManager : MonoBehaviour
         StoreAllObjects();
         
         // 7. 初期視界範囲を設定
-        Player player = FindObjectOfType<Player>();
-        if (player != null)
+        if (Player.Instance != null)
         {
-            UpdateTileVisibility(player.gridPosition);
+            UpdateTileVisibility(Player.Instance.gridPosition);
         }
     }
     
@@ -163,10 +162,9 @@ public class GridManager : MonoBehaviour
         // プレイヤーの初期化が完了するまで待機
         yield return new WaitForEndOfFrame();
         
-        CameraFollow cameraFollow = FindObjectOfType<CameraFollow>();
-        if (cameraFollow != null)
+        if (CameraFollow.Instance != null)
         {
-            cameraFollow.OnPlayerMoved(playerObj.transform.position);
+            CameraFollow.Instance.OnPlayerMoved(playerObj.transform.position);
         }
     }
 
@@ -185,8 +183,7 @@ public class GridManager : MonoBehaviour
     public bool IsOccupied(Vector2Int pos)
     {
         // プレイヤーの位置チェック
-        Player player = FindObjectOfType<Player>();
-        if (player != null && player.gridPosition == pos)
+        if (Player.Instance != null && Player.Instance.gridPosition == pos)
             return true;
 
         // 敵の位置チェック
@@ -381,10 +378,9 @@ public class GridManager : MonoBehaviour
         }
         
         // 色をリセットした後に視界範囲を更新
-        Player player = FindObjectOfType<Player>();
-        if (player != null)
+        if (Player.Instance != null)
         {
-            UpdateTileVisibility(player.gridPosition);
+            UpdateTileVisibility(Player.Instance.gridPosition);
         }
     }
 

@@ -2,10 +2,23 @@ using UnityEngine;
 
 public class CameraFollow : MonoBehaviour
 {
+    public static CameraFollow Instance { get; private set; }
+    
     public Transform target; // 追従対象（プレイヤー）
     public Vector3 offset = new Vector3(0, 0, -10); // カメラのオフセット
     public bool followX = true; // X軸追従
     public bool followY = true; // Y軸追従
+
+    private void Awake()
+    {
+        // Singletonパターンの実装
+        if (Instance != null && Instance != this)
+        {
+            Destroy(gameObject);
+            return;
+        }
+        Instance = this;
+    }
 
     private void Start()
     {
@@ -18,14 +31,13 @@ public class CameraFollow : MonoBehaviour
         // プレイヤーが生成されるまで待機
         while (target == null)
         {
-            Player player = FindObjectOfType<Player>();
-            if (player != null)
+            if (Player.Instance != null)
             {
-                target = player.transform;
+                target = Player.Instance.transform;
                 Debug.Log("プレイヤーを発見！カメラ追従開始");
                 
                 // 初期位置に即座に移動
-                OnPlayerMoved(player.transform.position);
+                OnPlayerMoved(Player.Instance.transform.position);
             }
             yield return new WaitForSeconds(0.1f);
         }

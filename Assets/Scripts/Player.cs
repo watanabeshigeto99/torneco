@@ -3,6 +3,8 @@ using UnityEngine;
 [DefaultExecutionOrder(-30)]
 public class Player : Unit
 {
+    public static Player Instance { get; private set; }
+    
     public Vector2Int gridPosition;
     public SpriteRenderer spriteRenderer;
 
@@ -13,6 +15,14 @@ public class Player : Unit
     {
         // 親クラスのAwakeを呼び出し
         base.Awake();
+        
+        // Singletonパターンの実装
+        if (Instance != null && Instance != this)
+        {
+            Destroy(gameObject);
+            return;
+        }
+        Instance = this;
         
         // コンポーネント参照の取得
         if (spriteRenderer == null)
@@ -219,11 +229,9 @@ public class Player : Unit
 
     private void NotifyCameraFollow()
     {
-        // カメラに移動通知
-        CameraFollow cameraFollow = FindObjectOfType<CameraFollow>();
-        if (cameraFollow != null)
+        if (CameraFollow.Instance != null)
         {
-            cameraFollow.OnPlayerMoved(transform.position);
+            CameraFollow.Instance.OnPlayerMoved(transform.position);
         }
         
         // 視界範囲を更新

@@ -38,14 +38,13 @@ public class EnemyManager : MonoBehaviour
     
     private System.Collections.IEnumerator SpawnEnemiesCoroutine()
     {
-        Player player = FindObjectOfType<Player>();
-        if (player == null)
+        if (Player.Instance == null)
         {
             Debug.LogError("プレイヤーが見つかりません");
             yield break;
         }
         
-        Vector2Int playerPos = player.gridPosition;
+        Vector2Int playerPos = Player.Instance.gridPosition;
         
         for (int i = 0; i < enemyCount; i++)
         {

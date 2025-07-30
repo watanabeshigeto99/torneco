@@ -24,8 +24,8 @@ public class TurnManager : MonoBehaviour
 
     private void Start()
     {
-        player = FindObjectOfType<Player>();
-        enemyManager = FindObjectOfType<EnemyManager>();
+        player = Player.Instance;
+        enemyManager = EnemyManager.Instance;
     }
 
     public void OnPlayerCardUsed()

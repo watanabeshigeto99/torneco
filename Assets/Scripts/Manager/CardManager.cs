@@ -44,15 +44,15 @@ public class CardManager : MonoBehaviour
 
     private void OnCardClicked(CardDataSO card)
     {
-        Player player = FindObjectOfType<Player>();
+        if (Player.Instance == null) return;
 
         if (card.type == CardType.Move)
         {
-            player.StartMoveSelection(card.moveDistance);
+            Player.Instance.StartMoveSelection(card.moveDistance);
         }
         else
         {
-            player.ExecuteCardEffect(card);
+            Player.Instance.ExecuteCardEffect(card);
             TurnManager.Instance.OnPlayerCardUsed();
         }
     }
@@ -60,10 +60,9 @@ public class CardManager : MonoBehaviour
     private IEnumerator ExecuteCardEffect(CardDataSO card)
     {
         // プレイヤーにカード効果を実行させる
-        Player player = FindObjectOfType<Player>();
-        if (player != null)
+        if (Player.Instance != null)
         {
-            player.ExecuteCardEffect(card);
+            Player.Instance.ExecuteCardEffect(card);
         }
 
         yield return new WaitForSeconds(0.3f);

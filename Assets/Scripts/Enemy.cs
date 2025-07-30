@@ -33,10 +33,9 @@ public class Enemy : Unit
             transform.position = GridManager.Instance.GetWorldPosition(gridPosition);
             
             // 敵の移動後に視界範囲を更新
-            Player player = FindObjectOfType<Player>();
-            if (player != null && GridManager.Instance != null)
+            if (Player.Instance != null && GridManager.Instance != null)
             {
-                GridManager.Instance.UpdateTileVisibility(player.gridPosition);
+                GridManager.Instance.UpdateTileVisibility(Player.Instance.gridPosition);
             }
         }
 
@@ -45,13 +44,12 @@ public class Enemy : Unit
 
     private void TryAttackPlayer()
     {
-        Player player = FindObjectOfType<Player>();
-        if (player != null)
+        if (Player.Instance != null)
         {
-            Vector2Int playerPos = player.gridPosition;
+            Vector2Int playerPos = Player.Instance.gridPosition;
             if (Vector2Int.Distance(playerPos, gridPosition) == 1)
             {
-                player.TakeDamage(1); // 1ダメージ
+                Player.Instance.TakeDamage(1); // 1ダメージ
                 Debug.Log("敵の攻撃！");
             }
         }

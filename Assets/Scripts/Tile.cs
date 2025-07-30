@@ -63,10 +63,9 @@ public class Tile : MonoBehaviour
     // マウスクリックで移動処理を実行
     private void OnMouseDown()
     {
-        Player player = FindObjectOfType<Player>();
-        if (player != null)
+        if (Player.Instance != null)
         {
-            player.OnTileClicked(new Vector2Int(x, y));
+            Player.Instance.OnTileClicked(new Vector2Int(x, y));
         }
     }
 

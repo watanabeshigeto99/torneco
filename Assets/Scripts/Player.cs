@@ -10,12 +10,32 @@ public class Player : Unit
 
     protected override void Awake()
     {
+        // 親クラスのAwakeを呼び出し
         base.Awake();
+        
+        // コンポーネント参照の取得
         if (spriteRenderer == null)
             spriteRenderer = GetComponentInChildren<SpriteRenderer>();
         
-        // 初期位置を設定
+        // 基本的な変数の初期化
         gridPosition = new Vector2Int(2, 2); // 5x5グリッドの中央
+        isAwaitingMoveInput = false;
+        allowedMoveDistance = 0;
+    }
+    
+    private void Start()
+    {
+        // 他のオブジェクトとの連携を開始
+        StartCoroutine(InitializePlayer());
+    }
+    
+    private System.Collections.IEnumerator InitializePlayer()
+    {
+        // GridManagerの初期化完了を待つ
+        yield return new WaitUntil(() => GridManager.Instance != null);
+        
+        // 位置の初期化
+        InitializePosition();
     }
 
     // 初期化完了後に呼ばれるメソッド

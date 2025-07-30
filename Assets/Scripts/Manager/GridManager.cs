@@ -36,45 +36,62 @@ public class GridManager : MonoBehaviour
 
     private void Awake()
     {
+        // Singletonパターンの実装
         if (Instance != null && Instance != this)
         {
             Destroy(gameObject);
             return;
         }
         Instance = this;
+        
+        // 基本的な変数の初期化
+        allTiles = null;
+        allEnemies = null;
+        exitObject = null;
     }
 
     private void Start()
     {
+        // 実際の初期化処理を開始
+        StartCoroutine(InitializeGame());
+    }
+    
+    private System.Collections.IEnumerator InitializeGame()
+    {
+        // 1. グリッド生成
         GenerateGrid();
+        
+        // 2. プレイヤー生成
         SpawnPlayer(new Vector2Int(width / 2, height / 2));
+        
+        // 3. Exit生成
         SpawnExit();
         
-        // 全オブジェクトの参照を保存
-        StartCoroutine(StoreObjectsAfterSpawn());
-    }
-
-    private System.Collections.IEnumerator StoreObjectsAfterSpawn()
-    {
-        // 全てのオブジェクトが生成されるまで待機
-        yield return new WaitForSeconds(0.1f);
+        // 4. 他のオブジェクトの初期化完了を待つ
+        yield return StartCoroutine(WaitForOtherManagers());
         
-        // 敵をスポーン（StoreAllObjectsの前に実行）
+        // 5. 敵のスポーン
         if (EnemyManager.Instance != null)
         {
             EnemyManager.Instance.SpawnEnemies();
         }
         
-        // 敵のスポーン完了後に全オブジェクトの参照を保存
+        // 6. 全オブジェクトの参照を保存
         yield return new WaitForSeconds(0.1f);
         StoreAllObjects();
         
-        // 初期視界範囲を設定
+        // 7. 初期視界範囲を設定
         Player player = FindObjectOfType<Player>();
         if (player != null)
         {
             UpdateTileVisibility(player.gridPosition);
         }
+    }
+    
+    private System.Collections.IEnumerator WaitForOtherManagers()
+    {
+        // 他のManagerの初期化完了を待つ
+        yield return new WaitForEndOfFrame();
     }
 
     private void GenerateGrid()

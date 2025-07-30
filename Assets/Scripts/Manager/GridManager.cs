@@ -181,8 +181,6 @@ public class GridManager : MonoBehaviour
     // 新しいタイル表示制御システム
     public void UpdateTileVisibility(Vector2Int playerPosition)
     {
-        Debug.Log($"タイル表示制御更新: プレイヤー位置 {playerPosition}");
-        
         if (allTiles != null)
         {
             foreach (Tile tile in allTiles)
@@ -212,8 +210,6 @@ public class GridManager : MonoBehaviour
                     // 非表示の場合のみSetActive(false)、それ以外は表示
                     bool shouldBeVisible = (visibility != Tile.VisibilityState.Hidden);
                     enemy.gameObject.SetActive(shouldBeVisible);
-                    
-                    Debug.Log($"敵 {enemyPos} の表示状態: {visibility}, 表示: {shouldBeVisible}");
                 }
             }
         }
@@ -231,8 +227,6 @@ public class GridManager : MonoBehaviour
                     // 非表示の場合のみSetActive(false)、それ以外は表示
                     bool shouldBeVisible = (visibility != Tile.VisibilityState.Hidden);
                     enemy.gameObject.SetActive(shouldBeVisible);
-                    
-                    Debug.Log($"敵 {enemyPos} の表示状態: {visibility}, 表示: {shouldBeVisible}");
                 }
             }
         }
@@ -246,8 +240,6 @@ public class GridManager : MonoBehaviour
             // 非表示の場合のみSetActive(false)、それ以外は表示
             bool shouldBeVisible = (visibility != Tile.VisibilityState.Hidden);
             exitObject.SetActive(shouldBeVisible);
-            
-            Debug.Log($"Exit {exitPos} の表示状態: {visibility}, 表示: {shouldBeVisible}");
         }
         
         // 視界範囲を視覚的に表示（デバッグ用）
@@ -292,9 +284,6 @@ public class GridManager : MonoBehaviour
         int minY = playerPosition.y - visionRange;
         int maxY = playerPosition.y + visionRange;
         
-        Debug.Log($"視界範囲境界: X({minX} to {maxX}), Y({minY} to {maxY})");
-        Debug.Log($"通常表示範囲: {normalVisibilityRange}マス, 半透明表示範囲: {transparentVisibilityRange}マス");
-        
         // プレイヤーを中心とした視界範囲の確認
         for (int x = minX; x <= maxX; x++)
         {
@@ -325,6 +314,44 @@ public class GridManager : MonoBehaviour
         allTiles = FindObjectsOfType<Tile>();
         allEnemies = FindObjectsOfType<Enemy>();
         // exitObjectはSpawnExitで既に設定済み
+    }
+    
+    // 移動可能なタイルをハイライト表示
+    public void HighlightMovableTiles(Vector2Int center, int range)
+    {
+        int highlightedCount = 0;
+        
+        foreach (var tile in FindObjectsOfType<Tile>())
+        {
+            int dist = Mathf.Abs(tile.x - center.x) + Mathf.Abs(tile.y - center.y);
+            if (dist <= range)
+            {
+                // 移動可能なタイルは必ず表示する（非表示でも表示に変更）
+                tile.gameObject.SetActive(true);
+                tile.Highlight();
+                highlightedCount++;
+            }
+            else
+            {
+                tile.ResetColor();
+            }
+        }
+    }
+    
+    // 全てのタイルの色をリセット
+    public void ResetAllTileColors()
+    {
+        foreach (var tile in FindObjectsOfType<Tile>())
+        {
+            tile.ResetColor();
+        }
+        
+        // 色をリセットした後に視界範囲を更新
+        Player player = FindObjectOfType<Player>();
+        if (player != null)
+        {
+            UpdateTileVisibility(player.gridPosition);
+        }
     }
 
     // 指定されたマス上のオブジェクトの透明度を更新
@@ -364,8 +391,6 @@ public class GridManager : MonoBehaviour
             Color color = spriteRenderer.color;
             color.a = alpha;
             spriteRenderer.color = color;
-            
-            Debug.Log($"オブジェクト {obj.name} の透明度を {alpha} に設定");
         }
     }
 } 

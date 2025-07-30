@@ -16,9 +16,6 @@ public class Enemy : Unit
     {
         gridPosition = startPos;
         transform.position = GridManager.Instance.GetWorldPosition(gridPosition);
-        
-        // 視界範囲更新はGridManagerに任せる（初期化タイミングの問題を回避）
-        Debug.Log($"敵を初期化: 位置{startPos}");
     }
 
     public void Act()

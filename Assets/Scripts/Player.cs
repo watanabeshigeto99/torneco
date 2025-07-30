@@ -5,6 +5,9 @@ public class Player : Unit
     public Vector2Int gridPosition;
     public SpriteRenderer spriteRenderer;
 
+    private bool isAwaitingMoveInput = false;
+    private int allowedMoveDistance = 0;
+
     protected override void Awake()
     {
         base.Awake();
@@ -25,6 +28,35 @@ public class Player : Unit
         if (GridManager.Instance != null)
         {
             GridManager.Instance.UpdateTileVisibility(gridPosition);
+        }
+    }
+
+    public void StartMoveSelection(int moveDistance)
+    {
+        isAwaitingMoveInput = true;
+        allowedMoveDistance = moveDistance;
+        GridManager.Instance.HighlightMovableTiles(gridPosition, allowedMoveDistance);
+    }
+
+    public void OnTileClicked(Vector2Int clickedPos)
+    {
+        if (!isAwaitingMoveInput) return;
+
+        int dist = Mathf.Abs(clickedPos.x - gridPosition.x) + Mathf.Abs(clickedPos.y - gridPosition.y);
+        
+        if (dist <= allowedMoveDistance && GridManager.Instance.IsWalkable(clickedPos))
+        {
+            gridPosition = clickedPos;
+            transform.position = GridManager.Instance.GetWorldPosition(gridPosition);
+
+            isAwaitingMoveInput = false;
+            GridManager.Instance.ResetAllTileColors();
+
+            // カメラ追従と視界範囲更新
+            NotifyCameraFollow();
+            
+            // ターン終了
+            TurnManager.Instance.OnPlayerCardUsed();
         }
     }
 

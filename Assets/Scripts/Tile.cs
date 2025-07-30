@@ -62,8 +62,8 @@ public class Tile : MonoBehaviour, IPointerClickHandler
 
     public void OnPointerClick(PointerEventData eventData)
     {
-        Debug.Log($"Tile clicked: ({x}, {y})");
-        ToggleSelect();
+        Player player = FindObjectOfType<Player>();
+        player?.OnTileClicked(new Vector2Int(x, y));
     }
 
     public void ToggleSelect()

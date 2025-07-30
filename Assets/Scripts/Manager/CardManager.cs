@@ -43,8 +43,17 @@ public class CardManager : MonoBehaviour
 
     private void OnCardClicked(CardDataSO card)
     {
-        Debug.Log($"カード使用: {card.cardName}（{card.type}）");
-        StartCoroutine(ExecuteCardEffect(card));
+        Player player = FindObjectOfType<Player>();
+
+        if (card.type == CardType.Move)
+        {
+            player.StartMoveSelection(card.moveDistance);
+        }
+        else
+        {
+            player.ExecuteCardEffect(card);
+            TurnManager.Instance.OnPlayerCardUsed();
+        }
     }
 
     private IEnumerator ExecuteCardEffect(CardDataSO card)

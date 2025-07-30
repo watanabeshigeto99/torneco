@@ -65,7 +65,6 @@ public class EnemyManager : MonoBehaviour
                     GridManager.Instance.IsWalkable(pos))
                 {
                     validPositionFound = true;
-                    Debug.Log($"敵{i + 1}をスポーン: 位置{pos}, プレイヤーからの距離{distanceFromPlayer:F1}");
                 }
                 
             } while (!validPositionFound && attempts < maxSpawnAttempts);
@@ -85,9 +84,6 @@ public class EnemyManager : MonoBehaviour
                 Debug.LogWarning($"敵{i + 1}のスポーン位置が見つかりませんでした（試行回数: {attempts}）");
             }
         }
-        
-        // 視界範囲更新はGridManagerに任せる（初期化タイミングの問題を回避）
-        Debug.Log($"敵のスポーン完了: {enemyCount}体");
     }
 
     public void EnemyTurn()

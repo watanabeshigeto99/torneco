@@ -20,7 +20,6 @@ public class Enemy : Unit
         if (spriteRenderer == null)
             spriteRenderer = GetComponentInChildren<SpriteRenderer>();
             
-        // 敵のクリックを確実にするための設定
         SetupForClicking();
     }
     
@@ -29,7 +28,8 @@ public class Enemy : Unit
     {
         gridPosition = startPos;
         lastPosition = startPos;
-        transform.position = GridManager.Instance.GetWorldPosition(gridPosition);
+        Vector3 worldPos = GridManager.Instance.GetWorldPosition(gridPosition);
+        transform.position = worldPos;
         
         // SOデータを設定
         if (data != null)
@@ -41,8 +41,6 @@ public class Enemy : Unit
         {
             ApplyEnemyData();
         }
-        
-        Debug.Log($"Enemy: 初期化完了 位置: {gridPosition}, データ: {(enemyData != null ? enemyData.enemyName : "なし")}");
     }
     
     // SOデータを適用
@@ -71,8 +69,6 @@ public class Enemy : Unit
         {
             collider.size = enemyData.colliderSize;
         }
-        
-        Debug.Log($"Enemy: データ適用完了 {enemyData.enemyName} (HP: {maxHP}, 攻撃力: {enemyData.attackPower})");
     }
     
     // クリック可能にするための設定
@@ -82,14 +78,14 @@ public class Enemy : Unit
         BoxCollider2D collider = GetComponent<BoxCollider2D>();
         if (collider != null)
         {
-            collider.isTrigger = true; // トリガーとして設定
+            collider.isTrigger = true;
             if (enemyData != null)
             {
                 collider.size = enemyData.colliderSize;
             }
             else
             {
-                collider.size = new Vector2(1f, 1f); // デフォルトサイズ
+                collider.size = new Vector2(1f, 1f);
             }
         }
         else
@@ -106,18 +102,13 @@ public class Enemy : Unit
             int order = enemyData != null ? enemyData.sortingOrder : 10;
             spriteRenderer.sortingOrder = order;
         }
-        
-        Debug.Log("Enemy: クリック設定完了");
     }
     
     // マウスクリックで攻撃対象として選択
     private void OnMouseDown()
     {
-        Debug.Log($"Enemy: クリックされました 位置: {gridPosition}");
-        
         if (Player.Instance != null)
         {
-            // プレイヤーが攻撃選択中の場合、敵をクリックしたらその位置を攻撃対象として処理
             Player.Instance.OnEnemyClicked(gridPosition);
         }
     }
@@ -142,14 +133,24 @@ public class Enemy : Unit
                     MoveInPatrol();
                     break;
                 case MovementPattern.Stationary:
-                    // 移動しない
                     break;
             }
         }
         else
         {
-            // デフォルトのランダム移動
             MoveRandomly();
+        }
+        
+        // プレイヤーとの距離をチェックして、遠い場合は追跡移動を追加
+        if (Player.Instance != null)
+        {
+            Vector2Int playerPos = Player.Instance.gridPosition;
+            int distanceToPlayer = GetGridDistance(playerPos, gridPosition);
+            
+            if (distanceToPlayer > 3)
+            {
+                MoveTowardsPlayer();
+            }
         }
         
         // 攻撃パターンに応じて攻撃
@@ -173,7 +174,6 @@ public class Enemy : Unit
         }
         else
         {
-            // デフォルトの近接攻撃
             TryAttackPlayerMelee();
         }
     }
@@ -186,7 +186,30 @@ public class Enemy : Unit
         Vector2Int[] directions = {
             Vector2Int.up, Vector2Int.down, Vector2Int.left, Vector2Int.right
         };
-        Vector2Int dir = directions[UnityEngine.Random.Range(0, directions.Length)];
+        
+        // プレイヤーとの距離をチェック
+        Vector2Int preferredDirection = Vector2Int.zero;
+        if (Player.Instance != null)
+        {
+            Vector2Int playerPos = Player.Instance.gridPosition;
+            int distanceToPlayer = GetGridDistance(playerPos, gridPosition);
+            
+            if (distanceToPlayer > 2)
+            {
+                preferredDirection = NormalizeVector2Int(playerPos - gridPosition);
+            }
+        }
+        
+        Vector2Int dir;
+        if (preferredDirection != Vector2Int.zero && UnityEngine.Random.Range(0f, 1f) < 0.7f)
+        {
+            dir = preferredDirection;
+        }
+        else
+        {
+            dir = directions[UnityEngine.Random.Range(0, directions.Length)];
+        }
+        
         Vector2Int newPos = gridPosition + dir;
 
         if (GridManager.Instance.IsInsideGrid(newPos) && !GridManager.Instance.IsOccupied(newPos))
@@ -224,6 +247,11 @@ public class Enemy : Unit
                 GridManager.Instance.UpdateTileVisibility(Player.Instance.gridPosition);
             }
         }
+        else
+        {
+            // 追跡移動が失敗した場合、ランダム移動を試行
+            MoveRandomly();
+        }
     }
     
     // Vector2Intを正規化するヘルパーメソッド
@@ -239,13 +267,17 @@ public class Enemy : Unit
         );
     }
     
-    // パトロール移動（簡単な実装）
+    // パトロール移動
     private void MoveInPatrol()
     {
         if (enemyData != null && !enemyData.canMove) return;
-        
-        // 簡単なパトロール：ランダム移動と同じ
         MoveRandomly();
+    }
+    
+    // グリッドベースの距離計算（チェビシェフ距離）
+    private int GetGridDistance(Vector2Int pos1, Vector2Int pos2)
+    {
+        return Mathf.Max(Mathf.Abs(pos1.x - pos2.x), Mathf.Abs(pos1.y - pos2.y));
     }
     
     // 近接攻撃
@@ -254,14 +286,13 @@ public class Enemy : Unit
         if (Player.Instance == null) return;
         
         Vector2Int playerPos = Player.Instance.gridPosition;
-        float distance = Vector2Int.Distance(playerPos, gridPosition);
+        int distance = GetGridDistance(playerPos, gridPosition);
         int attackRange = 1;
         
         if (distance <= attackRange)
         {
             int damage = enemyData != null ? enemyData.attackPower : 1;
             Player.Instance.TakeDamage(damage);
-            Debug.Log($"敵の近接攻撃！ダメージ: {damage}");
         }
     }
     
@@ -271,29 +302,46 @@ public class Enemy : Unit
         if (Player.Instance == null) return;
         
         Vector2Int playerPos = Player.Instance.gridPosition;
-        float distance = Vector2Int.Distance(playerPos, gridPosition);
+        int distance = GetGridDistance(playerPos, gridPosition);
         int attackRange = enemyData != null ? enemyData.rangedAttackRange : 2;
         
         if (distance <= attackRange)
         {
             int damage = enemyData != null ? enemyData.attackPower : 1;
             Player.Instance.TakeDamage(damage);
-            Debug.Log($"敵の遠距離攻撃！ダメージ: {damage}");
         }
     }
     
-    // 範囲攻撃（簡単な実装）
+    // 範囲攻撃
     private void TryAttackPlayerArea()
     {
-        // 範囲攻撃は近接攻撃と同じ
-        TryAttackPlayerMelee();
+        if (Player.Instance == null) return;
+        
+        Vector2Int playerPos = Player.Instance.gridPosition;
+        int distance = GetGridDistance(playerPos, gridPosition);
+        int attackRange = 2;
+        
+        if (distance <= attackRange)
+        {
+            int damage = enemyData != null ? enemyData.attackPower : 1;
+            Player.Instance.TakeDamage(damage);
+        }
     }
     
-    // 特殊攻撃（簡単な実装）
+    // 特殊攻撃
     private void TryAttackPlayerSpecial()
     {
-        // 特殊攻撃は近接攻撃と同じ
-        TryAttackPlayerMelee();
+        if (Player.Instance == null) return;
+        
+        Vector2Int playerPos = Player.Instance.gridPosition;
+        int distance = GetGridDistance(playerPos, gridPosition);
+        int attackRange = 1;
+        
+        if (distance <= attackRange)
+        {
+            int damage = enemyData != null ? enemyData.attackPower * 2 : 2;
+            Player.Instance.TakeDamage(damage);
+        }
     }
 
     public void TakeDamage(int damage)
@@ -304,7 +352,6 @@ public class Enemy : Unit
         int actualDamage = oldHP - currentHP;
         
         string enemyName = enemyData != null ? enemyData.enemyName : "敵";
-        Debug.Log($"{enemyName}が{actualDamage}ダメージを受けた！HP: {currentHP}/{maxHP}");
         
         // UI更新
         if (UIManager.Instance != null)
@@ -321,7 +368,6 @@ public class Enemy : Unit
     protected override void Die()
     {
         string enemyName = enemyData != null ? enemyData.enemyName : "敵";
-        Debug.Log($"{enemyName}を倒した！");
         
         // 効果音再生
         if (SoundManager.Instance != null)

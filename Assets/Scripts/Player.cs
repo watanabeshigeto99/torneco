@@ -24,15 +24,11 @@ public class Player : Unit
 
     protected override void Awake()
     {
-        // 親クラスのAwakeを呼び出し
         base.Awake();
-        
-        Debug.Log("Player: Awake開始");
         
         // Singletonパターンの実装
         if (Instance != null && Instance != this)
         {
-            Debug.LogWarning("Player: 重複するPlayerインスタンスを破棄");
             Destroy(gameObject);
             return;
         }
@@ -42,31 +38,22 @@ public class Player : Unit
         if (spriteRenderer == null)
             spriteRenderer = GetComponentInChildren<SpriteRenderer>();
         
-        if (spriteRenderer == null)
-        {
-            Debug.LogError("Player: SpriteRendererが見つかりません");
-        }
+        // プレイヤー固有のHP設定
+        maxHP = 20;
+        currentHP = maxHP;
         
         // 基本的な変数の初期化
-        gridPosition = new Vector2Int(2, 2); // 5x5グリッドの中央
+        gridPosition = new Vector2Int(2, 2);
         isAwaitingMoveInput = false;
         allowedMoveDistance = 0;
         isAwaitingAttackInput = false;
         attackPower = 0;
-        
-        Debug.Log("Player: Awake完了");
     }
 
     // 初期化完了後に呼ばれるメソッド
     public void InitializePosition()
     {
-        Debug.Log($"Player: 位置初期化開始 位置: {gridPosition}");
-        
-        if (GridManager.Instance == null)
-        {
-            Debug.LogError("Player: GridManager.Instanceが見つかりません");
-            return;
-        }
+        if (GridManager.Instance == null) return;
         
         Vector3 worldPos = GridManager.Instance.GetWorldPosition(gridPosition);
         transform.position = worldPos;
@@ -75,62 +62,37 @@ public class Player : Unit
         if (GridManager.Instance != null)
         {
             GridManager.Instance.UpdateTileVisibility(gridPosition);
-            Debug.Log("Player: 視界範囲更新完了");
-        }
-        else
-        {
-            Debug.LogError("Player: GridManager.Instanceが見つからないため視界範囲更新をスキップ");
         }
         
-        Debug.Log($"Player: 位置初期化完了 ワールド位置: {transform.position}");
+        // UI更新
+        if (UIManager.Instance != null)
+        {
+            UIManager.Instance.UpdateHP(currentHP, maxHP);
+        }
     }
-    
-
 
     public void StartMoveSelection(int moveDistance)
     {
-        Debug.Log($"Player: 移動選択開始 距離: {moveDistance}");
-        
-        if (GridManager.Instance == null)
-        {
-            Debug.LogError("Player: GridManager.Instanceが見つかりません");
-            return;
-        }
+        if (GridManager.Instance == null) return;
         
         isAwaitingMoveInput = true;
         allowedMoveDistance = moveDistance;
         GridManager.Instance.HighlightMovableTiles(gridPosition, allowedMoveDistance);
-        
-        Debug.Log($"Player: 移動選択完了 現在位置: {gridPosition}");
     }
     
     // 攻撃方向選択を開始
     public void StartAttackSelection(int power)
     {
-        Debug.Log($"Player: 攻撃方向選択開始 攻撃力: {power}");
-        
-        if (GridManager.Instance == null)
-        {
-            Debug.LogError("Player: GridManager.Instanceが見つかりません");
-            return;
-        }
+        if (GridManager.Instance == null) return;
         
         isAwaitingAttackInput = true;
         attackPower = power;
         GridManager.Instance.HighlightAttackableTiles(gridPosition);
-        
-        Debug.Log($"Player: 攻撃方向選択完了 現在位置: {gridPosition}");
     }
 
     public void OnTileClicked(Vector2Int clickedPos)
     {
-        Debug.Log($"Player: タイルクリック受信 位置: {clickedPos}");
-        
-        if (GridManager.Instance == null)
-        {
-            Debug.LogError("Player: GridManager.Instanceが見つかりません");
-            return;
-        }
+        if (GridManager.Instance == null) return;
 
         // 攻撃方向選択中の場合
         if (isAwaitingAttackInput)
@@ -145,15 +107,11 @@ public class Player : Unit
             HandleMoveSelection(clickedPos);
             return;
         }
-        
-        Debug.Log("Player: 選択待ち状態ではないためクリックを無視");
     }
     
     // 攻撃方向選択の処理
     private void HandleAttackDirectionSelection(Vector2Int clickedPos)
     {
-        Debug.Log($"Player: 攻撃方向選択処理 クリック位置: {clickedPos}");
-        
         // 攻撃可能範囲内かチェック
         Vector2Int[] attackRange = GetAttackRange();
         bool isValidAttackTarget = false;
@@ -182,17 +140,10 @@ public class Player : Unit
             if (TurnManager.Instance != null)
             {
                 TurnManager.Instance.OnPlayerCardUsed();
-                Debug.Log($"Player: 攻撃完了 方向: {attackDirection}");
-            }
-            else
-            {
-                Debug.LogError("Player: TurnManager.Instanceが見つかりません");
             }
         }
         else
         {
-            Debug.Log($"Player: 攻撃範囲外 クリック位置: {clickedPos}");
-            
             // UI更新
             if (UIManager.Instance != null)
             {
@@ -204,14 +155,8 @@ public class Player : Unit
     // 敵クリック時の処理
     public void OnEnemyClicked(Vector2Int enemyPos)
     {
-        Debug.Log($"Player: 敵クリック受信 敵位置: {enemyPos}");
-        
         // 攻撃選択中でない場合は無視
-        if (!isAwaitingAttackInput)
-        {
-            Debug.Log("Player: 攻撃選択中ではないため敵クリックを無視");
-            return;
-        }
+        if (!isAwaitingAttackInput) return;
         
         // 攻撃可能範囲内かチェック
         Vector2Int[] attackRange = GetAttackRange();
@@ -241,17 +186,10 @@ public class Player : Unit
             if (TurnManager.Instance != null)
             {
                 TurnManager.Instance.OnPlayerCardUsed();
-                Debug.Log($"Player: 敵への攻撃完了 方向: {attackDirection}");
-            }
-            else
-            {
-                Debug.LogError("Player: TurnManager.Instanceが見つかりません");
             }
         }
         else
         {
-            Debug.Log($"Player: 攻撃範囲外の敵 敵位置: {enemyPos}");
-            
             // UI更新
             if (UIManager.Instance != null)
             {
@@ -263,8 +201,6 @@ public class Player : Unit
     // 移動選択の処理
     private void HandleMoveSelection(Vector2Int clickedPos)
     {
-        Debug.Log($"Player: 移動選択処理 クリック位置: {clickedPos}");
-        
         int dist = Mathf.Abs(clickedPos.x - gridPosition.x) + Mathf.Abs(clickedPos.y - gridPosition.y);
         
         if (dist <= allowedMoveDistance && GridManager.Instance.IsWalkable(clickedPos))
@@ -278,7 +214,6 @@ public class Player : Unit
 
             // 移動イベントを発行
             OnPlayerMoved?.Invoke(gridPosition);
-            Debug.Log($"Player: 移動イベント発行 {oldPos} → {gridPosition}");
 
             // カメラ追従と視界範囲更新
             NotifyCameraFollow();
@@ -287,16 +222,7 @@ public class Player : Unit
             if (TurnManager.Instance != null)
             {
                 TurnManager.Instance.OnPlayerCardUsed();
-                Debug.Log($"Player: 移動完了 {oldPos} → {gridPosition}");
             }
-            else
-            {
-                Debug.LogError("Player: TurnManager.Instanceが見つかりません");
-            }
-        }
-        else
-        {
-            Debug.Log($"Player: 移動不可 距離: {dist}, 最大距離: {allowedMoveDistance}, 歩行可能: {GridManager.Instance.IsWalkable(clickedPos)}");
         }
     }
 
@@ -325,7 +251,6 @@ public class Player : Unit
             gridPosition = newPos;
             Vector3 worldPos = GridManager.Instance.GetWorldPosition(gridPosition);
             transform.position = worldPos;
-            Debug.Log($"移動！方向: {direction}, 距離: {distance}");
             
             // カメラ追従通知
             NotifyCameraFollow();
@@ -336,16 +261,14 @@ public class Player : Unit
                 UIManager.Instance.AddLog($"移動！方向: {direction}, 距離: {distance}");
             }
             
-            // 効果音再生（移動用の効果音があれば）
+            // 効果音再生
             if (SoundManager.Instance != null)
             {
-                SoundManager.Instance.PlaySound("Select"); // 仮でSelect音を使用
+                SoundManager.Instance.PlaySound("Select");
             }
         }
         else
         {
-            Debug.Log($"移動できません！位置: {newPos}");
-            
             // UI更新
             if (UIManager.Instance != null)
             {
@@ -386,11 +309,9 @@ public class Player : Unit
     public void ExecuteAttack(Vector2Int direction, int damage)
     {
         Vector2Int targetPos = gridPosition + direction;
-        Debug.Log($"攻撃実行！方向: {direction}, 目標位置: {targetPos}, ダメージ: {damage}");
         
         // 攻撃イベントを発行
         OnPlayerAttacked?.Invoke(damage);
-        Debug.Log($"Player: 攻撃イベント発行 ダメージ: {damage}");
         
         // 目標位置にいる敵を探して攻撃
         bool hitEnemy = false;
@@ -398,13 +319,13 @@ public class Player : Unit
         if (EnemyManager.Instance != null)
         {
             var enemies = EnemyManager.Instance.GetEnemies();
+            
             foreach (Enemy enemy in enemies)
             {
                 if (enemy != null && enemy.gridPosition == targetPos)
                 {
                     enemy.TakeDamage(damage);
                     hitEnemy = true;
-                    Debug.Log($"敵に{damage}ダメージを与えた！位置: {targetPos}");
                     
                     // UI更新
                     if (UIManager.Instance != null)
@@ -418,15 +339,9 @@ public class Player : Unit
                 }
             }
         }
-        else
-        {
-            Debug.LogWarning("Player: EnemyManager.Instanceが見つからないため攻撃をスキップ");
-        }
         
         if (!hitEnemy)
         {
-            Debug.Log($"攻撃範囲に敵がいません 目標位置: {targetPos}");
-            
             // UI更新
             if (UIManager.Instance != null)
             {
@@ -449,56 +364,62 @@ public class Player : Unit
     {
         // Unity標準のエフェクトシステムを使用
         // 将来的にパーティクルシステムなどを追加可能
-        Debug.Log($"攻撃エフェクト再生 位置: {targetPos}");
     }
     
     // 空振りエフェクト再生
     private void PlayMissEffect(Vector2Int targetPos)
     {
         // Unity標準のエフェクトシステムを使用
-        Debug.Log($"空振りエフェクト再生 位置: {targetPos}");
     }
 
     public void Attack(int damage)
     {
-        Debug.Log($"攻撃！ダメージ: {damage}");
-        
         // 攻撃イベントを発行
         OnPlayerAttacked?.Invoke(damage);
-        Debug.Log($"Player: 攻撃イベント発行 ダメージ: {damage}");
         
-        // 隣接マスにいる敵を探して攻撃（EnemyManagerから取得）
+        // 攻撃範囲内の敵を探して攻撃
         bool hitEnemy = false;
         
         if (EnemyManager.Instance != null)
         {
-            // EnemyManagerから敵リストを取得
             var enemies = EnemyManager.Instance.GetEnemies();
+            Vector2Int[] attackRange = GetAttackRange();
+            
             foreach (Enemy enemy in enemies)
             {
-                if (enemy != null && Vector2Int.Distance(gridPosition, enemy.gridPosition) == 1)
+                if (enemy != null)
                 {
-                    enemy.TakeDamage(damage);
-                    hitEnemy = true;
-                    Debug.Log($"敵に{damage}ダメージを与えた！");
-                    
-                    // UI更新
-                    if (UIManager.Instance != null)
+                    // 攻撃範囲内かチェック
+                    bool inAttackRange = false;
+                    foreach (Vector2Int attackPos in attackRange)
                     {
-                        UIManager.Instance.AddLog($"敵に{damage}ダメージを与えた！");
+                        if (attackPos == enemy.gridPosition)
+                        {
+                            inAttackRange = true;
+                            break;
+                        }
+                    }
+                    
+                    if (inAttackRange)
+                    {
+                        enemy.TakeDamage(damage);
+                        hitEnemy = true;
+                        
+                        // UI更新
+                        if (UIManager.Instance != null)
+                        {
+                            UIManager.Instance.AddLog($"敵に{damage}ダメージを与えた！");
+                        }
+                        
+                        // 1つの敵のみを攻撃（最初に見つかった敵）
+                        break;
                     }
                 }
             }
         }
-        else
-        {
-            Debug.LogWarning("Player: EnemyManager.Instanceが見つからないため攻撃をスキップ");
-        }
         
         if (!hitEnemy)
         {
-            Debug.Log("攻撃範囲に敵がいません");
-            
             // UI更新
             if (UIManager.Instance != null)
             {
@@ -550,11 +471,8 @@ public class Player : Unit
         currentHP = Mathf.Clamp(currentHP, 0, maxHP);
         int actualHeal = currentHP - oldHP;
         
-        Debug.Log($"回復！回復量: {actualHeal}, HP: {currentHP}/{maxHP}");
-        
         // 回復イベントを発行
         OnPlayerHealed?.Invoke(actualHeal);
-        Debug.Log($"Player: 回復イベント発行 回復量: {actualHeal}");
         
         // UI更新
         if (UIManager.Instance != null)
@@ -572,11 +490,8 @@ public class Player : Unit
 
     protected override void Die()
     {
-        Debug.Log("Game Over!");
-        
         // 死亡イベントを発行
         OnPlayerDied?.Invoke();
-        Debug.Log("Player: 死亡イベント発行");
         
         if (GameManager.Instance != null)
         {

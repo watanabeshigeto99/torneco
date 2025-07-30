@@ -19,7 +19,7 @@ public class UIManager : MonoBehaviour
     [Header("Action Log")]
     public TextMeshProUGUI actionLog;
     [Tooltip("表示するログの最大行数")]
-    public int maxLogLines = 5; // 最大5行まで表示
+    public int maxLogLines = 5;
 
     private List<string> logMessages = new List<string>();
 
@@ -35,39 +35,28 @@ public class UIManager : MonoBehaviour
 
     private void Start()
     {
-        // ゲーム開始時にログをクリア
         ClearLog();
-        
-        // イベントを購読
         SubscribeToEvents();
     }
     
     private void OnDestroy()
     {
-        // イベントの購読を解除
         UnsubscribeFromEvents();
     }
     
     private void SubscribeToEvents()
     {
-        // プレイヤーの行動イベントを購読
         Player.OnPlayerMoved += OnPlayerMoved;
         Player.OnPlayerAttacked += OnPlayerAttacked;
         Player.OnPlayerHealed += OnPlayerHealed;
         Player.OnPlayerDied += OnPlayerDied;
         
-        // グリッド初期化イベントを購読
         GridManager.OnGridInitialized += OnGridInitialized;
-        
-        // 全オブジェクト初期化完了イベントを購読
         GridManager.OnAllObjectsInitialized += OnAllObjectsInitialized;
-        
-        Debug.Log("UIManager: イベント購読完了");
     }
     
     private void UnsubscribeFromEvents()
     {
-        // イベントの購読を解除
         Player.OnPlayerMoved -= OnPlayerMoved;
         Player.OnPlayerAttacked -= OnPlayerAttacked;
         Player.OnPlayerHealed -= OnPlayerHealed;
@@ -75,44 +64,36 @@ public class UIManager : MonoBehaviour
         
         GridManager.OnGridInitialized -= OnGridInitialized;
         GridManager.OnAllObjectsInitialized -= OnAllObjectsInitialized;
-        
-        Debug.Log("UIManager: イベント購読解除完了");
     }
     
     // イベントハンドラー
     private void OnPlayerMoved(Vector2Int newPosition)
     {
-        Debug.Log($"UIManager: プレイヤー移動イベント受信 位置: {newPosition}");
         AddLog($"プレイヤーが移動しました: {newPosition}");
     }
     
     private void OnPlayerAttacked(int damage)
     {
-        Debug.Log($"UIManager: プレイヤー攻撃イベント受信 ダメージ: {damage}");
         AddLog($"攻撃しました！ダメージ: {damage}");
     }
     
     private void OnPlayerHealed(int healAmount)
     {
-        Debug.Log($"UIManager: プレイヤー回復イベント受信 回復量: {healAmount}");
         AddLog($"回復しました！回復量: {healAmount}");
     }
     
     private void OnPlayerDied()
     {
-        Debug.Log("UIManager: プレイヤー死亡イベント受信");
         AddLog("プレイヤーが死亡しました...");
     }
     
     private void OnGridInitialized()
     {
-        Debug.Log("UIManager: グリッド初期化イベント受信");
         AddLog("ゲーム開始！");
     }
     
     private void OnAllObjectsInitialized()
     {
-        Debug.Log("UIManager: 全オブジェクト初期化完了イベント受信");
         AddLog("全てのオブジェクトが初期化完了しました");
         
         // プレイヤーのHPを初期表示
@@ -122,7 +103,7 @@ public class UIManager : MonoBehaviour
         }
         
         // ターン表示を初期化
-        SetTurnText(true); // プレイヤーターンから開始
+        SetTurnText(true);
     }
 
     public void UpdateHP(int current, int max)
@@ -151,16 +132,13 @@ public class UIManager : MonoBehaviour
     {
         if (actionLog != null)
         {
-            // 新しいログメッセージを追加
             logMessages.Add(message);
             
-            // 最大行数を超えた場合、古いログを削除
             while (logMessages.Count > maxLogLines)
             {
                 logMessages.RemoveAt(0);
             }
             
-            // ログテキストを更新
             UpdateLogDisplay();
         }
     }
@@ -169,7 +147,6 @@ public class UIManager : MonoBehaviour
     {
         if (actionLog != null)
         {
-            // 全てのログメッセージを結合
             actionLog.text = string.Join("\n", logMessages);
         }
     }
@@ -182,5 +159,4 @@ public class UIManager : MonoBehaviour
             actionLog.text = "";
         }
     }
-    
 } 

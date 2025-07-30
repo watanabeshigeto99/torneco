@@ -26,7 +26,8 @@ public class EnemyDataSO : ScriptableObject
     public bool canMove = true;
     public bool canAttack = true;
     public bool isRanged = false;
-    public int rangedAttackRange = 2;
+    [Tooltip("遠距離攻撃の範囲（マス数）")]
+    public int rangedAttackRange = 3;
 }
 
 // 敵の種類

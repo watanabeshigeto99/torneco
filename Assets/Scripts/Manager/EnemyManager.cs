@@ -137,6 +137,12 @@ public class EnemyManager : MonoBehaviour
                 spawnedCount++;
                 string enemyName = selectedData != null ? selectedData.enemyName : "敵";
                 Debug.Log($"EnemyManager: 敵{i + 1}スポーン完了 位置: {pos}, 種類: {enemyName}");
+                
+                // 敵の詳細情報をログ出力
+                if (selectedData != null)
+                {
+                    Debug.Log($"EnemyManager: {enemyName}の設定 - HP: {selectedData.maxHP}, 攻撃力: {selectedData.attackPower}, 移動パターン: {selectedData.movementPattern}, 攻撃パターン: {selectedData.attackPattern}");
+                }
             }
             else
             {
@@ -182,13 +188,21 @@ public class EnemyManager : MonoBehaviour
             return;
         }
         
+        Debug.Log($"EnemyManager: 敵の数: {enemies.Count}");
+        
         int activeEnemies = 0;
         foreach (var enemy in enemies.ToArray())
         {
             if (enemy != null)
             {
+                string enemyName = enemy.enemyData != null ? enemy.enemyData.enemyName : "敵";
+                Debug.Log($"EnemyManager: {enemyName}のターンを実行 位置: {enemy.gridPosition}");
                 enemy.Act();
                 activeEnemies++;
+            }
+            else
+            {
+                Debug.LogWarning("EnemyManager: nullの敵をスキップ");
             }
         }
         

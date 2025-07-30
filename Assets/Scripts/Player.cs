@@ -24,7 +24,7 @@ public class Player : Unit
         // 視界範囲を更新（カメラ追従は別途実行されるため除外）
         if (GridManager.Instance != null)
         {
-            GridManager.Instance.UpdateVisionRange(gridPosition);
+            GridManager.Instance.UpdateTileVisibility(gridPosition);
         }
     }
 
@@ -176,7 +176,7 @@ public class Player : Unit
         // 視界範囲を更新
         if (GridManager.Instance != null)
         {
-            GridManager.Instance.UpdateVisionRange(gridPosition);
+            GridManager.Instance.UpdateTileVisibility(gridPosition);
         }
     }
 

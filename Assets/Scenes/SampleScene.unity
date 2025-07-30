@@ -421,8 +421,8 @@ MonoBehaviour:
   m_faceColor:
     serializedVersion: 2
     rgba: 4294967295
-  m_fontSize: 36
-  m_fontSizeBase: 36
+  m_fontSize: 24
+  m_fontSizeBase: 24
   m_fontWeight: 400
   m_enableAutoSizing: 0
   m_fontSizeMin: 18
@@ -519,12 +519,14 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   width: 10
   height: 10
-  tileSpacing: 1.1
+  tileSpacing: 1
   tilePrefab: {fileID: 1580805203300382638, guid: f88c02188ed471c428d0b25ee57fab72, type: 3}
   playerPrefab: {fileID: 9016790875124957544, guid: 6b252a14355110a49a6e5078d945639f, type: 3}
   exitPrefab: {fileID: 8480474197339999960, guid: dc4c1c78a3c53804daf28e52abb357c2, type: 3}
   visionRange: 1
   showVisionRange: 0
+  normalVisibilityRange: 1
+  transparentVisibilityRange: 1
 --- !u!1 &519420028
 GameObject:
   m_ObjectHideFlags: 0
@@ -587,7 +589,7 @@ Camera:
   far clip plane: 1000
   field of view: 26.991467
   orthographic: 1
-  orthographic size: 3
+  orthographic size: 5
   m_Depth: 0
   m_CullingMask:
     serializedVersion: 2
@@ -1773,7 +1775,7 @@ MonoBehaviour:
   m_ScaleFactor: 1
   m_ReferenceResolution: {x: 1920, y: 1080}
   m_ScreenMatchMode: 0
-  m_MatchWidthOrHeight: 0
+  m_MatchWidthOrHeight: 0.5
   m_PhysicalUnit: 3
   m_FallbackScreenDPI: 96
   m_DefaultSpriteDPI: 96

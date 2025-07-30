@@ -21,6 +21,14 @@ public class GridManager : MonoBehaviour
     
     [Tooltip("視界範囲をデバッグログに表示")]
     public bool showVisionRange = true; // 視界範囲を視覚的に表示
+    
+    [Header("Tile Visibility Settings")]
+    [Tooltip("通常表示範囲（プレイヤー周囲のマス数）")]
+    public int normalVisibilityRange = 1; // プレイヤー周囲1マス = 周囲8マス
+    
+    [Tooltip("半透明表示範囲（通常表示範囲の外側のマス数）")]
+    public int transparentVisibilityRange = 2; // 通常表示範囲の外側2マス = さらに16マス
+    
     private Tile[] allTiles;
     private Enemy[] allEnemies;
     private GameObject exitObject;
@@ -63,7 +71,7 @@ public class GridManager : MonoBehaviour
         Player player = FindObjectOfType<Player>();
         if (player != null)
         {
-            UpdateVisionRange(player.gridPosition);
+            UpdateTileVisibility(player.gridPosition);
         }
     }
 
@@ -168,25 +176,25 @@ public class GridManager : MonoBehaviour
         return distance <= visionRange;
     }
 
-    // 視界範囲を更新
-    public void UpdateVisionRange(Vector2Int playerPosition)
+    // 新しいタイル表示制御システム
+    public void UpdateTileVisibility(Vector2Int playerPosition)
     {
-        Debug.Log($"視界範囲更新: プレイヤー位置 {playerPosition}, 視界範囲 {visionRange}");
+        Debug.Log($"タイル表示制御更新: プレイヤー位置 {playerPosition}");
         
-        // タイルの表示/非表示を更新
         if (allTiles != null)
         {
             foreach (Tile tile in allTiles)
             {
                 if (tile != null)
                 {
-                    bool inVision = IsInVisionRange(new Vector2Int(tile.x, tile.y), playerPosition);
-                    tile.gameObject.SetActive(inVision);
+                    Vector2Int tilePos = new Vector2Int(tile.x, tile.y);
+                    Tile.VisibilityState visibility = GetTileVisibilityState(tilePos, playerPosition);
+                    tile.UpdateVisibility(visibility);
                 }
             }
         }
 
-        // 敵の表示/非表示を更新
+        // 敵の表示/非表示を更新（既存の視界範囲システムを使用）
         if (allEnemies != null)
         {
             foreach (Enemy enemy in allEnemies)
@@ -229,6 +237,32 @@ public class GridManager : MonoBehaviour
         }
     }
     
+    // タイルの表示状態を判定
+    private Tile.VisibilityState GetTileVisibilityState(Vector2Int tilePos, Vector2Int playerPos)
+    {
+        int distance = Mathf.Max(Mathf.Abs(tilePos.x - playerPos.x), Mathf.Abs(tilePos.y - playerPos.y));
+        
+        if (distance <= normalVisibilityRange)
+        {
+            return Tile.VisibilityState.Visible; // 通常表示
+        }
+        else if (distance <= normalVisibilityRange + transparentVisibilityRange)
+        {
+            return Tile.VisibilityState.Transparent; // 半透明表示
+        }
+        else
+        {
+            return Tile.VisibilityState.Hidden; // 非表示
+        }
+    }
+
+    // 視界範囲を更新（既存メソッド - 後方互換性のため保持）
+    public void UpdateVisionRange(Vector2Int playerPosition)
+    {
+        // 新しい表示制御システムを使用
+        UpdateTileVisibility(playerPosition);
+    }
+    
     // 視界範囲を視覚的に表示（デバッグ用）
     private void ShowVisionRangeDebug(Vector2Int playerPosition)
     {
@@ -239,6 +273,7 @@ public class GridManager : MonoBehaviour
         int maxY = playerPosition.y + visionRange;
         
         Debug.Log($"視界範囲境界: X({minX} to {maxX}), Y({minY} to {maxY})");
+        Debug.Log($"通常表示範囲: {normalVisibilityRange}マス, 半透明表示範囲: {transparentVisibilityRange}マス");
         
         // プレイヤーを中心とした視界範囲の確認
         for (int x = minX; x <= maxX; x++)

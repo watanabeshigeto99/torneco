@@ -23,6 +23,28 @@ public class Tile : MonoBehaviour, IPointerClickHandler
     }
     
     private VisibilityState currentVisibility = VisibilityState.Visible;
+    
+    // 現在の可視状態を取得するプロパティ
+    public VisibilityState CurrentVisibility => currentVisibility;
+    
+    // 現在の透明度を取得するプロパティ
+    public float CurrentAlpha
+    {
+        get
+        {
+            switch (currentVisibility)
+            {
+                case VisibilityState.Hidden:
+                    return 0f;
+                case VisibilityState.Transparent:
+                    return 0.4f; // 半透明時の透明度
+                case VisibilityState.Visible:
+                    return 1f;
+                default:
+                    return 1f;
+            }
+        }
+    }
 
     private void Awake()
     {

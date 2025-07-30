@@ -682,6 +682,9 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   enemyPrefab: {fileID: 2424985937461331734, guid: 20cb8d5f850665148bd5c9e5054f52ff, type: 3}
   enemyCount: 8
+  minDistanceFromPlayer: 3
+  maxDistanceFromPlayer: 8
+  maxSpawnAttempts: 100
 --- !u!1 &662713423
 GameObject:
   m_ObjectHideFlags: 0

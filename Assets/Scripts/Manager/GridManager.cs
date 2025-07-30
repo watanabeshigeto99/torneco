@@ -192,20 +192,28 @@ public class GridManager : MonoBehaviour
                     Vector2Int tilePos = new Vector2Int(tile.x, tile.y);
                     Tile.VisibilityState visibility = GetTileVisibilityState(tilePos, playerPosition);
                     tile.UpdateVisibility(visibility);
+                    
+                    // そのマス上のオブジェクトの透明度を同期
+                    UpdateObjectTransparencyAt(tilePos, tile.CurrentAlpha);
                 }
             }
         }
 
-        // 敵の表示/非表示を更新（既存の視界範囲システムを使用）
+        // 敵の表示/非表示を更新（新しい表示制御システムに合わせる）
         if (allEnemies != null)
         {
             foreach (Enemy enemy in allEnemies)
             {
                 if (enemy != null)
                 {
-                    bool inVision = IsInVisionRange(enemy.gridPosition, playerPosition);
-                    Debug.Log($"敵 {enemy.gridPosition} の視界範囲内: {inVision}");
-                    enemy.gameObject.SetActive(inVision);
+                    Vector2Int enemyPos = enemy.gridPosition;
+                    Tile.VisibilityState visibility = GetTileVisibilityState(enemyPos, playerPosition);
+                    
+                    // 非表示の場合のみSetActive(false)、それ以外は表示
+                    bool shouldBeVisible = (visibility != Tile.VisibilityState.Hidden);
+                    enemy.gameObject.SetActive(shouldBeVisible);
+                    
+                    Debug.Log($"敵 {enemyPos} の表示状態: {visibility}, 表示: {shouldBeVisible}");
                 }
             }
         }
@@ -217,19 +225,29 @@ public class GridManager : MonoBehaviour
             {
                 if (enemy != null)
                 {
-                    bool inVision = IsInVisionRange(enemy.gridPosition, playerPosition);
-                    Debug.Log($"敵 {enemy.gridPosition} の視界範囲内: {inVision}");
-                    enemy.gameObject.SetActive(inVision);
+                    Vector2Int enemyPos = enemy.gridPosition;
+                    Tile.VisibilityState visibility = GetTileVisibilityState(enemyPos, playerPosition);
+                    
+                    // 非表示の場合のみSetActive(false)、それ以外は表示
+                    bool shouldBeVisible = (visibility != Tile.VisibilityState.Hidden);
+                    enemy.gameObject.SetActive(shouldBeVisible);
+                    
+                    Debug.Log($"敵 {enemyPos} の表示状態: {visibility}, 表示: {shouldBeVisible}");
                 }
             }
         }
 
-        // Exitの表示/非表示を更新
+        // Exitの表示/非表示を更新（新しい表示制御システムに合わせる）
         if (exitObject != null)
         {
             Vector2Int exitPos = GetExitPosition();
-            bool inVision = IsInVisionRange(exitPos, playerPosition);
-            exitObject.SetActive(inVision);
+            Tile.VisibilityState visibility = GetTileVisibilityState(exitPos, playerPosition);
+            
+            // 非表示の場合のみSetActive(false)、それ以外は表示
+            bool shouldBeVisible = (visibility != Tile.VisibilityState.Hidden);
+            exitObject.SetActive(shouldBeVisible);
+            
+            Debug.Log($"Exit {exitPos} の表示状態: {visibility}, 表示: {shouldBeVisible}");
         }
         
         // 視界範囲を視覚的に表示（デバッグ用）
@@ -307,5 +325,47 @@ public class GridManager : MonoBehaviour
         allTiles = FindObjectsOfType<Tile>();
         allEnemies = FindObjectsOfType<Enemy>();
         // exitObjectはSpawnExitで既に設定済み
+    }
+
+    // 指定されたマス上のオブジェクトの透明度を更新
+    private void UpdateObjectTransparencyAt(Vector2Int position, float alpha)
+    {
+        // 敵の透明度を更新
+        if (allEnemies != null)
+        {
+            foreach (Enemy enemy in allEnemies)
+            {
+                if (enemy != null && enemy.gridPosition == position)
+                {
+                    UpdateSpriteTransparency(enemy.gameObject, alpha);
+                }
+            }
+        }
+        
+        // Exitの透明度を更新
+        if (exitObject != null)
+        {
+            Vector2Int exitPos = GetExitPosition();
+            if (exitPos == position)
+            {
+                UpdateSpriteTransparency(exitObject, alpha);
+            }
+        }
+    }
+    
+    // 指定されたGameObjectのSpriteRendererの透明度を更新
+    private void UpdateSpriteTransparency(GameObject obj, float alpha)
+    {
+        if (obj == null) return;
+        
+        SpriteRenderer spriteRenderer = obj.GetComponentInChildren<SpriteRenderer>();
+        if (spriteRenderer != null)
+        {
+            Color color = spriteRenderer.color;
+            color.a = alpha;
+            spriteRenderer.color = color;
+            
+            Debug.Log($"オブジェクト {obj.name} の透明度を {alpha} に設定");
+        }
     }
 } 

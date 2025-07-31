@@ -26,6 +26,9 @@ public class UIManager : MonoBehaviour
     [Header("Log Display")]
     public TextMeshProUGUI logText;
     public int maxLogLines = 5;
+    
+    [Header("Card Enhancement")]
+    public Button enhanceButton; // カード強化ボタン（テスト用）
 
     private void Awake()
     {
@@ -104,6 +107,34 @@ public class UIManager : MonoBehaviour
         
         // 階層表示を更新（準備段階）
         UpdateFloorDisplay(GameManager.Instance.currentFloor);
+        
+        // 強化ボタンの設定
+        SetupEnhanceButton();
+    }
+    
+    // 強化ボタンの設定
+    private void SetupEnhanceButton()
+    {
+        if (enhanceButton != null)
+        {
+            enhanceButton.onClick.RemoveAllListeners();
+            enhanceButton.onClick.AddListener(OnEnhanceButtonClicked);
+        }
+    }
+    
+    // 強化ボタンクリック時の処理
+    private void OnEnhanceButtonClicked()
+    {
+        if (CardManager.Instance != null)
+        {
+            // ランダムにカードを強化（テスト用）
+            var cardPool = CardManager.Instance.cardPool;
+            if (cardPool != null && cardPool.Length > 0)
+            {
+                CardDataSO randomCard = cardPool[UnityEngine.Random.Range(0, cardPool.Length)];
+                CardManager.Instance.EnhanceCard(randomCard);
+            }
+        }
     }
     
     // 階層システム準備メソッド

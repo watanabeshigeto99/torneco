@@ -152,12 +152,12 @@ public class CardManager : MonoBehaviour
 
         if (card.type == CardType.Move)
         {
-            Player.Instance.StartMoveSelection(card.moveDistance);
+            Player.Instance.StartMoveSelection(card.GetEffectiveMoveDistance());
         }
         else if (card.type == CardType.Attack)
         {
             // 攻撃カードは方向選択を開始（ターン終了は方向選択後に実行）
-            Player.Instance.StartAttackSelection(card.power);
+            Player.Instance.StartAttackSelection(card.GetEffectivePower());
         }
         else
         {
@@ -175,6 +175,48 @@ public class CardManager : MonoBehaviour
         }
         
         Debug.Log($"CardManager: カード効果実行完了 {card.cardName}");
+    }
+    
+    // カード強化メソッド（テスト用）
+    public void EnhanceCard(CardDataSO card)
+    {
+        if (card == null) return;
+        
+        if (card.LevelUp())
+        {
+            Debug.Log($"CardManager: カード強化成功！{card.cardName} Lv.{card.level}");
+            
+            // UI更新
+            if (UIManager.Instance != null)
+            {
+                UIManager.Instance.AddLog($"カード強化！{card.cardName} Lv.{card.level}");
+            }
+            
+            // 手札のUIを更新
+            UpdateHandUI();
+        }
+        else
+        {
+            Debug.Log($"CardManager: カード強化失敗！{card.cardName} は最大レベルです");
+            
+            if (UIManager.Instance != null)
+            {
+                UIManager.Instance.AddLog($"{card.cardName} は最大レベルです");
+            }
+        }
+    }
+    
+    // 手札のUIを更新
+    private void UpdateHandUI()
+    {
+        foreach (Transform child in handArea)
+        {
+            CardUI cardUI = child.GetComponent<CardUI>();
+            if (cardUI != null)
+            {
+                cardUI.UpdateLevelDisplay();
+            }
+        }
     }
 
     private IEnumerator ExecuteCardEffect(CardDataSO card)

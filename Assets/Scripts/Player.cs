@@ -397,13 +397,13 @@ public class Player : Unit
         switch (card.type)
         {
             case CardType.Attack:
-                StartAttackSelection(card.power);
+                StartAttackSelection(card.GetEffectivePower());
                 break;
             case CardType.Heal:
-                Heal(card.healAmount);
+                Heal(card.GetEffectiveHealAmount());
                 break;
             case CardType.Move:
-                MoveWithDistance(card.moveDirection, card.moveDistance);
+                MoveWithDistance(card.moveDirection, card.GetEffectiveMoveDistance());
                 break;
         }
     }

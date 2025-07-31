@@ -14,6 +14,7 @@ public class SoundManager : MonoBehaviour
     public AudioClip selectSE;
     public AudioClip enemyDeathSE;
     public AudioClip levelUpSE;
+    public AudioClip enhanceSE; // カード強化効果音
     
     [Header("BGM")]
     public AudioClip bgmMain;
@@ -92,6 +93,10 @@ public class SoundManager : MonoBehaviour
             case "LevelUp": 
                 if (seSource != null && levelUpSE != null)
                     seSource.PlayOneShot(levelUpSE); 
+                break;
+            case "Enhance": 
+                if (seSource != null && enhanceSE != null)
+                    seSource.PlayOneShot(enhanceSE); 
                 break;
         }
     }

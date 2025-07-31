@@ -832,6 +832,13 @@ public class Enemy : Unit
     {
         string enemyName = enemyData != null ? enemyData.enemyName : "敵";
         
+        // プレイヤーに経験値を与える
+        if (Player.Instance != null)
+        {
+            int expGain = enemyData != null ? enemyData.expReward : 3; // デフォルト3経験値
+            Player.Instance.GainExp(expGain);
+        }
+        
         // 死亡演出を実行（アクティブな場合のみ）
         if (gameObject.activeInHierarchy)
         {

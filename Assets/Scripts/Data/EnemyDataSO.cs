@@ -12,6 +12,8 @@ public class EnemyDataSO : ScriptableObject
     public int maxHP = 10;
     public int attackPower = 1;
     public int moveRange = 1;
+    [Tooltip("敵を倒した時に獲得する経験値")]
+    public int expReward = 3;
     
     [Header("Behavior")]
     public EnemyType enemyType = EnemyType.Basic;

@@ -13,6 +13,7 @@ public class SoundManager : MonoBehaviour
     public AudioClip healSE;
     public AudioClip selectSE;
     public AudioClip enemyDeathSE;
+    public AudioClip levelUpSE;
     
     [Header("BGM")]
     public AudioClip bgmMain;
@@ -87,6 +88,10 @@ public class SoundManager : MonoBehaviour
             case "Death": 
                 if (seSource != null && enemyDeathSE != null)
                     seSource.PlayOneShot(enemyDeathSE); 
+                break;
+            case "LevelUp": 
+                if (seSource != null && levelUpSE != null)
+                    seSource.PlayOneShot(levelUpSE); 
                 break;
         }
     }

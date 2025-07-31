@@ -19,6 +19,10 @@ public class UIManager : MonoBehaviour
     [Header("Floor Display")]
     public TextMeshProUGUI floorLabel; // 階層表示用
     
+    [Header("Level Display")]
+    public TextMeshProUGUI levelLabel; // レベル表示用
+    public TextMeshProUGUI expLabel; // 経験値表示用
+    
     [Header("Log Display")]
     public TextMeshProUGUI logText;
     public int maxLogLines = 5;
@@ -67,6 +71,9 @@ public class UIManager : MonoBehaviour
         GameManager.OnGameClear += OnGameClear;
         GameManager.OnGameOver += OnGameOver;
         
+        // プレイヤーレベルアップイベントを購読
+        Player.OnPlayerLevelUp += OnPlayerLevelUp;
+        
         Debug.Log("UIManager: イベント購読完了");
     }
     
@@ -79,6 +86,9 @@ public class UIManager : MonoBehaviour
         GameManager.OnFloorChanged -= OnFloorChanged;
         GameManager.OnGameClear -= OnGameClear;
         GameManager.OnGameOver -= OnGameOver;
+        
+        // プレイヤーレベルアップイベントの購読を解除
+        Player.OnPlayerLevelUp -= OnPlayerLevelUp;
     }
     
     private void OnAllObjectsInitialized()
@@ -89,6 +99,7 @@ public class UIManager : MonoBehaviour
         if (Player.Instance != null)
         {
             UpdateHP(Player.Instance.currentHP, Player.Instance.maxHP);
+            UpdateLevelDisplay(Player.Instance.level, Player.Instance.exp, Player.Instance.expToNext);
         }
         
         // 階層表示を更新（準備段階）
@@ -140,6 +151,29 @@ public class UIManager : MonoBehaviour
         if (floorLabel != null)
         {
             floorLabel.text = $"階層: {floor}";
+        }
+    }
+    
+    // レベルアップイベントハンドラー
+    private void OnPlayerLevelUp(int newLevel)
+    {
+        if (Player.Instance != null)
+        {
+            UpdateLevelDisplay(Player.Instance.level, Player.Instance.exp, Player.Instance.expToNext);
+        }
+    }
+    
+    // レベル表示を更新
+    public void UpdateLevelDisplay(int level, int exp, int expToNext)
+    {
+        if (levelLabel != null)
+        {
+            levelLabel.text = $"Lv.{level}";
+        }
+        
+        if (expLabel != null)
+        {
+            expLabel.text = $"EXP: {exp}/{expToNext}";
         }
     }
     

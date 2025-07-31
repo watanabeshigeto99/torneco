@@ -12,6 +12,7 @@ public class Player : Unit
     public static event Action<int> OnPlayerAttacked;
     public static event Action<int> OnPlayerHealed;
     public static event Action OnPlayerDied;
+    public static event Action<int> OnPlayerLevelUp; // レベルアップイベントを追加
     
     public Vector2Int gridPosition;
     public SpriteRenderer spriteRenderer;
@@ -22,6 +23,13 @@ public class Player : Unit
     // 攻撃方向選択用の変数
     private bool isAwaitingAttackInput = false;
     private int attackPower = 0;
+    
+    // レベルシステム関連の変数
+    [Header("Level System")]
+    public int level = 1;
+    public int exp = 0;
+    public int expToNext = 10;
+    public int maxLevel = 10;
     
     // 演出用の変数
     [Header("Effects")]
@@ -57,6 +65,11 @@ public class Player : Unit
         allowedMoveDistance = 0;
         isAwaitingAttackInput = false;
         attackPower = 0;
+        
+        // レベルシステムの初期化
+        level = 1;
+        exp = 0;
+        expToNext = 10;
     }
 
     // 初期化完了後に呼ばれるメソッド
@@ -254,6 +267,9 @@ public class Player : Unit
         if (GridManager.Instance != null && GridManager.Instance.exitPosition == newPos)
         {
             Debug.Log("Player: Exitに到達！次の階層に進みます");
+            
+            // 階段到達時の経験値獲得
+            GainExp(5); // 階段到達で5経験値獲得
             
             // UI更新
             if (UIManager.Instance != null)
@@ -769,6 +785,112 @@ public class Player : Unit
         
         // 1秒後に削除
         Destroy(healEffect, 1f);
+    }
+
+    // 経験値獲得メソッド
+    public void GainExp(int amount)
+    {
+        if (level >= maxLevel) return; // 最大レベルに達している場合は経験値を獲得しない
+        
+        exp += amount;
+        Debug.Log($"Player: 経験値獲得！+{amount} (現在: {exp}/{expToNext})");
+        
+        // UI更新
+        if (UIManager.Instance != null)
+        {
+            UIManager.Instance.AddLog($"経験値獲得！+{amount}");
+            UIManager.Instance.UpdateLevelDisplay(level, exp, expToNext);
+        }
+        
+        // レベルアップチェック
+        while (exp >= expToNext && level < maxLevel)
+        {
+            exp -= expToNext;
+            LevelUp();
+        }
+    }
+    
+    // レベルアップメソッド
+    private void LevelUp()
+    {
+        level++;
+        expToNext = Mathf.RoundToInt(expToNext * 1.5f); // 次のレベルに必要な経験値を1.5倍に増加
+        
+        // レベルアップ時の能力向上
+        int oldMaxHP = maxHP;
+        maxHP += 5; // HPを5増加
+        currentHP = maxHP; // レベルアップ時はHPを全回復
+        
+        Debug.Log($"Player: レベルアップ！レベル {level}、HP {oldMaxHP}→{maxHP}");
+        
+        // レベルアップイベントを発行
+        OnPlayerLevelUp?.Invoke(level);
+        
+        // UI更新
+        if (UIManager.Instance != null)
+        {
+            UIManager.Instance.UpdateHP(currentHP, maxHP);
+            UIManager.Instance.UpdateLevelDisplay(level, exp, expToNext);
+            UIManager.Instance.AddLog($"レベルアップ！レベル {level}、HP {oldMaxHP}→{maxHP}");
+        }
+        
+        // レベルアップ演出を実行
+        StartCoroutine(AnimateLevelUp());
+        
+        // 効果音再生
+        if (SoundManager.Instance != null)
+        {
+            SoundManager.Instance.PlaySound("LevelUp");
+        }
+    }
+    
+    // レベルアップ演出
+    private IEnumerator AnimateLevelUp()
+    {
+        // レベルアップ中はスプライトを金色に光らせる
+        float elapsed = 0f;
+        float duration = 1f;
+        
+        while (elapsed < duration)
+        {
+            elapsed += Time.deltaTime;
+            float t = elapsed / duration;
+            
+            Color targetColor = Color.Lerp(Color.white, Color.yellow, Mathf.Sin(t * Mathf.PI * 4));
+            spriteRenderer.color = targetColor;
+            
+            // スケールも少し大きくする
+            float scale = 1f + Mathf.Sin(t * Mathf.PI * 4) * 0.2f;
+            spriteRenderer.transform.localScale = Vector3.one * scale;
+            
+            yield return null;
+        }
+        
+        spriteRenderer.color = Color.white;
+        spriteRenderer.transform.localScale = Vector3.one;
+        
+        // レベルアップエフェクトを生成
+        GameObject levelUpEffect = new GameObject("LevelUpEffect");
+        levelUpEffect.transform.position = transform.position;
+        
+        ParticleSystem levelUpParticles = levelUpEffect.AddComponent<ParticleSystem>();
+        var main = levelUpParticles.main;
+        main.startLifetime = 1.5f;
+        main.startSpeed = 3f;
+        main.startSize = 0.2f;
+        main.maxParticles = 30;
+        main.startColor = Color.yellow;
+        
+        var emission = levelUpParticles.emission;
+        emission.rateOverTime = 40;
+        
+        var shape = levelUpParticles.shape;
+        shape.enabled = true;
+        shape.shapeType = ParticleSystemShapeType.Sphere;
+        shape.radius = 1f;
+        
+        // 1.5秒後に削除
+        Destroy(levelUpEffect, 1.5f);
     }
 
     protected override void Die()

@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 4ea20ae15bd49014fa30d6ce349c9448, type: 3}
   m_Name: HealCardUpgrade
   m_EditorClassIdentifier: 
-  targetCard: {fileID: 0}
+  targetCard: {fileID: 11400000, guid: 944bb98aede80674486db6cb242fd035, type: 2}
   maxLevel: 5
   expRequiredForLevelUp: 10
   powerGrowthCurve:
@@ -29,7 +29,7 @@ MonoBehaviour:
       outWeight: 0.33333334
     m_PreInfinity: 2
     m_PostInfinity: 2
-    m_RangeOrder: 4
+    m_RotationOrder: 4
   basePowerIncrease: 0
   healGrowthCurve:
     serializedVersion: 2
@@ -81,7 +81,7 @@ MonoBehaviour:
       outWeight: 0.33333334
     m_PreInfinity: 2
     m_PostInfinity: 2
-    m_RangeOrder: 4
+    m_RotationOrder: 4
   baseHealIncrease: 3
   moveGrowthCurve:
     serializedVersion: 2
@@ -97,14 +97,14 @@ MonoBehaviour:
       outWeight: 0.33333334
     m_PreInfinity: 2
     m_PostInfinity: 2
-    m_RangeOrder: 4
+    m_RotationOrder: 4
   baseMoveIncrease: 0
   specialEffects:
   - requiredLevel: 3
     effectType: 2
     effectValue: 1.5
-    description: 回復量1.5倍
+    description: "\u56DE\u5FA9\u91CF1.5\u500D"
   - requiredLevel: 5
     effectType: 3
     effectValue: 2
-    description: 回復量2倍 
+    description: "\u56DE\u5FA9\u91CF2\u500D"

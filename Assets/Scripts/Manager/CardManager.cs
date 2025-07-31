@@ -100,6 +100,65 @@ public class CardManager : MonoBehaviour
             return;
         }
         
+        // PlayerDeckからカードをドロー
+        if (GameManager.Instance != null && GameManager.Instance.GetPlayerDeck() != null)
+        {
+            DrawHandFromDeck();
+        }
+        else
+        {
+            // フォールバック: 従来のcardPoolからドロー
+            DrawHandFromPool();
+        }
+    }
+    
+    /// <summary>
+    /// デッキから手札をドロー
+    /// </summary>
+    private void DrawHandFromDeck()
+    {
+        var playerDeck = GameManager.Instance.GetPlayerDeck();
+        
+        // 既存のカードを削除
+        int childCount = handArea.childCount;
+        foreach (Transform child in handArea)
+            Destroy(child.gameObject);
+        
+        Debug.Log($"CardManager: 既存カード削除完了 削除数: {childCount}");
+
+        // デッキからカードをドロー
+        int createdCount = 0;
+        for (int i = 0; i < handSize; i++)
+        {
+            CardDataSO drawnCard = playerDeck.DrawCard();
+            
+            if (drawnCard == null)
+            {
+                Debug.LogWarning($"CardManager: ドロー可能なカードがありません (手札{i + 1}枚目)");
+                break;
+            }
+            
+            GameObject cardObj = Instantiate(cardUIPrefab, handArea);
+            CardUI ui = cardObj.GetComponent<CardUI>();
+            
+            if (ui == null)
+            {
+                Debug.LogError($"CardManager: カード{i + 1}にCardUIコンポーネントが見つかりません");
+                continue;
+            }
+            
+            ui.Setup(drawnCard, OnCardClicked);
+            createdCount++;
+        }
+        
+        Debug.Log($"CardManager: デッキから手札をドロー完了 作成数: {createdCount}/{handSize}");
+    }
+    
+    /// <summary>
+    /// カードプールから手札をドロー（フォールバック）
+    /// </summary>
+    private void DrawHandFromPool()
+    {
         if (cardPool == null || cardPool.Length == 0)
         {
             Debug.LogError("CardManager: cardPoolが設定されていません");
@@ -131,7 +190,7 @@ public class CardManager : MonoBehaviour
             createdCount++;
         }
         
-        Debug.Log($"CardManager: 手札を引く完了 作成数: {createdCount}/{handSize}");
+        Debug.Log($"CardManager: カードプールから手札をドロー完了 作成数: {createdCount}/{handSize}");
     }
 
     private void OnCardClicked(CardDataSO card)

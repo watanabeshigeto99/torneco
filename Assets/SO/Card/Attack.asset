@@ -16,3 +16,9 @@ MonoBehaviour:
   type: 0
   icon: {fileID: 21300000, guid: f10d7f41a3290e44bb128755a0655867, type: 3}
   power: 5
+  level: 1
+  maxLevel: 5
+  upgradeData: {fileID: 11400000, guid: 23456789012345678901234567890123, type: 2}
+  moveDirection: {x: 0, y: -1}
+  moveDistance: 1
+  healAmount: 10

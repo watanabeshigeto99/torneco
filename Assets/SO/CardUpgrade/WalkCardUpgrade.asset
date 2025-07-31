@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 4ea20ae15bd49014fa30d6ce349c9448, type: 3}
   m_Name: WalkCardUpgrade
   m_EditorClassIdentifier: 
-  targetCard: {fileID: 0}
+  targetCard: {fileID: 11400000, guid: d897d358c7104764e88be2363986487c, type: 2}
   maxLevel: 5
   expRequiredForLevelUp: 10
   powerGrowthCurve:
@@ -29,7 +29,7 @@ MonoBehaviour:
       outWeight: 0.33333334
     m_PreInfinity: 2
     m_PostInfinity: 2
-    m_RangeOrder: 4
+    m_RotationOrder: 4
   basePowerIncrease: 0
   healGrowthCurve:
     serializedVersion: 2
@@ -45,7 +45,7 @@ MonoBehaviour:
       outWeight: 0.33333334
     m_PreInfinity: 2
     m_PostInfinity: 2
-    m_RangeOrder: 4
+    m_RotationOrder: 4
   baseHealIncrease: 0
   moveGrowthCurve:
     serializedVersion: 2
@@ -97,14 +97,14 @@ MonoBehaviour:
       outWeight: 0.33333334
     m_PreInfinity: 2
     m_PostInfinity: 2
-    m_RangeOrder: 4
+    m_RotationOrder: 4
   baseMoveIncrease: 1
   specialEffects:
   - requiredLevel: 3
     effectType: 4
     effectValue: 1.5
-    description: 移動距離1.5倍
+    description: "\u79FB\u52D5\u8DDD\u96E21.5\u500D"
   - requiredLevel: 5
     effectType: 5
     effectValue: 2
-    description: 移動距離2倍 
+    description: "\u79FB\u52D5\u8DDD\u96E22\u500D"

@@ -20,6 +20,10 @@ public class GameManager : MonoBehaviour
     public static event System.Action<int> OnFloorChanged;
     public static event System.Action OnGameClear;
     public static event System.Action OnGameOver;
+    
+    // デッキシステム
+    [Header("Deck System")]
+    public PlayerDeck playerDeck;
 
     private void Awake()
     {
@@ -159,5 +163,22 @@ public class GameManager : MonoBehaviour
         }
         
         Debug.Log($"GameManager: 階層 {floorNumber} の生成完了");
+    }
+    
+    /// <summary>
+    /// プレイヤーデッキを設定
+    /// </summary>
+    public void SetPlayerDeck(PlayerDeck deck)
+    {
+        playerDeck = deck;
+        Debug.Log($"GameManager: プレイヤーデッキを設定 - {deck.selectedDeck.Count}枚");
+    }
+    
+    /// <summary>
+    /// プレイヤーデッキを取得
+    /// </summary>
+    public PlayerDeck GetPlayerDeck()
+    {
+        return playerDeck;
     }
 } 

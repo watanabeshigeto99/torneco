@@ -139,6 +139,13 @@ public class EnemyManager : MonoBehaviour
                 
                 // 敵を初期化
                 enemy.Initialize(pos, selectedData);
+                
+                // 階層に応じた敵の強化
+                if (GameManager.Instance != null)
+                {
+                    enemy.InitializeWithFloor(GameManager.Instance.currentFloor);
+                }
+                
                 enemies.Add(enemy);
                 
                 // ターン制システムに敵を登録

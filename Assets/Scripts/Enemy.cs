@@ -80,6 +80,34 @@ public class Enemy : Unit
         }
     }
     
+    // 階層に応じた敵の強化
+    public void InitializeWithFloor(int floor)
+    {
+        // 基本HPを階層に応じて強化
+        int baseHP = enemyData != null ? enemyData.maxHP : 5;
+        maxHP = baseHP + (floor / 5) * 5;
+        currentHP = maxHP;
+        
+        // 基本攻撃力を階層に応じて強化
+        int baseAttackPower = enemyData != null ? enemyData.attackPower : 1;
+        int enhancedAttackPower = baseAttackPower + (floor / 10);
+        
+        // enemyDataの攻撃力を更新（既存の攻撃処理で使用される）
+        if (enemyData != null)
+        {
+            enemyData.attackPower = enhancedAttackPower;
+        }
+        
+        Debug.Log($"Enemy: 階層{floor}に応じた強化 - HP: {maxHP}, 攻撃力: {enhancedAttackPower}");
+        
+        // UI更新
+        if (UIManager.Instance != null)
+        {
+            string enemyName = enemyData != null ? enemyData.enemyName : "敵";
+            UIManager.Instance.AddLog($"階層{floor}の{enemyName} - HP: {maxHP}, 攻撃力: {enhancedAttackPower}");
+        }
+    }
+    
     // クリック可能にするための設定
     private void SetupForClicking()
     {

@@ -31,6 +31,9 @@ public class Player : Unit
     public int expToNext = 10;
     public int maxLevel = 10;
     
+    [Header("Level Table")]
+    public LevelTableSO levelTable;
+    
     // 演出用の変数
     [Header("Effects")]
     public ParticleSystem moveEffect;
@@ -814,14 +817,33 @@ public class Player : Unit
     private void LevelUp()
     {
         level++;
-        expToNext = Mathf.RoundToInt(expToNext * 1.5f); // 次のレベルに必要な経験値を1.5倍に増加
         
-        // レベルアップ時の能力向上
-        int oldMaxHP = maxHP;
-        maxHP += 5; // HPを5増加
-        currentHP = maxHP; // レベルアップ時はHPを全回復
-        
-        Debug.Log($"Player: レベルアップ！レベル {level}、HP {oldMaxHP}→{maxHP}");
+        if (levelTable != null)
+        {
+            // ScriptableObjectを使用したレベルアップ
+            var levelData = levelTable.GetLevelUpgradeData(level);
+            expToNext = levelData.expRequired;
+            int oldMaxHP = maxHP;
+            maxHP += levelData.hpIncrease;
+            currentHP = maxHP;
+            
+            Debug.Log($"Player: レベルアップ！レベル {level}、HP {oldMaxHP}→{maxHP} (SO使用)");
+            
+            // 報酬の処理
+            if (levelData.reward.rewardType != RewardType.None)
+            {
+                ProcessLevelReward(levelData.reward);
+            }
+        }
+        else
+        {
+            // 従来の計算方法（フォールバック）
+            expToNext = Mathf.RoundToInt(expToNext * 1.5f);
+            int oldMaxHP = maxHP;
+            maxHP += 5;
+            currentHP = maxHP;
+            Debug.Log($"Player: レベルアップ！レベル {level}、HP {oldMaxHP}→{maxHP} (従来方式)");
+        }
         
         // レベルアップイベントを発行
         OnPlayerLevelUp?.Invoke(level);
@@ -831,7 +853,7 @@ public class Player : Unit
         {
             UIManager.Instance.UpdateHP(currentHP, maxHP);
             UIManager.Instance.UpdateLevelDisplay(level, exp, expToNext);
-            UIManager.Instance.AddLog($"レベルアップ！レベル {level}、HP {oldMaxHP}→{maxHP}");
+            UIManager.Instance.AddLog($"レベルアップ！レベル {level}、HP {maxHP}");
         }
         
         // レベルアップ演出を実行
@@ -841,6 +863,56 @@ public class Player : Unit
         if (SoundManager.Instance != null)
         {
             SoundManager.Instance.PlaySound("LevelUp");
+        }
+    }
+    
+    // レベル報酬の処理
+    private void ProcessLevelReward(LevelReward reward)
+    {
+        switch (reward.rewardType)
+        {
+            case RewardType.Card:
+                if (reward.cardReward != null && CardManager.Instance != null)
+                {
+                    CardManager.Instance.AddCardToHand(reward.cardReward);
+                    if (UIManager.Instance != null)
+                    {
+                        UIManager.Instance.AddLog($"レベル報酬: {reward.cardReward.cardName}を獲得！");
+                    }
+                }
+                break;
+                
+            case RewardType.Gold:
+                // ゴールドシステムが実装されたらここに追加
+                if (UIManager.Instance != null)
+                {
+                    UIManager.Instance.AddLog($"レベル報酬: {reward.rewardValue}ゴールドを獲得！");
+                }
+                break;
+                
+            case RewardType.Item:
+                // アイテムシステムが実装されたらここに追加
+                if (UIManager.Instance != null)
+                {
+                    UIManager.Instance.AddLog($"レベル報酬: アイテムを獲得！");
+                }
+                break;
+                
+            case RewardType.Skill:
+                // スキルシステムが実装されたらここに追加
+                if (UIManager.Instance != null)
+                {
+                    UIManager.Instance.AddLog($"レベル報酬: スキルを獲得！");
+                }
+                break;
+                
+            case RewardType.StatBoost:
+                // ステータス強化
+                if (UIManager.Instance != null)
+                {
+                    UIManager.Instance.AddLog($"レベル報酬: ステータス強化！");
+                }
+                break;
         }
     }
     

@@ -218,6 +218,36 @@ public class CardManager : MonoBehaviour
             }
         }
     }
+    
+    // 手札にカードを追加
+    public void AddCardToHand(CardDataSO card)
+    {
+        if (card == null || handArea == null || cardUIPrefab == null)
+        {
+            Debug.LogError("CardManager: AddCardToHand - 必要なコンポーネントが設定されていません");
+            return;
+        }
+        
+        // カードUIを生成
+        GameObject cardObj = Instantiate(cardUIPrefab, handArea);
+        CardUI cardUI = cardObj.GetComponent<CardUI>();
+        
+        if (cardUI != null)
+        {
+            cardUI.Setup(card, OnCardClicked);
+            Debug.Log($"CardManager: 手札にカードを追加 - {card.cardName}");
+            
+            if (UIManager.Instance != null)
+            {
+                UIManager.Instance.AddLog($"カードを獲得: {card.cardName}");
+            }
+        }
+        else
+        {
+            Debug.LogError("CardManager: AddCardToHand - CardUIコンポーネントが見つかりません");
+            Destroy(cardObj);
+        }
+    }
 
     private IEnumerator ExecuteCardEffect(CardDataSO card)
     {

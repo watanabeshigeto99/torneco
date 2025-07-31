@@ -11,6 +11,9 @@ public class Enemy : Unit
     [Header("Enemy Data")]
     public EnemyDataSO enemyData;
     
+    [Header("Growth Data")]
+    public EnemyGrowthSO growthData;
+    
     // 動的な状態
     private bool hasMovedThisTurn = false;
     private Vector2Int lastPosition;
@@ -83,28 +86,50 @@ public class Enemy : Unit
     // 階層に応じた敵の強化
     public void InitializeWithFloor(int floor)
     {
-        // 基本HPを階層に応じて強化
-        int baseHP = enemyData != null ? enemyData.maxHP : 5;
-        maxHP = baseHP + (floor / 5) * 5;
-        currentHP = maxHP;
-        
-        // 基本攻撃力を階層に応じて強化
-        int baseAttackPower = enemyData != null ? enemyData.attackPower : 1;
-        int enhancedAttackPower = baseAttackPower + (floor / 10);
-        
-        // enemyDataの攻撃力を更新（既存の攻撃処理で使用される）
-        if (enemyData != null)
+        if (growthData != null)
         {
-            enemyData.attackPower = enhancedAttackPower;
+            // ScriptableObjectを使用した強化
+            var growthDataResult = growthData.GetGrowthDataForFloor(floor);
+            maxHP = growthDataResult.hp;
+            currentHP = maxHP;
+            
+            // enemyDataの攻撃力を更新（既存の攻撃処理で使用される）
+            if (enemyData != null)
+            {
+                enemyData.attackPower = growthDataResult.attackPower;
+            }
+            
+            Debug.Log($"Enemy: 階層{floor}に応じた強化 (SO使用) - HP: {maxHP}, 攻撃力: {growthDataResult.attackPower}");
+            
+            // UI更新
+            if (UIManager.Instance != null)
+            {
+                string enemyName = enemyData != null ? enemyData.enemyName : "敵";
+                UIManager.Instance.AddLog($"階層{floor}の{enemyName} - HP: {maxHP}, 攻撃力: {growthDataResult.attackPower}");
+            }
         }
-        
-        Debug.Log($"Enemy: 階層{floor}に応じた強化 - HP: {maxHP}, 攻撃力: {enhancedAttackPower}");
-        
-        // UI更新
-        if (UIManager.Instance != null)
+        else
         {
-            string enemyName = enemyData != null ? enemyData.enemyName : "敵";
-            UIManager.Instance.AddLog($"階層{floor}の{enemyName} - HP: {maxHP}, 攻撃力: {enhancedAttackPower}");
+            // 従来の計算方法（フォールバック）
+            int baseHP = enemyData != null ? enemyData.maxHP : 5;
+            maxHP = baseHP + (floor / 5) * 5;
+            currentHP = maxHP;
+            
+            int baseAttackPower = enemyData != null ? enemyData.attackPower : 1;
+            int enhancedAttackPower = baseAttackPower + (floor / 10);
+            
+            if (enemyData != null)
+            {
+                enemyData.attackPower = enhancedAttackPower;
+            }
+            
+            Debug.Log($"Enemy: 階層{floor}に応じた強化 (従来方式) - HP: {maxHP}, 攻撃力: {enhancedAttackPower}");
+            
+            if (UIManager.Instance != null)
+            {
+                string enemyName = enemyData != null ? enemyData.enemyName : "敵";
+                UIManager.Instance.AddLog($"階層{floor}の{enemyName} - HP: {maxHP}, 攻撃力: {enhancedAttackPower}");
+            }
         }
     }
     

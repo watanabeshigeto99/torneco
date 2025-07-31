@@ -14,6 +14,9 @@ public class CardDataSO : ScriptableObject
     public int level = 1;
     public int maxLevel = 5; // 最大レベル
     
+    [Header("Upgrade Data")]
+    public CardUpgradeSO upgradeData;
+    
     [Header("Move Settings")]
     public Vector2Int moveDirection = Vector2Int.down; // 移動方向
     public int moveDistance = 1; // 移動距離
@@ -24,19 +27,43 @@ public class CardDataSO : ScriptableObject
     // レベルに応じた効果的なパワーを取得
     public int GetEffectivePower()
     {
-        return power + (level - 1) * 5;
+        if (upgradeData != null)
+        {
+            return power + upgradeData.GetPowerIncrease(level);
+        }
+        else
+        {
+            // 従来の計算方法（フォールバック）
+            return power + (level - 1) * 5;
+        }
     }
     
     // レベルに応じた効果的な回復量を取得
     public int GetEffectiveHealAmount()
     {
-        return healAmount + (level - 1) * 3;
+        if (upgradeData != null)
+        {
+            return healAmount + upgradeData.GetHealIncrease(level);
+        }
+        else
+        {
+            // 従来の計算方法（フォールバック）
+            return healAmount + (level - 1) * 3;
+        }
     }
     
     // レベルに応じた効果的な移動距離を取得
     public int GetEffectiveMoveDistance()
     {
-        return moveDistance + (level - 1) / 2; // 2レベルごとに1マス増加
+        if (upgradeData != null)
+        {
+            return moveDistance + upgradeData.GetMoveIncrease(level);
+        }
+        else
+        {
+            // 従来の計算方法（フォールバック）
+            return moveDistance + (level - 1) / 2; // 2レベルごとに1マス増加
+        }
     }
     
     // カードを強化

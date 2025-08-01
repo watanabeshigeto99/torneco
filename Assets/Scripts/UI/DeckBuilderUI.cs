@@ -84,7 +84,7 @@ public class DeckBuilderUI : MonoBehaviour
         if (healCardsButton != null)
             healCardsButton.onClick.AddListener(() => SetCardFilter(CardType.Heal));
         
-        Debug.Log("DeckBuilderUI: UI初期化完了");
+
     }
     
     /// <summary>
@@ -95,7 +95,7 @@ public class DeckBuilderUI : MonoBehaviour
         if (cardDatabase != null)
         {
             availableCards = cardDatabase.GetAllCards();
-            Debug.Log($"DeckBuilderUI: 利用可能カード読み込み完了 - {availableCards.Count}枚");
+
         }
         else
         {
@@ -131,7 +131,7 @@ public class DeckBuilderUI : MonoBehaviour
             }
         }
         
-        Debug.Log($"DeckBuilderUI: カードリスト更新完了 - {filteredCards.Count}枚表示");
+
     }
     
     /// <summary>
@@ -226,7 +226,7 @@ public class DeckBuilderUI : MonoBehaviour
     {
         currentFilter = filterType;
         UpdateCardList();
-        Debug.Log($"DeckBuilderUI: カードフィルター設定 - {filterType}");
+
     }
     
     /// <summary>
@@ -242,7 +242,7 @@ public class DeckBuilderUI : MonoBehaviour
         
         selectedDeck.Add(card);
         UpdateUI();
-        Debug.Log($"DeckBuilderUI: カードをデッキに追加 - {card.cardName}");
+
     }
     
     /// <summary>
@@ -252,7 +252,7 @@ public class DeckBuilderUI : MonoBehaviour
     {
         selectedDeck.Remove(card);
         UpdateUI();
-        Debug.Log($"DeckBuilderUI: カードをデッキから削除 - {card.cardName}");
+
     }
     
     /// <summary>
@@ -261,7 +261,6 @@ public class DeckBuilderUI : MonoBehaviour
     private void OnAddCardClicked()
     {
         // 現在選択されているカードを追加（実装はOnCardListItemClickedで処理）
-        Debug.Log("DeckBuilderUI: カード追加ボタンがクリックされました");
     }
     
     /// <summary>
@@ -273,7 +272,7 @@ public class DeckBuilderUI : MonoBehaviour
         {
             selectedDeck.RemoveAt(selectedDeck.Count - 1);
             UpdateUI();
-            Debug.Log("DeckBuilderUI: 最後のカードを削除しました");
+
         }
     }
     
@@ -284,7 +283,7 @@ public class DeckBuilderUI : MonoBehaviour
     {
         selectedDeck.Clear();
         UpdateUI();
-        Debug.Log("DeckBuilderUI: デッキをクリアしました");
+
     }
     
     /// <summary>
@@ -317,7 +316,7 @@ public class DeckBuilderUI : MonoBehaviour
             GameManager.Instance.SetPlayerDeck(playerDeck);
         }
         
-        Debug.Log($"DeckBuilderUI: デッキを保存してバトル開始 - {selectedDeck.Count}枚");
+
         
         // バトルシーンに遷移
         UnityEngine.SceneManagement.SceneManager.LoadScene(1); // MainScene index

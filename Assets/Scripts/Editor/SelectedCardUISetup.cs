@@ -126,19 +126,11 @@ public class SelectedCardUISetup : EditorWindow
             Debug.LogError("CardIcon is not assigned!");
             allAssigned = false;
         }
-        else
-        {
-            Debug.Log($"CardIcon assigned: {selectedCardUI.cardIcon.name}");
-        }
         
         if (selectedCardUI.cardNameText == null)
         {
             Debug.LogError("CardNameText is not assigned!");
             allAssigned = false;
-        }
-        else
-        {
-            Debug.Log($"CardNameText assigned: {selectedCardUI.cardNameText.name}");
         }
         
         if (selectedCardUI.cardTypeText == null)
@@ -146,65 +138,21 @@ public class SelectedCardUISetup : EditorWindow
             Debug.LogError("CardTypeText is not assigned!");
             allAssigned = false;
         }
-        else
-        {
-            Debug.Log($"CardTypeText assigned: {selectedCardUI.cardTypeText.name}");
-        }
         
         if (selectedCardUI.removeButton == null)
         {
             Debug.LogError("RemoveButton is not assigned!");
             allAssigned = false;
         }
-        else
-        {
-            Debug.Log($"RemoveButton assigned: {selectedCardUI.removeButton.name}");
-        }
         
         if (selectedCardUI.backgroundImage == null)
         {
             Debug.LogWarning("BackgroundImage is not assigned (optional)");
         }
-        else
-        {
-            Debug.Log($"BackgroundImage assigned: {selectedCardUI.backgroundImage.name}");
-        }
         
         if (allAssigned)
         {
             Debug.Log("All SelectedCardUI references are properly assigned!");
-        }
-        
-        // Test with sample card data
-        TestWithSampleCard(selectedCardUI);
-    }
-    
-    private static void TestWithSampleCard(SelectedCardUI selectedCardUI)
-    {
-        // Load a sample card to test the display
-        CardDataSO sampleCard = AssetDatabase.LoadAssetAtPath<CardDataSO>("Assets/SO/Card/Attack.asset");
-        
-        if (sampleCard != null)
-        {
-            Debug.Log($"Testing with sample card: {sampleCard.cardName}");
-            Debug.Log($"Sample card icon: {(sampleCard.icon != null ? sampleCard.icon.name : "null")}");
-            
-            // Create a temporary instance to test
-            GameObject tempInstance = PrefabUtility.InstantiatePrefab(selectedCardUI.gameObject) as GameObject;
-            SelectedCardUI tempSelectedCardUI = tempInstance.GetComponent<SelectedCardUI>();
-            
-            if (tempSelectedCardUI != null)
-            {
-                tempSelectedCardUI.Setup(sampleCard, (card) => Debug.Log($"Remove callback for {card.cardName}"));
-                Debug.Log("Sample card test completed successfully!");
-            }
-            
-            // Clean up
-            DestroyImmediate(tempInstance);
-        }
-        else
-        {
-            Debug.LogError("Sample card not found for testing!");
         }
     }
 } 

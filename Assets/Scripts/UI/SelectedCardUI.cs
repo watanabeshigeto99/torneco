@@ -24,21 +24,11 @@ public class SelectedCardUI : MonoBehaviour
     /// </summary>
     public void Setup(CardDataSO card, Action<CardDataSO> onRemove)
     {
-        if (card == null)
-        {
-            Debug.LogError("SelectedCardUI: カードデータがnullです");
-            return;
-        }
-        
         cardData = card;
         onRemoveCallback = onRemove;
         
-        Debug.Log($"SelectedCardUI: カードセットアップ開始 - {card.cardName} (アイコン: {(card.icon != null ? card.icon.name : "null")})");
-        
         UpdateDisplay();
         SetupButton();
-        
-        Debug.Log($"SelectedCardUI: 選択カードセットアップ完了 - {card.cardName}");
     }
     
     /// <summary>
@@ -49,23 +39,9 @@ public class SelectedCardUI : MonoBehaviour
         if (cardData == null) return;
         
         // アイコン
-        if (cardIcon != null)
+        if (cardIcon != null && cardData.icon != null)
         {
-            if (cardData.icon != null)
-            {
-                cardIcon.sprite = cardData.icon;
-                cardIcon.enabled = true;
-                Debug.Log($"SelectedCardUI: アイコン設定完了 - {cardData.cardName} -> {cardData.icon.name}");
-            }
-            else
-            {
-                cardIcon.enabled = false;
-                Debug.LogWarning($"SelectedCardUI: {cardData.cardName}のアイコンが設定されていません");
-            }
-        }
-        else
-        {
-            Debug.LogError("SelectedCardUI: cardIconが設定されていません");
+            cardIcon.sprite = cardData.icon;
         }
         
         // カード名
@@ -73,19 +49,11 @@ public class SelectedCardUI : MonoBehaviour
         {
             cardNameText.text = cardData.cardName;
         }
-        else
-        {
-            Debug.LogError("SelectedCardUI: cardNameTextが設定されていません");
-        }
         
         // カードタイプ
         if (cardTypeText != null)
         {
             cardTypeText.text = GetCardTypeString(cardData.type);
-        }
-        else
-        {
-            Debug.LogError("SelectedCardUI: cardTypeTextが設定されていません");
         }
     }
     

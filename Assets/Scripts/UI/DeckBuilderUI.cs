@@ -320,7 +320,7 @@ public class DeckBuilderUI : MonoBehaviour
         Debug.Log($"DeckBuilderUI: デッキを保存してバトル開始 - {selectedDeck.Count}枚");
         
         // バトルシーンに遷移
-        UnityEngine.SceneManagement.SceneManager.LoadScene("SampleScene");
+        UnityEngine.SceneManagement.SceneManager.LoadScene(1); // MainScene index
     }
     
     /// <summary>

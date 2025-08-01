@@ -8,14 +8,13 @@ public class DeckBuilderUISetup : EditorWindow
     [MenuItem("Tools/Setup DeckBuilderUI")]
     public static void SetupDeckBuilderUI()
     {
-        // Find the DeckBuilderScene
-        string scenePath = "Assets/Scenes/DeckBuilderScene.unity";
-        if (!UnityEditor.EditorApplication.isPlaying)
+        // DeckBuilderSceneを開く
+        if (UnityEditor.SceneManagement.EditorSceneManager.GetActiveScene().name != "DeckBuilderScene")
         {
-            UnityEditor.SceneManagement.EditorSceneManager.OpenScene(scenePath);
+            UnityEditor.SceneManagement.EditorSceneManager.OpenScene("Assets/Scenes/DeckBuilderScene.unity");
         }
         
-        // Find the DeckBuilderUI component in the scene
+        // DeckBuilderUIコンポーネントを探す
         DeckBuilderUI deckBuilderUI = FindObjectOfType<DeckBuilderUI>();
         
         if (deckBuilderUI == null)
@@ -24,155 +23,172 @@ public class DeckBuilderUISetup : EditorWindow
             return;
         }
         
-        // Assign references
+        // 参照を自動設定
         AssignDeckBuilderUIReferences(deckBuilderUI);
         
-        // Mark the scene as dirty
-        EditorUtility.SetDirty(deckBuilderUI.gameObject);
-        UnityEditor.SceneManagement.EditorSceneManager.MarkSceneDirty(UnityEditor.SceneManagement.EditorSceneManager.GetActiveScene());
+        // 階層情報表示用のUIを追加
+        AddFloorInfoUI(deckBuilderUI);
         
         Debug.Log("DeckBuilderUI setup completed successfully!");
     }
     
     private static void AssignDeckBuilderUIReferences(DeckBuilderUI deckBuilderUI)
     {
-        // Find CardDatabase
-        CardDatabase cardDatabase = FindObjectOfType<CardDatabase>();
-        if (cardDatabase == null)
+        // CardDatabaseの設定
+        if (deckBuilderUI.cardDatabase == null)
         {
-            cardDatabase = AssetDatabase.LoadAssetAtPath<CardDatabase>("Assets/SO/CardDatabase/DefaultCardDatabase.asset");
+            deckBuilderUI.cardDatabase = AssetDatabase.LoadAssetAtPath<CardDatabase>("Assets/SO/CardDatabase/DefaultCardDatabase.asset");
+            Debug.Log("CardDatabase assigned");
         }
         
-        if (cardDatabase != null)
+        // カードリスト関連の設定
+        if (deckBuilderUI.cardListContent == null)
         {
-            deckBuilderUI.cardDatabase = cardDatabase;
-            Debug.Log("CardDatabase assigned successfully");
-        }
-        else
-        {
-            Debug.LogError("CardDatabase not found!");
+            deckBuilderUI.cardListContent = FindChildByName(deckBuilderUI.transform, "CardListContent");
+            Debug.Log("CardListContent assigned");
         }
         
-        // Find UI elements by name
-        Transform canvas = FindObjectOfType<Canvas>()?.transform;
-        if (canvas == null)
+        if (deckBuilderUI.cardListItemPrefab == null)
         {
-            Debug.LogError("Canvas not found in scene!");
+            deckBuilderUI.cardListItemPrefab = AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Prefabs/UI/CardListItemUI.prefab");
+            Debug.Log("CardListItemPrefab assigned");
+        }
+        
+        if (deckBuilderUI.cardListScrollView == null)
+        {
+            deckBuilderUI.cardListScrollView = FindComponentInChildren<ScrollRect>(deckBuilderUI.transform, "CardListScrollView");
+            Debug.Log("CardListScrollView assigned");
+        }
+        
+        // 選択デッキ関連の設定
+        if (deckBuilderUI.selectedDeckContent == null)
+        {
+            deckBuilderUI.selectedDeckContent = FindChildByName(deckBuilderUI.transform, "SelectedDeckContent");
+            Debug.Log("SelectedDeckContent assigned");
+        }
+        
+        if (deckBuilderUI.selectedCardPrefab == null)
+        {
+            deckBuilderUI.selectedCardPrefab = AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Prefabs/UI/SelectedCardUI.prefab");
+            Debug.Log("SelectedCardPrefab assigned");
+        }
+        
+        if (deckBuilderUI.deckSizeText == null)
+        {
+            deckBuilderUI.deckSizeText = FindComponentInChildren<TextMeshProUGUI>(deckBuilderUI.transform, "DeckSizeText");
+            Debug.Log("DeckSizeText assigned");
+        }
+        
+        if (deckBuilderUI.deckStatisticsText == null)
+        {
+            deckBuilderUI.deckStatisticsText = FindComponentInChildren<TextMeshProUGUI>(deckBuilderUI.transform, "DeckStatisticsText");
+            Debug.Log("DeckStatisticsText assigned");
+        }
+        
+        // ボタンの設定
+        if (deckBuilderUI.addCardButton == null)
+        {
+            deckBuilderUI.addCardButton = FindComponentInChildren<Button>(deckBuilderUI.transform, "AddCardButton");
+            Debug.Log("AddCardButton assigned");
+        }
+        
+        if (deckBuilderUI.removeCardButton == null)
+        {
+            deckBuilderUI.removeCardButton = FindComponentInChildren<Button>(deckBuilderUI.transform, "RemoveCardButton");
+            Debug.Log("RemoveCardButton assigned");
+        }
+        
+        if (deckBuilderUI.startBattleButton == null)
+        {
+            deckBuilderUI.startBattleButton = FindComponentInChildren<Button>(deckBuilderUI.transform, "StartBattleButton");
+            Debug.Log("StartBattleButton assigned");
+        }
+        
+        if (deckBuilderUI.clearDeckButton == null)
+        {
+            deckBuilderUI.clearDeckButton = FindComponentInChildren<Button>(deckBuilderUI.transform, "ClearDeckButton");
+            Debug.Log("ClearDeckButton assigned");
+        }
+        
+        // フィルターボタンの設定
+        if (deckBuilderUI.allCardsButton == null)
+        {
+            deckBuilderUI.allCardsButton = FindComponentInChildren<Button>(deckBuilderUI.transform, "AllCardsButton");
+            Debug.Log("AllCardsButton assigned");
+        }
+        
+        if (deckBuilderUI.attackCardsButton == null)
+        {
+            deckBuilderUI.attackCardsButton = FindComponentInChildren<Button>(deckBuilderUI.transform, "AttackCardsButton");
+            Debug.Log("AttackCardsButton assigned");
+        }
+        
+        if (deckBuilderUI.moveCardsButton == null)
+        {
+            deckBuilderUI.moveCardsButton = FindComponentInChildren<Button>(deckBuilderUI.transform, "MoveCardsButton");
+            Debug.Log("MoveCardsButton assigned");
+        }
+        
+        if (deckBuilderUI.healCardsButton == null)
+        {
+            deckBuilderUI.healCardsButton = FindComponentInChildren<Button>(deckBuilderUI.transform, "HealCardsButton");
+            Debug.Log("HealCardsButton assigned");
+        }
+    }
+    
+    private static void AddFloorInfoUI(DeckBuilderUI deckBuilderUI)
+    {
+        // 階層情報表示用のUIが既に存在するかチェック
+        if (deckBuilderUI.floorInfoText != null)
+        {
+            Debug.Log("FloorInfoText already exists");
             return;
         }
         
-        // Find CardListContent
-        Transform cardListContent = FindChildByName(canvas, "CardListContent");
-        if (cardListContent != null)
+        // Canvasを探す
+        Canvas canvas = FindObjectOfType<Canvas>();
+        if (canvas == null)
         {
-            deckBuilderUI.cardListContent = cardListContent;
-            Debug.Log("CardListContent assigned successfully");
+            Debug.LogError("Canvas not found in the scene!");
+            return;
         }
         
-        // Find CardListItemPrefab
-        GameObject cardListItemPrefab = AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Prefabs/UI/CardListItemUI.prefab");
-        if (cardListItemPrefab != null)
-        {
-            deckBuilderUI.cardListItemPrefab = cardListItemPrefab;
-            Debug.Log("CardListItemPrefab assigned successfully");
-        }
+        // 階層情報表示用のUIを作成
+        GameObject floorInfoObj = new GameObject("FloorInfo");
+        floorInfoObj.transform.SetParent(canvas.transform, false);
         
-        // Find CardListScrollView
-        ScrollRect cardListScrollView = FindComponentInChildren<ScrollRect>(canvas, "CardListScrollView");
-        if (cardListScrollView != null)
-        {
-            deckBuilderUI.cardListScrollView = cardListScrollView;
-            Debug.Log("CardListScrollView assigned successfully");
-        }
+        // RectTransformを設定
+        RectTransform rectTransform = floorInfoObj.AddComponent<RectTransform>();
+        rectTransform.anchorMin = new Vector2(0, 1);
+        rectTransform.anchorMax = new Vector2(0, 1);
+        rectTransform.pivot = new Vector2(0, 1);
+        rectTransform.anchoredPosition = new Vector2(20, -20);
+        rectTransform.sizeDelta = new Vector2(200, 50);
         
-        // Find SelectedDeckContent
-        Transform selectedDeckContent = FindChildByName(canvas, "SelectedDeckContent");
-        if (selectedDeckContent != null)
-        {
-            deckBuilderUI.selectedDeckContent = selectedDeckContent;
-            Debug.Log("SelectedDeckContent assigned successfully");
-        }
+        // 背景画像を追加
+        Image backgroundImage = floorInfoObj.AddComponent<Image>();
+        backgroundImage.color = new Color(0, 0, 0, 0.8f);
         
-        // Find SelectedCardPrefab
-        GameObject selectedCardPrefab = AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Prefabs/UI/SelectedCardUI.prefab");
-        if (selectedCardPrefab != null)
-        {
-            deckBuilderUI.selectedCardPrefab = selectedCardPrefab;
-            Debug.Log("SelectedCardPrefab assigned successfully");
-        }
+        // テキストを追加
+        GameObject textObj = new GameObject("FloorInfoText");
+        textObj.transform.SetParent(floorInfoObj.transform, false);
         
-        // Find Text components
-        TextMeshProUGUI deckSizeText = FindComponentInChildren<TextMeshProUGUI>(canvas, "DeckSizeText");
-        if (deckSizeText != null)
-        {
-            deckBuilderUI.deckSizeText = deckSizeText;
-            Debug.Log("DeckSizeText assigned successfully");
-        }
+        RectTransform textRectTransform = textObj.AddComponent<RectTransform>();
+        textRectTransform.anchorMin = Vector2.zero;
+        textRectTransform.anchorMax = Vector2.one;
+        textRectTransform.offsetMin = Vector2.zero;
+        textRectTransform.offsetMax = Vector2.zero;
         
-        TextMeshProUGUI deckStatisticsText = FindComponentInChildren<TextMeshProUGUI>(canvas, "DeckStatisticsText");
-        if (deckStatisticsText != null)
-        {
-            deckBuilderUI.deckStatisticsText = deckStatisticsText;
-            Debug.Log("DeckStatisticsText assigned successfully");
-        }
+        TextMeshProUGUI floorInfoText = textObj.AddComponent<TextMeshProUGUI>();
+        floorInfoText.text = "階層 1";
+        floorInfoText.fontSize = 18;
+        floorInfoText.color = Color.white;
+        floorInfoText.alignment = TextAlignmentOptions.Center;
         
-        // Find Buttons
-        Button addCardButton = FindComponentInChildren<Button>(canvas, "AddCardButton");
-        if (addCardButton != null)
-        {
-            deckBuilderUI.addCardButton = addCardButton;
-            Debug.Log("AddCardButton assigned successfully");
-        }
+        // DeckBuilderUIに参照を設定
+        deckBuilderUI.floorInfoText = floorInfoText;
         
-        Button removeCardButton = FindComponentInChildren<Button>(canvas, "RemoveCardButton");
-        if (removeCardButton != null)
-        {
-            deckBuilderUI.removeCardButton = removeCardButton;
-            Debug.Log("RemoveCardButton assigned successfully");
-        }
-        
-        Button startBattleButton = FindComponentInChildren<Button>(canvas, "StartBattleButton");
-        if (startBattleButton != null)
-        {
-            deckBuilderUI.startBattleButton = startBattleButton;
-            Debug.Log("StartBattleButton assigned successfully");
-        }
-        
-        Button clearDeckButton = FindComponentInChildren<Button>(canvas, "ClearDeckButton");
-        if (clearDeckButton != null)
-        {
-            deckBuilderUI.clearDeckButton = clearDeckButton;
-            Debug.Log("ClearDeckButton assigned successfully");
-        }
-        
-        // Find Filter Buttons
-        Button allCardsButton = FindComponentInChildren<Button>(canvas, "AllCardsButton");
-        if (allCardsButton != null)
-        {
-            deckBuilderUI.allCardsButton = allCardsButton;
-            Debug.Log("AllCardsButton assigned successfully");
-        }
-        
-        Button attackCardsButton = FindComponentInChildren<Button>(canvas, "AttackCardsButton");
-        if (attackCardsButton != null)
-        {
-            deckBuilderUI.attackCardsButton = attackCardsButton;
-            Debug.Log("AttackCardsButton assigned successfully");
-        }
-        
-        Button moveCardsButton = FindComponentInChildren<Button>(canvas, "MoveCardsButton");
-        if (moveCardsButton != null)
-        {
-            deckBuilderUI.moveCardsButton = moveCardsButton;
-            Debug.Log("MoveCardsButton assigned successfully");
-        }
-        
-        Button healCardsButton = FindComponentInChildren<Button>(canvas, "HealCardsButton");
-        if (healCardsButton != null)
-        {
-            deckBuilderUI.healCardsButton = healCardsButton;
-            Debug.Log("HealCardsButton assigned successfully");
-        }
+        Debug.Log("FloorInfoUI created and assigned");
     }
     
     private static Transform FindChildByName(Transform parent, string name)
@@ -206,13 +222,12 @@ public class DeckBuilderUISetup : EditorWindow
         
         if (deckBuilderUI == null)
         {
-            Debug.LogError("DeckBuilderUI component not found in scene!");
+            Debug.LogError("DeckBuilderUI component not found!");
             return;
         }
         
         bool allAssigned = true;
         
-        // Check required references
         if (deckBuilderUI.cardDatabase == null)
         {
             Debug.LogError("CardDatabase is not assigned!");
@@ -243,64 +258,20 @@ public class DeckBuilderUISetup : EditorWindow
             allAssigned = false;
         }
         
-        if (deckBuilderUI.deckSizeText == null)
-        {
-            Debug.LogWarning("DeckSizeText is not assigned!");
-        }
-        
-        if (deckBuilderUI.deckStatisticsText == null)
-        {
-            Debug.LogWarning("DeckStatisticsText is not assigned!");
-        }
-        
-        if (deckBuilderUI.addCardButton == null)
-        {
-            Debug.LogWarning("AddCardButton is not assigned!");
-        }
-        
-        if (deckBuilderUI.removeCardButton == null)
-        {
-            Debug.LogWarning("RemoveCardButton is not assigned!");
-        }
-        
         if (deckBuilderUI.startBattleButton == null)
         {
             Debug.LogError("StartBattleButton is not assigned!");
             allAssigned = false;
         }
         
-        if (deckBuilderUI.clearDeckButton == null)
+        if (deckBuilderUI.floorInfoText == null)
         {
-            Debug.LogWarning("ClearDeckButton is not assigned!");
-        }
-        
-        if (deckBuilderUI.allCardsButton == null)
-        {
-            Debug.LogWarning("AllCardsButton is not assigned!");
-        }
-        
-        if (deckBuilderUI.attackCardsButton == null)
-        {
-            Debug.LogWarning("AttackCardsButton is not assigned!");
-        }
-        
-        if (deckBuilderUI.moveCardsButton == null)
-        {
-            Debug.LogWarning("MoveCardsButton is not assigned!");
-        }
-        
-        if (deckBuilderUI.healCardsButton == null)
-        {
-            Debug.LogWarning("HealCardsButton is not assigned!");
+            Debug.LogWarning("FloorInfoText is not assigned (optional)");
         }
         
         if (allAssigned)
         {
-            Debug.Log("All essential DeckBuilderUI references are properly assigned!");
-        }
-        else
-        {
-            Debug.LogError("Some essential DeckBuilderUI references are missing!");
+            Debug.Log("All DeckBuilderUI references are properly assigned!");
         }
     }
 } 

@@ -101,7 +101,8 @@ public class CardManager : MonoBehaviour
         }
         
         // PlayerDeckからカードをドロー
-        if (GameManager.Instance != null && GameManager.Instance.GetPlayerDeck() != null)
+        GameManager gameManager = GameManager.GetOrCreateInstance();
+        if (gameManager != null && gameManager.GetPlayerDeck() != null)
         {
             DrawHandFromDeck();
         }
@@ -117,7 +118,15 @@ public class CardManager : MonoBehaviour
     /// </summary>
     private void DrawHandFromDeck()
     {
-        var playerDeck = GameManager.Instance.GetPlayerDeck();
+        var playerDeck = GameManager.GetOrCreateInstance().GetPlayerDeck();
+        
+        if (playerDeck == null)
+        {
+            Debug.LogError("CardManager: PlayerDeckがnullです");
+            return;
+        }
+        
+        Debug.Log($"CardManager: PlayerDeckから手札をドロー開始 - デッキサイズ: {playerDeck.selectedDeck.Count}");
         
         // 既存のカードを削除
         int childCount = handArea.childCount;
@@ -137,6 +146,8 @@ public class CardManager : MonoBehaviour
                 Debug.LogWarning($"CardManager: ドロー可能なカードがありません (手札{i + 1}枚目)");
                 break;
             }
+            
+            Debug.Log($"CardManager: カードドロー - {drawnCard.cardName}");
             
             GameObject cardObj = Instantiate(cardUIPrefab, handArea);
             CardUI ui = cardObj.GetComponent<CardUI>();

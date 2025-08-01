@@ -19,11 +19,24 @@ public class PlayerDeck
     /// </summary>
     public void InitializeDeck(List<CardDataSO> cards)
     {
+        if (cards == null)
+        {
+            Debug.LogError("PlayerDeck: InitializeDeck - cardsがnullです");
+            return;
+        }
+        
         selectedDeck = new List<CardDataSO>(cards);
         InitializeDrawPile();
         discardPile.Clear();
         
         Debug.Log($"PlayerDeck: デッキ初期化完了 - {selectedDeck.Count}枚");
+        
+        // デッキの内容をログ出力
+        for (int i = 0; i < selectedDeck.Count; i++)
+        {
+            var card = selectedDeck[i];
+            Debug.Log($"PlayerDeck: デッキ[{i}]: {card.cardName} ({card.type})");
+        }
     }
     
     /// <summary>

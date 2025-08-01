@@ -46,7 +46,41 @@ public class GameManager : MonoBehaviour
         gameClear = false;
         currentFloor = 1; // 階層システム準備
         
+        // デッキが既に設定されているかチェック
+        if (playerDeck != null)
+        {
+            Debug.Log($"GameManager: 既存のデッキを保持 - {playerDeck.selectedDeck.Count}枚");
+        }
+        
         Debug.Log("GameManager: Awake完了");
+    }
+    
+    /// <summary>
+    /// GameManagerインスタンスを取得（存在しない場合は作成）
+    /// </summary>
+    public static GameManager GetOrCreateInstance()
+    {
+        if (Instance == null)
+        {
+            Debug.Log("GameManager: インスタンスが存在しないため、新しく作成します");
+            
+            // シーン内でGameManagerを探す
+            GameManager existingManager = FindObjectOfType<GameManager>();
+            if (existingManager != null)
+            {
+                Instance = existingManager;
+                Debug.Log("GameManager: 既存のGameManagerを見つけました");
+            }
+            else
+            {
+                // 新しいGameManagerを作成
+                GameObject gameManagerObj = new GameObject("GameManager");
+                Instance = gameManagerObj.AddComponent<GameManager>();
+                Debug.Log("GameManager: 新しいGameManagerを作成しました");
+            }
+        }
+        
+        return Instance;
     }
 
     public void GameOver()
@@ -114,8 +148,28 @@ public class GameManager : MonoBehaviour
             return;
         }
         
-        // 新しい階層の生成を開始
-        StartCoroutine(GenerateFloorCoroutine(currentFloor));
+        // デッキビルダーシーンに遷移してデッキを再構築
+        StartCoroutine(GoToDeckBuilderCoroutine());
+    }
+    
+    /// <summary>
+    /// デッキビルダーシーンに遷移するコルーチン
+    /// </summary>
+    private System.Collections.IEnumerator GoToDeckBuilderCoroutine()
+    {
+        Debug.Log("GameManager: デッキビルダーシーンに遷移します");
+        
+        // UI更新
+        if (UIManager.Instance != null)
+        {
+            UIManager.Instance.AddLog($"階層 {currentFloor} に進みます。デッキを再構築してください。");
+        }
+        
+        // 少し待ってからシーン遷移
+        yield return new WaitForSeconds(1f);
+        
+        // デッキビルダーシーンに遷移
+        UnityEngine.SceneManagement.SceneManager.LoadScene(0); // DeckBuilderScene index
     }
     
     // 階層生成処理
@@ -170,8 +224,21 @@ public class GameManager : MonoBehaviour
     /// </summary>
     public void SetPlayerDeck(PlayerDeck deck)
     {
+        if (deck == null)
+        {
+            Debug.LogError("GameManager: SetPlayerDeck - deckがnullです");
+            return;
+        }
+        
         playerDeck = deck;
         Debug.Log($"GameManager: プレイヤーデッキを設定 - {deck.selectedDeck.Count}枚");
+        
+        // デッキの内容をログ出力
+        for (int i = 0; i < deck.selectedDeck.Count; i++)
+        {
+            var card = deck.selectedDeck[i];
+            Debug.Log($"GameManager: デッキ[{i}]: {card.cardName} ({card.type})");
+        }
     }
     
     /// <summary>
@@ -179,6 +246,14 @@ public class GameManager : MonoBehaviour
     /// </summary>
     public PlayerDeck GetPlayerDeck()
     {
+        if (playerDeck == null)
+        {
+            Debug.LogWarning("GameManager: GetPlayerDeck - playerDeckがnullです");
+        }
+        else
+        {
+            Debug.Log($"GameManager: GetPlayerDeck - デッキサイズ: {playerDeck.selectedDeck.Count}枚");
+        }
         return playerDeck;
     }
 } 

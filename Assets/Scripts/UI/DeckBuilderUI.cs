@@ -36,14 +36,21 @@ public class DeckBuilderUI : MonoBehaviour
     public int maxDeckSize = 10;
     public int minDeckSize = 5;
     
+    [Header("Floor Display")]
+    public TextMeshProUGUI floorInfoText;
+    
     private List<CardDataSO> availableCards = new List<CardDataSO>();
     private List<CardDataSO> selectedDeck = new List<CardDataSO>();
     private CardType currentFilter = CardType.Attack;
     
     private void Start()
     {
+        // GameManagerを確実に初期化
+        GameManager.GetOrCreateInstance();
+        
         InitializeUI();
         LoadAvailableCards();
+        LoadExistingDeck();
         UpdateUI();
     }
     
@@ -100,6 +107,29 @@ public class DeckBuilderUI : MonoBehaviour
         else
         {
             Debug.LogError("DeckBuilderUI: CardDatabaseが設定されていません");
+        }
+    }
+    
+    /// <summary>
+    /// 既存のデッキを読み込み
+    /// </summary>
+    private void LoadExistingDeck()
+    {
+        GameManager gameManager = GameManager.GetOrCreateInstance();
+        if (gameManager != null && gameManager.GetPlayerDeck() != null)
+        {
+            var existingDeck = gameManager.GetPlayerDeck();
+            if (existingDeck.selectedDeck != null && existingDeck.selectedDeck.Count > 0)
+            {
+                selectedDeck = new List<CardDataSO>(existingDeck.selectedDeck);
+                Debug.Log($"DeckBuilderUI: 既存のデッキを読み込み - {selectedDeck.Count}枚");
+                
+                // UI更新
+                if (UIManager.Instance != null)
+                {
+                    UIManager.Instance.AddLog($"既存のデッキを読み込みました ({selectedDeck.Count}枚)");
+                }
+            }
         }
     }
     
@@ -181,6 +211,7 @@ public class DeckBuilderUI : MonoBehaviour
         UpdateCardList();
         UpdateSelectedDeckDisplay();
         UpdateButtonStates();
+        UpdateFloorInfo();
     }
     
     /// <summary>
@@ -310,13 +341,19 @@ public class DeckBuilderUI : MonoBehaviour
         var playerDeck = new PlayerDeck();
         playerDeck.InitializeDeck(selectedDeck);
         
-        // GameManagerにデッキを設定
-        if (GameManager.Instance != null)
-        {
-            GameManager.Instance.SetPlayerDeck(playerDeck);
-        }
+        Debug.Log($"DeckBuilderUI: デッキを初期化 - {selectedDeck.Count}枚");
         
-
+        // GameManagerにデッキを設定
+        GameManager gameManager = GameManager.GetOrCreateInstance();
+        if (gameManager != null)
+        {
+            gameManager.SetPlayerDeck(playerDeck);
+            Debug.Log($"DeckBuilderUI: GameManagerにデッキを設定完了 - {playerDeck.selectedDeck.Count}枚");
+        }
+        else
+        {
+            Debug.LogError("DeckBuilderUI: GameManagerの作成に失敗しました");
+        }
         
         // バトルシーンに遷移
         UnityEngine.SceneManagement.SceneManager.LoadScene(1); // MainScene index
@@ -350,5 +387,24 @@ public class DeckBuilderUI : MonoBehaviour
         
         stats.totalCards = selectedDeck.Count;
         return stats;
+    }
+    
+    /// <summary>
+    /// 階層情報を更新
+    /// </summary>
+    private void UpdateFloorInfo()
+    {
+        if (floorInfoText != null)
+        {
+            GameManager gameManager = GameManager.GetOrCreateInstance();
+            if (gameManager != null)
+            {
+                floorInfoText.text = $"階層 {gameManager.currentFloor}";
+            }
+            else
+            {
+                floorInfoText.text = "階層 1";
+            }
+        }
     }
 } 

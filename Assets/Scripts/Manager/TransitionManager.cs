@@ -244,6 +244,13 @@ public class TransitionManager : MonoBehaviour
     {
         Debug.Log("TransitionManager: 現在のシーンのクリーンアップ開始");
         
+        // 現在のBGMを停止
+        if (SoundManager.Instance != null)
+        {
+            SoundManager.Instance.StopBGM();
+            Debug.Log("TransitionManager: 現在のBGMを停止しました");
+        }
+        
         // UIマネージャーのクリーンアップ
         if (UIManager.Instance != null)
         {
@@ -275,6 +282,17 @@ public class TransitionManager : MonoBehaviour
     private void InitializeNewScene(string sceneName)
     {
         Debug.Log($"TransitionManager: {sceneName}の初期化開始");
+        
+        // BGM切り替え
+        if (SoundManager.Instance != null)
+        {
+            SoundManager.Instance.PlayBGMForScene(sceneName);
+            Debug.Log($"TransitionManager: {sceneName}用のBGMに切り替えました");
+        }
+        else
+        {
+            Debug.LogWarning("TransitionManager: SoundManagerが見つかりません");
+        }
         
         // シーン名に応じた初期化処理
         switch (sceneName)
@@ -338,6 +356,9 @@ public class TransitionManager : MonoBehaviour
         {
             UIManager.Instance.InitializeForDeckBuilderScene();
         }
+        
+        // DeckBuilderUIの初期化はOnSceneLoadedイベントで行われる
+        Debug.Log("TransitionManager: DeckBuilderUIの初期化はイベントで実行されます");
     }
     
     /// <summary>

@@ -16,11 +16,19 @@ MonoBehaviour:
   - {fileID: 11400000, guid: 2f38be29e98822e43860c5598b0cff11, type: 2}
   - {fileID: 11400000, guid: 944bb98aede80674486db6cb242fd035, type: 2}
   - {fileID: 11400000, guid: d897d358c7104764e88be2363986487c, type: 2}
+  - {fileID: 11400000, guid: 2f38be29e98822e43860c5598b0cff11, type: 2}
+  - {fileID: 11400000, guid: 944bb98aede80674486db6cb242fd035, type: 2}
+  - {fileID: 11400000, guid: d897d358c7104764e88be2363986487c, type: 2}
+  - {fileID: 11400000, guid: 2f38be29e98822e43860c5598b0cff11, type: 2}
   attackCards:
+  - {fileID: 11400000, guid: 2f38be29e98822e43860c5598b0cff11, type: 2}
+  - {fileID: 11400000, guid: 2f38be29e98822e43860c5598b0cff11, type: 2}
   - {fileID: 11400000, guid: 2f38be29e98822e43860c5598b0cff11, type: 2}
   moveCards:
   - {fileID: 11400000, guid: d897d358c7104764e88be2363986487c, type: 2}
+  - {fileID: 11400000, guid: d897d358c7104764e88be2363986487c, type: 2}
   healCards:
+  - {fileID: 11400000, guid: 944bb98aede80674486db6cb242fd035, type: 2}
   - {fileID: 11400000, guid: 944bb98aede80674486db6cb242fd035, type: 2}
   maxDeckSize: 10
   minDeckSize: 5

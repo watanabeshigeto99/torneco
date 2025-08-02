@@ -280,8 +280,14 @@ public class UIManager : MonoBehaviour
     {
         Debug.Log("UIManager: デッキビルダーシーン初期化開始");
         
-        // デッキビルダーシーン固有の初期化処理
-        // 必要に応じて実装
+        // イベントを再購読
+        SubscribeToEvents();
+        
+        // ログをクリア
+        if (logText != null)
+        {
+            logText.text = "";
+        }
         
         Debug.Log("UIManager: デッキビルダーシーン初期化完了");
     }

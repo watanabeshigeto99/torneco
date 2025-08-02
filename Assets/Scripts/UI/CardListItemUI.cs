@@ -27,13 +27,71 @@ public class CardListItemUI : MonoBehaviour
     /// </summary>
     public void Setup(CardDataSO card, Action<CardDataSO> onClick)
     {
+        if (card == null)
+        {
+            Debug.LogError("CardListItemUI: カードデータがnullです");
+            return;
+        }
+        
         cardData = card;
         onClickCallback = onClick;
+        
+        // UIコンポーネントを自動で見つける
+        FindUIComponents();
         
         UpdateDisplay();
         SetupButton();
         
         Debug.Log($"CardListItemUI: カードアイテムセットアップ完了 - {card.cardName}");
+    }
+    
+    /// <summary>
+    /// UIコンポーネントを自動で見つける
+    /// </summary>
+    private void FindUIComponents()
+    {
+        // カードアイコン
+        if (cardIcon == null)
+        {
+            cardIcon = transform.Find("CardIcon")?.GetComponent<Image>();
+        }
+        
+        // カード名テキスト
+        if (cardNameText == null)
+        {
+            cardNameText = transform.Find("CardInfo/CardName")?.GetComponent<TextMeshProUGUI>();
+        }
+        
+        // カードタイプテキスト
+        if (cardTypeText == null)
+        {
+            cardTypeText = transform.Find("CardInfo/CardType")?.GetComponent<TextMeshProUGUI>();
+        }
+        
+        // カード効果テキスト
+        if (cardPowerText == null)
+        {
+            cardPowerText = transform.Find("CardInfo/CardPower")?.GetComponent<TextMeshProUGUI>();
+        }
+        
+        // ボタン
+        if (cardButton == null)
+        {
+            cardButton = GetComponent<Button>();
+        }
+        
+        // 背景画像
+        if (backgroundImage == null)
+        {
+            backgroundImage = transform.Find("Background")?.GetComponent<Image>();
+        }
+        
+        // エラーチェック
+        if (cardIcon == null) Debug.LogWarning("CardListItemUI: cardIconが見つかりません");
+        if (cardNameText == null) Debug.LogWarning("CardListItemUI: cardNameTextが見つかりません");
+        if (cardTypeText == null) Debug.LogWarning("CardListItemUI: cardTypeTextが見つかりません");
+        if (cardPowerText == null) Debug.LogWarning("CardListItemUI: cardPowerTextが見つかりません");
+        if (cardButton == null) Debug.LogWarning("CardListItemUI: cardButtonが見つかりません");
     }
     
     /// <summary>
@@ -47,6 +105,7 @@ public class CardListItemUI : MonoBehaviour
         if (cardIcon != null)
         {
             cardIcon.sprite = cardData.icon;
+            cardIcon.enabled = cardData.icon != null;
         }
         
         // カード名

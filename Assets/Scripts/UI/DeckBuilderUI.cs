@@ -55,6 +55,56 @@ public class DeckBuilderUI : MonoBehaviour
         // GameManagerを確実に初期化
         GameManager.GetOrCreateInstance();
         
+        // 遷移後の初期化が完了するまで待機
+        if (TransitionManager.Instance != null && TransitionManager.Instance.IsTransitioning)
+        {
+            Debug.Log("DeckBuilderUI: 遷移中なので初期化を遅延します");
+            return;
+        }
+        
+        // 通常の初期化を実行
+        InitializeAfterTransition();
+    }
+    
+    private void OnEnable()
+    {
+        // TransitionManagerのイベントを購読
+        TransitionManager.OnSceneLoaded += OnSceneLoaded;
+    }
+    
+    private void OnDisable()
+    {
+        // TransitionManagerのイベントを購読解除
+        TransitionManager.OnSceneLoaded -= OnSceneLoaded;
+    }
+    
+    private void OnSceneLoaded(string sceneName)
+    {
+        if (sceneName == "DeckBuilderScene")
+        {
+            Debug.Log("DeckBuilderUI: シーンロード完了イベントを受信");
+            // 少し遅延してから初期化を実行
+            StartCoroutine(DelayedInitialization());
+        }
+    }
+    
+    private System.Collections.IEnumerator DelayedInitialization()
+    {
+        // 2フレーム待機
+        yield return null;
+        yield return null;
+        
+        Debug.Log("DeckBuilderUI: 遅延初期化を実行");
+        InitializeAfterTransition();
+    }
+    
+    /// <summary>
+    /// 遷移後の初期化処理
+    /// </summary>
+    public void InitializeAfterTransition()
+    {
+        Debug.Log("DeckBuilderUI: 遷移後の初期化開始");
+        
         InitializeUI();
         LoadAvailableCards();
         LoadExistingDeck();
@@ -62,6 +112,8 @@ public class DeckBuilderUI : MonoBehaviour
         
         // BGMを再生
         PlayBGM();
+        
+        Debug.Log("DeckBuilderUI: 遷移後の初期化完了");
     }
     
     /// <summary>
@@ -112,7 +164,7 @@ public class DeckBuilderUI : MonoBehaviour
         if (cardDatabase != null)
         {
             availableCards = cardDatabase.GetAllCards();
-
+            Debug.Log($"DeckBuilderUI: 利用可能なカードを読み込み - {availableCards.Count}枚");
         }
         else
         {
@@ -148,7 +200,17 @@ public class DeckBuilderUI : MonoBehaviour
     /// </summary>
     private void UpdateCardList()
     {
-        if (cardListContent == null || cardListItemPrefab == null) return;
+        if (cardListContent == null)
+        {
+            Debug.LogError("DeckBuilderUI: cardListContentが設定されていません");
+            return;
+        }
+        
+        if (cardListItemPrefab == null)
+        {
+            Debug.LogError("DeckBuilderUI: cardListItemPrefabが設定されていません");
+            return;
+        }
         
         // 既存のカードリストアイテムをクリア
         foreach (Transform child in cardListContent)
@@ -158,20 +220,32 @@ public class DeckBuilderUI : MonoBehaviour
         
         // フィルタリングされたカードを取得
         var filteredCards = GetFilteredCards();
+        Debug.Log($"DeckBuilderUI: カードリストを更新 - フィルタリングされたカード: {filteredCards.Count}枚");
         
         // カードリストアイテムを作成
         foreach (var card in filteredCards)
         {
+            if (card == null)
+            {
+                Debug.LogWarning("DeckBuilderUI: カードデータがnullです");
+                continue;
+            }
+            
             var cardItem = Instantiate(cardListItemPrefab, cardListContent);
             var cardItemUI = cardItem.GetComponent<CardListItemUI>();
             
             if (cardItemUI != null)
             {
                 cardItemUI.Setup(card, OnCardListItemClicked);
+                Debug.Log($"DeckBuilderUI: カードアイテムを作成 - {card.cardName}");
+            }
+            else
+            {
+                Debug.LogError("DeckBuilderUI: CardListItemUIコンポーネントが見つかりません");
             }
         }
         
-
+        Debug.Log($"DeckBuilderUI: カードリスト更新完了 - 作成されたアイテム数: {cardListContent.childCount}");
     }
     
     /// <summary>
@@ -251,13 +325,18 @@ public class DeckBuilderUI : MonoBehaviour
     /// </summary>
     private List<CardDataSO> GetFilteredCards()
     {
+        Debug.Log($"DeckBuilderUI: フィルタリング実行 - 利用可能カード: {availableCards.Count}枚, 現在のフィルター: {currentFilter}");
+        
         if (currentFilter == CardType.Attack && allCardsButton != null)
         {
             // 全カード表示の場合
+            Debug.Log($"DeckBuilderUI: 全カード表示 - {availableCards.Count}枚");
             return availableCards;
         }
         
-        return availableCards.Where(card => card.type == currentFilter).ToList();
+        var filteredCards = availableCards.Where(card => card.type == currentFilter).ToList();
+        Debug.Log($"DeckBuilderUI: フィルタリング結果 - {filteredCards.Count}枚 ({currentFilter}タイプ)");
+        return filteredCards;
     }
     
     /// <summary>
@@ -375,8 +454,16 @@ public class DeckBuilderUI : MonoBehaviour
             Debug.LogError("DeckBuilderUI: GameManagerの作成に失敗しました");
         }
         
-        // バトルシーンに遷移
-        UnityEngine.SceneManagement.SceneManager.LoadScene(1); // MainScene index
+        // バトルシーンに遷移（TransitionManagerを使用）
+        if (TransitionManager.Instance != null)
+        {
+            TransitionManager.Instance.LoadSceneWithFade("MainScene");
+        }
+        else
+        {
+            Debug.LogError("DeckBuilderUI: TransitionManagerが見つかりません");
+            UnityEngine.SceneManagement.SceneManager.LoadScene(1); // フォールバック
+        }
     }
     
     /// <summary>

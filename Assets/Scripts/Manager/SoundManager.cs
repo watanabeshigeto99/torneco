@@ -196,15 +196,15 @@ public class SoundManager : MonoBehaviour
                 break;
                 
             case "MainScene":
-                if (bgmBattle != null)
-                {
-                    PlayBGM(bgmBattle);
-                    Debug.Log("SoundManager: バトルBGMを再生");
-                }
-                else if (bgmMain != null)
+                if (bgmMain != null)
                 {
                     PlayBGM(bgmMain);
                     Debug.Log("SoundManager: メインBGMを再生");
+                }
+                else if (bgmBattle != null)
+                {
+                    PlayBGM(bgmBattle);
+                    Debug.Log("SoundManager: バトルBGMを再生（メインBGMが設定されていないため）");
                 }
                 break;
                 

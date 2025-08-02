@@ -1,0 +1,24 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 94b7fff78ee2e00499e1e89803ac1d2d, type: 3}
+  m_Name: Flame
+  m_EditorClassIdentifier: 
+  cardName: Flame
+  type: 0
+  icon: {fileID: 21300000, guid: 97687b50a58b26f4d8c925a410b6d24f, type: 3}
+  power: 6
+  level: 1
+  maxLevel: 5
+  upgradeData: {fileID: 11400000, guid: 23456789012345678901234567890123, type: 2}
+  moveDirection: {x: 0, y: -1}
+  moveDistance: 1
+  healAmount: 0

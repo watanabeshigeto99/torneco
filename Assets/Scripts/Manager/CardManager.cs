@@ -19,7 +19,7 @@ public class CardManager : MonoBehaviour
     public Transform handArea;
     public GameObject cardUIPrefab;
     public CardDataSO[] cardPool;
-    public int handSize = 3;
+    public int handSize = 7;
 
     private void Awake()
     {
@@ -117,6 +117,15 @@ public class CardManager : MonoBehaviour
         GameManager gameManager = GameManager.GetOrCreateInstance();
         if (gameManager != null && gameManager.GetPlayerDeck() != null)
         {
+            var playerDeck = gameManager.GetPlayerDeck();
+            
+            // デッキをシャッフル（初回ドロー時またはドローピールが少ない場合）
+            if (playerDeck.drawPile.Count == 0 || playerDeck.drawPile.Count < handSize)
+            {
+                Debug.Log($"CardManager: デッキをシャッフルします (現在: {playerDeck.drawPile.Count}枚, 必要: {handSize}枚)");
+                playerDeck.InitializeDrawPile();
+            }
+            
             DrawHandFromDeck();
         }
         else
@@ -140,6 +149,18 @@ public class CardManager : MonoBehaviour
         }
         
         Debug.Log($"CardManager: PlayerDeckから手札をドロー開始 - デッキサイズ: {playerDeck.selectedDeck.Count}");
+        
+        // デッキの状態を確認
+        var deckStatus = playerDeck.GetDeckStatus();
+        Debug.Log($"CardManager: デッキ状態 - デッキ: {deckStatus.deckSize}枚, ドローピール: {deckStatus.drawPileSize}枚, ディスカード: {deckStatus.discardPileSize}枚");
+        
+        // ドローピールが空または少ない場合はシャッフル
+        if (playerDeck.drawPile.Count == 0 || playerDeck.drawPile.Count < handSize)
+        {
+            Debug.Log($"CardManager: ドローピールが少ないため、デッキをシャッフルします (現在: {playerDeck.drawPile.Count}枚, 必要: {handSize}枚)");
+            playerDeck.InitializeDrawPile();
+            Debug.Log($"CardManager: シャッフル完了 - ドローピール: {playerDeck.drawPile.Count}枚");
+        }
         
         // 既存のカードを削除
         int childCount = handArea.childCount;

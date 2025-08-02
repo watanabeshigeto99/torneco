@@ -354,8 +354,16 @@ public class GameManager : MonoBehaviour
         // 少し待ってからシーン遷移
         yield return new WaitForSeconds(1f);
         
-        // デッキビルダーシーンに遷移
-        UnityEngine.SceneManagement.SceneManager.LoadScene(0); // DeckBuilderScene index
+        // デッキビルダーシーンに遷移（TransitionManagerを使用）
+        if (TransitionManager.Instance != null)
+        {
+            TransitionManager.Instance.LoadSceneWithFade("DeckBuilderScene");
+        }
+        else
+        {
+            Debug.LogError("GameManager: TransitionManagerが見つかりません");
+            UnityEngine.SceneManagement.SceneManager.LoadScene(0); // フォールバック
+        }
     }
     
     // 階層生成処理
@@ -425,6 +433,10 @@ public class GameManager : MonoBehaviour
             var card = deck.selectedDeck[i];
             Debug.Log($"GameManager: デッキ[{i}]: {card.cardName} ({card.type})");
         }
+        
+        // ドローピールを初期化
+        playerDeck.InitializeDrawPile();
+        Debug.Log($"GameManager: ドローピール初期化完了 - {playerDeck.drawPile.Count}枚");
     }
     
     /// <summary>

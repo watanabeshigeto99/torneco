@@ -69,10 +69,26 @@ public class Player : Unit
         isAwaitingAttackInput = false;
         attackPower = 0;
         
-        // レベルシステムの初期化
-        level = 1;
-        exp = 0;
-        expToNext = 10;
+        // レベルシステムの初期化（GameManagerから永続化データを読み込み）
+        if (GameManager.Instance != null)
+        {
+            // GameManagerから永続化されたデータを読み込み
+            level = GameManager.Instance.playerLevel;
+            exp = GameManager.Instance.playerExp;
+            expToNext = GameManager.Instance.playerExpToNext;
+            maxHP = GameManager.Instance.playerMaxHP;
+            currentHP = GameManager.Instance.playerCurrentHP;
+            maxLevel = GameManager.Instance.playerMaxLevel;
+            
+            Debug.Log($"Player: GameManagerから永続化データを読み込み - レベル: {level}, 経験値: {exp}/{expToNext}, HP: {currentHP}/{maxHP}");
+        }
+        else
+        {
+            // GameManagerが存在しない場合の初期化
+            level = 1;
+            exp = 0;
+            expToNext = 10;
+        }
     }
 
     // 初期化完了後に呼ばれるメソッド
@@ -300,6 +316,12 @@ public class Player : Unit
         
         // HPを回復（階層進行の報酬）
         currentHP = maxHP;
+        
+        // GameManagerのデータも更新
+        if (GameManager.Instance != null)
+        {
+            GameManager.Instance.SetPlayerHP(currentHP, maxHP);
+        }
         
         // 状態をリセット
         isAwaitingMoveInput = false;
@@ -726,6 +748,12 @@ public class Player : Unit
         currentHP = Mathf.Clamp(currentHP, 0, maxHP);
         int actualHeal = currentHP - oldHP;
         
+        // GameManagerのデータも更新
+        if (GameManager.Instance != null)
+        {
+            GameManager.Instance.SetPlayerHP(currentHP, maxHP);
+        }
+        
         // 回復イベントを発行
         OnPlayerHealed?.Invoke(actualHeal);
         
@@ -793,23 +821,32 @@ public class Player : Unit
     // 経験値獲得メソッド
     public void GainExp(int amount)
     {
-        if (level >= maxLevel) return; // 最大レベルに達している場合は経験値を獲得しない
-        
-        exp += amount;
-        Debug.Log($"Player: 経験値獲得！+{amount} (現在: {exp}/{expToNext})");
-        
-        // UI更新
-        if (UIManager.Instance != null)
+        // GameManagerを通じて経験値を管理（永続化のため）
+        if (GameManager.Instance != null)
         {
-            UIManager.Instance.AddLog($"経験値獲得！+{amount}");
-            UIManager.Instance.UpdateLevelDisplay(level, exp, expToNext);
+            GameManager.Instance.AddPlayerExp(amount);
         }
-        
-        // レベルアップチェック
-        while (exp >= expToNext && level < maxLevel)
+        else
         {
-            exp -= expToNext;
-            LevelUp();
+            // GameManagerが存在しない場合のフォールバック処理
+            if (level >= maxLevel) return; // 最大レベルに達している場合は経験値を獲得しない
+            
+            exp += amount;
+            Debug.Log($"Player: 経験値獲得！+{amount} (現在: {exp}/{expToNext})");
+            
+            // UI更新
+            if (UIManager.Instance != null)
+            {
+                UIManager.Instance.AddLog($"経験値獲得！+{amount}");
+                UIManager.Instance.UpdateLevelDisplay(level, exp, expToNext);
+            }
+            
+            // レベルアップチェック
+            while (exp >= expToNext && level < maxLevel)
+            {
+                exp -= expToNext;
+                LevelUp();
+            }
         }
     }
     

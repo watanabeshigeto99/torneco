@@ -20,6 +20,12 @@ public abstract class Unit : MonoBehaviour
         currentHP = Mathf.Clamp(currentHP, 0, maxHP);
         int actualDamage = oldHP - currentHP;
         
+        // プレイヤーの場合、GameManagerのデータも更新
+        if (this is Player && GameManager.Instance != null)
+        {
+            GameManager.Instance.SetPlayerHP(currentHP, maxHP);
+        }
+        
         // UI更新
         if (UIManager.Instance != null)
         {

@@ -16,10 +16,20 @@ public class GameManager : MonoBehaviour
     public int currentFloor = 1;
     public int maxFloor = 10;
     
+    // プレイヤーデータ（永続化）
+    [Header("Player Data - Persistent")]
+    public int playerLevel = 1;
+    public int playerExp = 0;
+    public int playerExpToNext = 10;
+    public int playerMaxHP = 20;
+    public int playerCurrentHP = 20;
+    public int playerMaxLevel = 10;
+    
     // 階層システムイベント（準備段階）
     public static event System.Action<int> OnFloorChanged;
     public static event System.Action OnGameClear;
     public static event System.Action OnGameOver;
+    public static event System.Action<int> OnPlayerLevelUp; // プレイヤーレベルアップイベント
     
     // デッキシステム
     [Header("Deck System")]
@@ -46,6 +56,12 @@ public class GameManager : MonoBehaviour
         gameClear = false;
         currentFloor = 1; // 階層システム準備
         
+        // プレイヤーデータの初期化（初回のみ）
+        if (playerLevel <= 0)
+        {
+            InitializePlayerData();
+        }
+        
         // デッキが既に設定されているかチェック
         if (playerDeck != null)
         {
@@ -53,6 +69,160 @@ public class GameManager : MonoBehaviour
         }
         
         Debug.Log("GameManager: Awake完了");
+    }
+    
+    /// <summary>
+    /// プレイヤーデータの初期化
+    /// </summary>
+    private void InitializePlayerData()
+    {
+        playerLevel = 1;
+        playerExp = 0;
+        playerExpToNext = 10;
+        playerMaxHP = 20;
+        playerCurrentHP = 20;
+        playerMaxLevel = 10;
+        
+        Debug.Log("GameManager: プレイヤーデータを初期化しました");
+    }
+    
+    /// <summary>
+    /// プレイヤーデータをPlayerクラスから同期
+    /// </summary>
+    public void SyncPlayerDataFromPlayer()
+    {
+        if (Player.Instance != null)
+        {
+            playerLevel = Player.Instance.level;
+            playerExp = Player.Instance.exp;
+            playerExpToNext = Player.Instance.expToNext;
+            playerMaxHP = Player.Instance.maxHP;
+            playerCurrentHP = Player.Instance.currentHP;
+            playerMaxLevel = Player.Instance.maxLevel;
+            
+            Debug.Log($"GameManager: プレイヤーデータを同期しました - レベル: {playerLevel}, 経験値: {playerExp}/{playerExpToNext}, HP: {playerCurrentHP}/{playerMaxHP}");
+        }
+    }
+    
+    /// <summary>
+    /// プレイヤーデータをPlayerクラスに適用
+    /// </summary>
+    public void ApplyPlayerDataToPlayer()
+    {
+        if (Player.Instance != null)
+        {
+            Player.Instance.level = playerLevel;
+            Player.Instance.exp = playerExp;
+            Player.Instance.expToNext = playerExpToNext;
+            Player.Instance.maxHP = playerMaxHP;
+            Player.Instance.currentHP = playerCurrentHP;
+            Player.Instance.maxLevel = playerMaxLevel;
+            
+            Debug.Log($"GameManager: プレイヤーデータを適用しました - レベル: {playerLevel}, 経験値: {playerExp}/{playerExpToNext}, HP: {playerCurrentHP}/{playerMaxHP}");
+            
+            // UI更新
+            if (UIManager.Instance != null)
+            {
+                UIManager.Instance.UpdateHP(playerCurrentHP, playerMaxHP);
+                UIManager.Instance.UpdateLevelDisplay(playerLevel, playerExp, playerExpToNext);
+            }
+        }
+    }
+    
+    /// <summary>
+    /// プレイヤーに経験値を追加
+    /// </summary>
+    public void AddPlayerExp(int amount)
+    {
+        if (playerLevel >= playerMaxLevel) return; // 最大レベルに達している場合は経験値を獲得しない
+        
+        playerExp += amount;
+        Debug.Log($"GameManager: プレイヤー経験値獲得！+{amount} (現在: {playerExp}/{playerExpToNext})");
+        
+        // UI更新
+        if (UIManager.Instance != null)
+        {
+            UIManager.Instance.AddLog($"経験値獲得！+{amount}");
+            UIManager.Instance.UpdateLevelDisplay(playerLevel, playerExp, playerExpToNext);
+        }
+        
+        // レベルアップチェック
+        while (playerExp >= playerExpToNext && playerLevel < playerMaxLevel)
+        {
+            playerExp -= playerExpToNext;
+            PlayerLevelUp();
+        }
+        
+        // Playerクラスにも同期
+        if (Player.Instance != null)
+        {
+            Player.Instance.level = playerLevel;
+            Player.Instance.exp = playerExp;
+            Player.Instance.expToNext = playerExpToNext;
+        }
+    }
+    
+    /// <summary>
+    /// プレイヤーレベルアップ処理
+    /// </summary>
+    private void PlayerLevelUp()
+    {
+        playerLevel++;
+        
+        // レベルアップ時のステータス上昇
+        int oldMaxHP = playerMaxHP;
+        playerMaxHP += 5; // レベルアップでHP+5
+        playerCurrentHP = playerMaxHP; // HP全回復
+        playerExpToNext = Mathf.RoundToInt(playerExpToNext * 1.5f); // 次のレベルに必要な経験値を1.5倍
+        
+        Debug.Log($"GameManager: プレイヤーレベルアップ！レベル {playerLevel}、HP {oldMaxHP}→{playerMaxHP}");
+        
+        // レベルアップイベントを発行
+        OnPlayerLevelUp?.Invoke(playerLevel);
+        
+        // UI更新
+        if (UIManager.Instance != null)
+        {
+            UIManager.Instance.UpdateHP(playerCurrentHP, playerMaxHP);
+            UIManager.Instance.UpdateLevelDisplay(playerLevel, playerExp, playerExpToNext);
+            UIManager.Instance.AddLog($"レベルアップ！レベル {playerLevel}、HP {playerMaxHP}");
+        }
+        
+        // Playerクラスにも同期
+        if (Player.Instance != null)
+        {
+            Player.Instance.level = playerLevel;
+            Player.Instance.maxHP = playerMaxHP;
+            Player.Instance.currentHP = playerCurrentHP;
+            Player.Instance.expToNext = playerExpToNext;
+        }
+    }
+    
+    /// <summary>
+    /// プレイヤーのHPを変更
+    /// </summary>
+    public void SetPlayerHP(int currentHP, int maxHP = -1)
+    {
+        playerCurrentHP = currentHP;
+        if (maxHP > 0)
+        {
+            playerMaxHP = maxHP;
+        }
+        
+        Debug.Log($"GameManager: プレイヤーHP設定 - {playerCurrentHP}/{playerMaxHP}");
+        
+        // Playerクラスにも同期
+        if (Player.Instance != null)
+        {
+            Player.Instance.currentHP = playerCurrentHP;
+            Player.Instance.maxHP = playerMaxHP;
+        }
+        
+        // UI更新
+        if (UIManager.Instance != null)
+        {
+            UIManager.Instance.UpdateHP(playerCurrentHP, playerMaxHP);
+        }
     }
     
     /// <summary>
@@ -129,6 +299,10 @@ public class GameManager : MonoBehaviour
     public void EnemyDefeated()
     {
         score += 100; // 敵撃破で100ポイント加算
+        
+        // 敵撃破で経験値獲得
+        AddPlayerExp(10); // 敵撃破で10経験値獲得
+        
         Debug.Log($"GameManager: 敵撃破！スコア: {score}");
         
         // UI更新
@@ -286,6 +460,22 @@ public class GameManager : MonoBehaviour
             currentFloor = 1;
         }
         
-        Debug.Log($"GameManager: メインシーン初期化完了 - 現在階層: {currentFloor}");
+        // プレイヤーデータをPlayerクラスに適用
+        ApplyPlayerDataToPlayer();
+        
+        Debug.Log($"GameManager: メインシーン初期化完了 - 現在階層: {currentFloor}, プレイヤーレベル: {playerLevel}");
+    }
+    
+    /// <summary>
+    /// デッキビルダーシーン用の初期化処理
+    /// </summary>
+    public void InitializeForDeckBuilderScene()
+    {
+        Debug.Log("GameManager: デッキビルダーシーン初期化開始");
+        
+        // プレイヤーデータをPlayerクラスから同期
+        SyncPlayerDataFromPlayer();
+        
+        Debug.Log($"GameManager: デッキビルダーシーン初期化完了 - プレイヤーレベル: {playerLevel}");
     }
 } 

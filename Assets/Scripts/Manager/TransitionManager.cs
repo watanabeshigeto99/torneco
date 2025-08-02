@@ -327,6 +327,12 @@ public class TransitionManager : MonoBehaviour
     {
         Debug.Log("TransitionManager: デッキビルダーシーンの初期化");
         
+        // ゲームマネージャーの初期化
+        if (GameManager.Instance != null)
+        {
+            GameManager.Instance.InitializeForDeckBuilderScene();
+        }
+        
         // デッキビルダーUIの初期化
         if (UIManager.Instance != null)
         {

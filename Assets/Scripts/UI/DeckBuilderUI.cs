@@ -55,10 +55,8 @@ public class DeckBuilderUI : MonoBehaviour
         // GameManagerを確実に初期化
         GameManager.GetOrCreateInstance();
         
-        // 遷移後の初期化が完了するまで待機
         if (TransitionManager.Instance != null && TransitionManager.Instance.IsTransitioning)
         {
-            Debug.Log("DeckBuilderUI: 遷移中なので初期化を遅延します");
             return;
         }
         
@@ -82,43 +80,27 @@ public class DeckBuilderUI : MonoBehaviour
     {
         if (sceneName == "DeckBuilderScene")
         {
-            Debug.Log("DeckBuilderUI: シーンロード完了イベントを受信");
-            // 少し遅延してから初期化を実行
             StartCoroutine(DelayedInitialization());
         }
     }
     
     private System.Collections.IEnumerator DelayedInitialization()
     {
-        // 2フレーム待機
         yield return null;
         yield return null;
         
-        Debug.Log("DeckBuilderUI: 遅延初期化を実行");
         InitializeAfterTransition();
     }
     
-    /// <summary>
-    /// 遷移後の初期化処理
-    /// </summary>
     public void InitializeAfterTransition()
     {
-        Debug.Log("DeckBuilderUI: 遷移後の初期化開始");
-        
         InitializeUI();
         LoadAvailableCards();
         LoadExistingDeck();
         UpdateUI();
-        
-        // BGMを再生
         PlayBGM();
-        
-        Debug.Log("DeckBuilderUI: 遷移後の初期化完了");
     }
     
-    /// <summary>
-    /// UIを初期化
-    /// </summary>
     private void InitializeUI()
     {
         if (cardDatabase == null)
@@ -181,23 +163,18 @@ public class DeckBuilderUI : MonoBehaviour
         if (gameManager != null && gameManager.GetPlayerDeck() != null)
         {
             var existingDeck = gameManager.GetPlayerDeck();
-            if (existingDeck.selectedDeck != null && existingDeck.selectedDeck.Count > 0)
+                    if (existingDeck.selectedDeck != null && existingDeck.selectedDeck.Count > 0)
+        {
+            selectedDeck = new List<CardDataSO>(existingDeck.selectedDeck);
+            
+            if (UIManager.Instance != null)
             {
-                selectedDeck = new List<CardDataSO>(existingDeck.selectedDeck);
-                Debug.Log($"DeckBuilderUI: 既存のデッキを読み込み - {selectedDeck.Count}枚");
-                
-                // UI更新
-                if (UIManager.Instance != null)
-                {
-                    UIManager.Instance.AddLog($"既存のデッキを読み込みました ({selectedDeck.Count}枚)");
-                }
+                UIManager.Instance.AddLog($"既存のデッキを読み込みました ({selectedDeck.Count}枚)");
             }
+        }
         }
     }
     
-    /// <summary>
-    /// カードリストを更新
-    /// </summary>
     private void UpdateCardList()
     {
         if (cardListContent == null)
@@ -212,17 +189,13 @@ public class DeckBuilderUI : MonoBehaviour
             return;
         }
         
-        // 既存のカードリストアイテムをクリア
         foreach (Transform child in cardListContent)
         {
             Destroy(child.gameObject);
         }
         
-        // フィルタリングされたカードを取得
         var filteredCards = GetFilteredCards();
-        Debug.Log($"DeckBuilderUI: カードリストを更新 - フィルタリングされたカード: {filteredCards.Count}枚");
         
-        // カードリストアイテムを作成
         foreach (var card in filteredCards)
         {
             if (card == null)
@@ -237,20 +210,14 @@ public class DeckBuilderUI : MonoBehaviour
             if (cardItemUI != null)
             {
                 cardItemUI.Setup(card, OnCardListItemClicked);
-                Debug.Log($"DeckBuilderUI: カードアイテムを作成 - {card.cardName}");
             }
             else
             {
                 Debug.LogError("DeckBuilderUI: CardListItemUIコンポーネントが見つかりません");
             }
         }
-        
-        Debug.Log($"DeckBuilderUI: カードリスト更新完了 - 作成されたアイテム数: {cardListContent.childCount}");
     }
     
-    /// <summary>
-    /// 選択されたデッキの表示を更新
-    /// </summary>
     private void UpdateSelectedDeckDisplay()
     {
         if (selectedDeckContent == null || selectedCardPrefab == null) return;
@@ -339,95 +306,67 @@ public class DeckBuilderUI : MonoBehaviour
         return filteredCards;
     }
     
-    /// <summary>
-    /// カードフィルターを設定
-    /// </summary>
     private void SetCardFilter(CardType filterType)
     {
         currentFilter = filterType;
-        PlayButtonClickSE(); // ボタンクリックSE
+        PlayButtonClickSE();
         UpdateCardList();
-
     }
     
-    /// <summary>
-    /// カードリストアイテムがクリックされた
-    /// </summary>
     private void OnCardListItemClicked(CardDataSO card)
     {
         if (selectedDeck.Count >= maxDeckSize)
         {
             Debug.LogWarning($"DeckBuilderUI: デッキが最大枚数({maxDeckSize}枚)に達しています");
-            PlayCardRemoveSE(); // エラー音
+            PlayCardRemoveSE();
             return;
         }
         
         selectedDeck.Add(card);
-        PlayCardAddSE(); // カード追加SE
+        PlayCardAddSE();
         UpdateUI();
-
     }
     
-    /// <summary>
-    /// 選択されたカードがクリックされた
-    /// </summary>
     private void OnSelectedCardClicked(CardDataSO card)
     {
         selectedDeck.Remove(card);
-        PlayCardRemoveSE(); // カード削除SE
+        PlayCardRemoveSE();
         UpdateUI();
-
     }
     
-    /// <summary>
-    /// カード追加ボタンがクリックされた
-    /// </summary>
     private void OnAddCardClicked()
     {
-        // 現在選択されているカードを追加（実装はOnCardListItemClickedで処理）
     }
     
-    /// <summary>
-    /// カード削除ボタンがクリックされた
-    /// </summary>
     private void OnRemoveCardClicked()
     {
         if (selectedDeck.Count > 0)
         {
             selectedDeck.RemoveAt(selectedDeck.Count - 1);
-            PlayCardRemoveSE(); // カード削除SE
+            PlayCardRemoveSE();
             UpdateUI();
-
         }
-        PlayButtonClickSE(); // ボタンクリックSE
+        PlayButtonClickSE();
     }
     
-    /// <summary>
-    /// デッキクリアボタンがクリックされた
-    /// </summary>
     private void OnClearDeckClicked()
     {
         selectedDeck.Clear();
-        PlayCardRemoveSE(); // カード削除SE
+        PlayCardRemoveSE();
         UpdateUI();
-        PlayButtonClickSE(); // ボタンクリックSE
-
+        PlayButtonClickSE();
     }
     
-    /// <summary>
-    /// バトル開始ボタンがクリックされた
-    /// </summary>
     private void OnStartBattleClicked()
     {
         if (selectedDeck.Count < minDeckSize)
         {
             Debug.LogWarning($"DeckBuilderUI: デッキが最小枚数({minDeckSize}枚)に達していません");
-            PlayCardRemoveSE(); // エラー音
+            PlayCardRemoveSE();
             return;
         }
         
-        PlayButtonClickSE(); // ボタンクリックSE
-        // デッキを保存してバトルシーンに遷移
+        PlayButtonClickSE();
         SaveDeckAndStartBattle();
     }
     
@@ -496,9 +435,6 @@ public class DeckBuilderUI : MonoBehaviour
         return stats;
     }
     
-    /// <summary>
-    /// 階層情報を更新
-    /// </summary>
     private void UpdateFloorInfo()
     {
         if (floorInfoText != null)
@@ -515,21 +451,14 @@ public class DeckBuilderUI : MonoBehaviour
         }
     }
     
-    /// <summary>
-    /// BGMを再生
-    /// </summary>
     private void PlayBGM()
     {
         if (SoundManager.Instance != null)
         {
-            // 現在のシーンに応じたBGMを再生
             SoundManager.Instance.PlayBGMForCurrentScene();
         }
     }
     
-    /// <summary>
-    /// ボタンクリックSEを再生
-    /// </summary>
     private void PlayButtonClickSE()
     {
         if (SoundManager.Instance != null)
@@ -538,9 +467,6 @@ public class DeckBuilderUI : MonoBehaviour
         }
     }
     
-    /// <summary>
-    /// カード選択SEを再生
-    /// </summary>
     private void PlayCardSelectSE()
     {
         if (SoundManager.Instance != null)
@@ -549,9 +475,6 @@ public class DeckBuilderUI : MonoBehaviour
         }
     }
     
-    /// <summary>
-    /// カード追加SEを再生
-    /// </summary>
     private void PlayCardAddSE()
     {
         if (SoundManager.Instance != null)
@@ -560,9 +483,6 @@ public class DeckBuilderUI : MonoBehaviour
         }
     }
     
-    /// <summary>
-    /// カード削除SEを再生
-    /// </summary>
     private void PlayCardRemoveSE()
     {
         if (SoundManager.Instance != null)

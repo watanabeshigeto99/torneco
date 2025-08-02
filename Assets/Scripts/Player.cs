@@ -69,22 +69,17 @@ public class Player : Unit
         isAwaitingAttackInput = false;
         attackPower = 0;
         
-        // レベルシステムの初期化（GameManagerから永続化データを読み込み）
         if (GameManager.Instance != null)
         {
-            // GameManagerから永続化されたデータを読み込み
             level = GameManager.Instance.playerLevel;
             exp = GameManager.Instance.playerExp;
             expToNext = GameManager.Instance.playerExpToNext;
             maxHP = GameManager.Instance.playerMaxHP;
             currentHP = GameManager.Instance.playerCurrentHP;
             maxLevel = GameManager.Instance.playerMaxLevel;
-            
-            Debug.Log($"Player: GameManagerから永続化データを読み込み - レベル: {level}, 経験値: {exp}/{expToNext}, HP: {currentHP}/{maxHP}");
         }
         else
         {
-            // GameManagerが存在しない場合の初期化
             level = 1;
             exp = 0;
             expToNext = 10;
@@ -274,29 +269,19 @@ public class Player : Unit
                 TurnManager.Instance.OnPlayerCardUsed();
             }
         }
-        else
-        {
-            Debug.Log($"Player: 移動できません - 距離: {dist}, 最大距離: {allowedMoveDistance}, 歩行可能: {GridManager.Instance.IsWalkable(clickedPos)}");
-        }
     }
 
-    // Exit判定（段階5実装）
     private void CheckExit(Vector2Int newPos)
     {
         if (GridManager.Instance != null && GridManager.Instance.exitPosition == newPos)
         {
-            Debug.Log("Player: Exitに到達！次の階層に進みます");
+            GainExp(5);
             
-            // 階段到達時の経験値獲得
-            GainExp(5); // 階段到達で5経験値獲得
-            
-            // UI更新
             if (UIManager.Instance != null)
             {
                 UIManager.Instance.AddLog("Exitに到達！次の階層に進みます");
             }
             
-            // 次の階層に進む
             if (GameManager.Instance != null)
             {
                 GameManager.Instance.GoToNextFloor();
@@ -304,48 +289,36 @@ public class Player : Unit
         }
     }
     
-    // プレイヤーの位置をリセット（段階4実装）
     public void ResetPlayerPosition()
     {
-        Debug.Log("Player: 位置をリセットします");
-        
-        // 中央位置にリセット
         gridPosition = new Vector2Int(2, 2);
         Vector3 worldPos = GridManager.Instance.GetWorldPosition(gridPosition);
         transform.position = worldPos;
         
-        // HPを回復（階層進行の報酬）
         currentHP = maxHP;
         
-        // GameManagerのデータも更新
         if (GameManager.Instance != null)
         {
             GameManager.Instance.SetPlayerHP(currentHP, maxHP);
         }
         
-        // 状態をリセット
         isAwaitingMoveInput = false;
         allowedMoveDistance = 0;
         isAwaitingAttackInput = false;
         attackPower = 0;
         
-        // カメラ追従と視界範囲更新
         NotifyCameraFollow();
         
-        // 視界範囲を更新
         if (GridManager.Instance != null)
         {
             GridManager.Instance.UpdateTileVisibility(gridPosition);
         }
         
-        // UI更新
         if (UIManager.Instance != null)
         {
             UIManager.Instance.UpdateHP(currentHP, maxHP);
             UIManager.Instance.AddLog($"階層 {GameManager.Instance.currentFloor} に到達！HPが回復しました");
         }
-        
-        Debug.Log("Player: 位置リセット完了");
     }
 
     public void Move(Vector2Int delta)
@@ -864,9 +837,6 @@ public class Player : Unit
             maxHP += levelData.hpIncrease;
             currentHP = maxHP;
             
-            Debug.Log($"Player: レベルアップ！レベル {level}、HP {oldMaxHP}→{maxHP} (SO使用)");
-            
-            // 報酬の処理
             if (levelData.reward.rewardType != RewardType.None)
             {
                 ProcessLevelReward(levelData.reward);
@@ -874,12 +844,10 @@ public class Player : Unit
         }
         else
         {
-            // 従来の計算方法（フォールバック）
             expToNext = Mathf.RoundToInt(expToNext * 1.5f);
             int oldMaxHP = maxHP;
             maxHP += 5;
             currentHP = maxHP;
-            Debug.Log($"Player: レベルアップ！レベル {level}、HP {oldMaxHP}→{maxHP} (従来方式)");
         }
         
         // レベルアップイベントを発行
@@ -1062,4 +1030,4 @@ public class Player : Unit
         
         gameObject.SetActive(false);
     }
-} 
+}

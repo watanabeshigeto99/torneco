@@ -23,17 +23,13 @@ public class CardManager : MonoBehaviour
 
     private void Awake()
     {
-        Debug.Log("CardManager: Awake開始");
-        
         if (Instance != null && Instance != this)
         {
-            Debug.LogWarning("CardManager: 重複するCardManagerインスタンスを破棄");
             Destroy(gameObject);
             return;
         }
         Instance = this;
         
-        // DontDestroyOnLoadで永続化（シーン間で保持）
         DontDestroyOnLoad(gameObject);
         
         // 設定項目のnullチェック
@@ -51,18 +47,11 @@ public class CardManager : MonoBehaviour
         {
             Debug.LogError("CardManager: cardPoolが設定されていません");
         }
-        
-        Debug.Log("CardManager: Awake完了");
     }
 
     private void Start()
     {
-        Debug.Log("CardManager: Start開始");
-        
-        // イベントを購読
         SubscribeToEvents();
-        
-        Debug.Log("CardManager: Start完了");
     }
     
     private void OnDestroy()
@@ -73,34 +62,21 @@ public class CardManager : MonoBehaviour
     
     private void SubscribeToEvents()
     {
-        // 全オブジェクト初期化完了イベントを購読
         GridManager.OnAllObjectsInitialized += OnAllObjectsInitialized;
-        
-        Debug.Log("CardManager: イベント購読完了");
     }
     
     private void UnsubscribeFromEvents()
     {
-        // イベントの購読を解除
         GridManager.OnAllObjectsInitialized -= OnAllObjectsInitialized;
-        
-        Debug.Log("CardManager: イベント購読解除完了");
     }
     
     private void OnAllObjectsInitialized()
     {
-        Debug.Log("CardManager: 全オブジェクト初期化完了イベント受信");
-        
-        // カード管理の初期化
         DrawHand();
-        
-        Debug.Log("CardManager: カード管理初期化完了");
     }
 
     public void DrawHand()
     {
-        Debug.Log($"CardManager: 手札を引く開始 手札サイズ: {handSize}");
-        
         if (handArea == null)
         {
             Debug.LogError("CardManager: handAreaが設定されていません");
@@ -113,16 +89,13 @@ public class CardManager : MonoBehaviour
             return;
         }
         
-        // PlayerDeckからカードをドロー
         GameManager gameManager = GameManager.GetOrCreateInstance();
         if (gameManager != null && gameManager.GetPlayerDeck() != null)
         {
             var playerDeck = gameManager.GetPlayerDeck();
             
-            // デッキをシャッフル（初回ドロー時またはドローピールが少ない場合）
             if (playerDeck.drawPile.Count == 0 || playerDeck.drawPile.Count < handSize)
             {
-                Debug.Log($"CardManager: デッキをシャッフルします (現在: {playerDeck.drawPile.Count}枚, 必要: {handSize}枚)");
                 playerDeck.InitializeDrawPile();
             }
             
@@ -130,7 +103,6 @@ public class CardManager : MonoBehaviour
         }
         else
         {
-            // フォールバック: 従来のcardPoolからドロー
             DrawHandFromPool();
         }
     }
@@ -148,28 +120,14 @@ public class CardManager : MonoBehaviour
             return;
         }
         
-        Debug.Log($"CardManager: PlayerDeckから手札をドロー開始 - デッキサイズ: {playerDeck.selectedDeck.Count}");
-        
-        // デッキの状態を確認
-        var deckStatus = playerDeck.GetDeckStatus();
-        Debug.Log($"CardManager: デッキ状態 - デッキ: {deckStatus.deckSize}枚, ドローピール: {deckStatus.drawPileSize}枚, ディスカード: {deckStatus.discardPileSize}枚");
-        
-        // ドローピールが空または少ない場合はシャッフル
         if (playerDeck.drawPile.Count == 0 || playerDeck.drawPile.Count < handSize)
         {
-            Debug.Log($"CardManager: ドローピールが少ないため、デッキをシャッフルします (現在: {playerDeck.drawPile.Count}枚, 必要: {handSize}枚)");
             playerDeck.InitializeDrawPile();
-            Debug.Log($"CardManager: シャッフル完了 - ドローピール: {playerDeck.drawPile.Count}枚");
         }
         
-        // 既存のカードを削除
-        int childCount = handArea.childCount;
         foreach (Transform child in handArea)
             Destroy(child.gameObject);
-        
-        Debug.Log($"CardManager: 既存カード削除完了 削除数: {childCount}");
 
-        // デッキからカードをドロー
         int createdCount = 0;
         for (int i = 0; i < handSize; i++)
         {
@@ -180,8 +138,6 @@ public class CardManager : MonoBehaviour
                 Debug.LogWarning($"CardManager: ドロー可能なカードがありません (手札{i + 1}枚目)");
                 break;
             }
-            
-            Debug.Log($"CardManager: カードドロー - {drawnCard.cardName}");
             
             GameObject cardObj = Instantiate(cardUIPrefab, handArea);
             CardUI ui = cardObj.GetComponent<CardUI>();
@@ -195,8 +151,6 @@ public class CardManager : MonoBehaviour
             ui.Setup(drawnCard, OnCardClicked);
             createdCount++;
         }
-        
-        Debug.Log($"CardManager: デッキから手札をドロー完了 作成数: {createdCount}/{handSize}");
     }
     
     /// <summary>
@@ -210,15 +164,9 @@ public class CardManager : MonoBehaviour
             return;
         }
         
-        // 既存のカードを削除
-        int childCount = handArea.childCount;
         foreach (Transform child in handArea)
             Destroy(child.gameObject);
-        
-        Debug.Log($"CardManager: 既存カード削除完了 削除数: {childCount}");
 
-        // 新しいカードを生成
-        int createdCount = 0;
         for (int i = 0; i < handSize; i++)
         {
             CardDataSO randomCard = cardPool[UnityEngine.Random.Range(0, cardPool.Length)];
@@ -232,10 +180,7 @@ public class CardManager : MonoBehaviour
             }
             
             ui.Setup(randomCard, OnCardClicked);
-            createdCount++;
         }
-        
-        Debug.Log($"CardManager: カードプールから手札をドロー完了 作成数: {createdCount}/{handSize}");
     }
 
     private void OnCardClicked(CardDataSO card)
@@ -245,8 +190,6 @@ public class CardManager : MonoBehaviour
             Debug.LogError("CardManager: クリックされたカードがnullです");
             return;
         }
-        
-        Debug.Log($"CardManager: カードクリック {card.cardName} ({card.type})");
         
         if (Player.Instance == null)
         {
@@ -260,12 +203,10 @@ public class CardManager : MonoBehaviour
         }
         else if (card.type == CardType.Attack)
         {
-            // 攻撃カードは方向選択を開始（ターン終了は方向選択後に実行）
             Player.Instance.StartAttackSelection(card.GetEffectivePower());
         }
         else
         {
-            // Healカードなどは即座に実行してターン終了
             Player.Instance.ExecuteCardEffect(card);
             
             if (TurnManager.Instance != null)
@@ -277,32 +218,23 @@ public class CardManager : MonoBehaviour
                 Debug.LogError("CardManager: TurnManager.Instanceが見つかりません");
             }
         }
-        
-        Debug.Log($"CardManager: カード効果実行完了 {card.cardName}");
     }
     
-    // カード強化メソッド（テスト用）
     public void EnhanceCard(CardDataSO card)
     {
         if (card == null) return;
         
         if (card.LevelUp())
         {
-            Debug.Log($"CardManager: カード強化成功！{card.cardName} Lv.{card.level}");
-            
-            // UI更新
             if (UIManager.Instance != null)
             {
                 UIManager.Instance.AddLog($"カード強化！{card.cardName} Lv.{card.level}");
             }
             
-            // 手札のUIを更新
             UpdateHandUI();
         }
         else
         {
-            Debug.Log($"CardManager: カード強化失敗！{card.cardName} は最大レベルです");
-            
             if (UIManager.Instance != null)
             {
                 UIManager.Instance.AddLog($"{card.cardName} は最大レベルです");
@@ -310,7 +242,6 @@ public class CardManager : MonoBehaviour
         }
     }
     
-    // 手札のUIを更新
     private void UpdateHandUI()
     {
         foreach (Transform child in handArea)
@@ -323,7 +254,6 @@ public class CardManager : MonoBehaviour
         }
     }
     
-    // 手札にカードを追加
     public void AddCardToHand(CardDataSO card)
     {
         if (card == null || handArea == null || cardUIPrefab == null)
@@ -332,14 +262,12 @@ public class CardManager : MonoBehaviour
             return;
         }
         
-        // カードUIを生成
         GameObject cardObj = Instantiate(cardUIPrefab, handArea);
         CardUI cardUI = cardObj.GetComponent<CardUI>();
         
         if (cardUI != null)
         {
             cardUI.Setup(card, OnCardClicked);
-            Debug.Log($"CardManager: 手札にカードを追加 - {card.cardName}");
             
             if (UIManager.Instance != null)
             {
@@ -355,7 +283,6 @@ public class CardManager : MonoBehaviour
 
     private IEnumerator ExecuteCardEffect(CardDataSO card)
     {
-        // プレイヤーにカード効果を実行させる
         if (Player.Instance != null)
         {
             Player.Instance.ExecuteCardEffect(card);
@@ -363,21 +290,14 @@ public class CardManager : MonoBehaviour
 
         yield return new WaitForSeconds(0.3f);
         
-        // ターン管理に通知
         if (TurnManager.Instance != null)
         {
             TurnManager.Instance.OnPlayerCardUsed();
         }
     }
     
-    /// <summary>
-    /// シーン遷移時のクリーンアップ処理
-    /// </summary>
     public void CleanupForSceneTransition()
     {
-        Debug.Log("CardManager: シーン遷移時のクリーンアップ開始");
-        
-        // 手札をクリア
         if (handArea != null)
         {
             foreach (Transform child in handArea)
@@ -388,7 +308,5 @@ public class CardManager : MonoBehaviour
                 }
             }
         }
-        
-        Debug.Log("CardManager: シーン遷移時のクリーンアップ完了");
     }
 } 

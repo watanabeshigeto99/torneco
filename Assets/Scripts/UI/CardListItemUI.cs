@@ -162,6 +162,9 @@ public class CardListItemUI : MonoBehaviour
         {
             backgroundImage.color = hoverColor;
         }
+        
+        // ホバー時のSEを再生
+        PlayHoverSE();
     }
     
     /// <summary>
@@ -181,5 +184,16 @@ public class CardListItemUI : MonoBehaviour
     public CardDataSO GetCardData()
     {
         return cardData;
+    }
+    
+    /// <summary>
+    /// ホバー時のSEを再生
+    /// </summary>
+    private void PlayHoverSE()
+    {
+        if (SoundManager.Instance != null)
+        {
+            SoundManager.Instance.PlaySound("card_hover");
+        }
     }
 } 

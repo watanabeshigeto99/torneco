@@ -5,6 +5,16 @@ using System.Collections;
 public class CardManager : MonoBehaviour
 {
     public static CardManager Instance { get; private set; }
+    
+    public static CardManager GetOrCreateInstance()
+    {
+        if (Instance == null)
+        {
+            GameObject go = new GameObject("CardManager");
+            Instance = go.AddComponent<CardManager>();
+        }
+        return Instance;
+    }
 
     public Transform handArea;
     public GameObject cardUIPrefab;
@@ -22,6 +32,9 @@ public class CardManager : MonoBehaviour
             return;
         }
         Instance = this;
+        
+        // DontDestroyOnLoadで永続化（シーン間で保持）
+        DontDestroyOnLoad(gameObject);
         
         // 設定項目のnullチェック
         if (handArea == null)
@@ -334,5 +347,27 @@ public class CardManager : MonoBehaviour
         {
             TurnManager.Instance.OnPlayerCardUsed();
         }
+    }
+    
+    /// <summary>
+    /// シーン遷移時のクリーンアップ処理
+    /// </summary>
+    public void CleanupForSceneTransition()
+    {
+        Debug.Log("CardManager: シーン遷移時のクリーンアップ開始");
+        
+        // 手札をクリア
+        if (handArea != null)
+        {
+            foreach (Transform child in handArea)
+            {
+                if (child != null)
+                {
+                    DestroyImmediate(child.gameObject);
+                }
+            }
+        }
+        
+        Debug.Log("CardManager: シーン遷移時のクリーンアップ完了");
     }
 } 

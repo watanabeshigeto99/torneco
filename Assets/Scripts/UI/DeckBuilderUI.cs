@@ -39,6 +39,13 @@ public class DeckBuilderUI : MonoBehaviour
     [Header("Floor Display")]
     public TextMeshProUGUI floorInfoText;
     
+    [Header("Audio")]
+    public string bgmName = "DeckBuilderBGM";
+    public string buttonClickSE = "ButtonClick";
+    public string cardSelectSE = "card_hover";
+    public string cardAddSE = "アイテムを入手2";
+    public string cardRemoveSE = "Error";
+    
     private List<CardDataSO> availableCards = new List<CardDataSO>();
     private List<CardDataSO> selectedDeck = new List<CardDataSO>();
     private CardType currentFilter = CardType.Attack;
@@ -52,6 +59,9 @@ public class DeckBuilderUI : MonoBehaviour
         LoadAvailableCards();
         LoadExistingDeck();
         UpdateUI();
+        
+        // BGMを再生
+        PlayBGM();
     }
     
     /// <summary>
@@ -256,6 +266,7 @@ public class DeckBuilderUI : MonoBehaviour
     private void SetCardFilter(CardType filterType)
     {
         currentFilter = filterType;
+        PlayButtonClickSE(); // ボタンクリックSE
         UpdateCardList();
 
     }
@@ -268,10 +279,12 @@ public class DeckBuilderUI : MonoBehaviour
         if (selectedDeck.Count >= maxDeckSize)
         {
             Debug.LogWarning($"DeckBuilderUI: デッキが最大枚数({maxDeckSize}枚)に達しています");
+            PlayCardRemoveSE(); // エラー音
             return;
         }
         
         selectedDeck.Add(card);
+        PlayCardAddSE(); // カード追加SE
         UpdateUI();
 
     }
@@ -282,6 +295,7 @@ public class DeckBuilderUI : MonoBehaviour
     private void OnSelectedCardClicked(CardDataSO card)
     {
         selectedDeck.Remove(card);
+        PlayCardRemoveSE(); // カード削除SE
         UpdateUI();
 
     }
@@ -302,9 +316,11 @@ public class DeckBuilderUI : MonoBehaviour
         if (selectedDeck.Count > 0)
         {
             selectedDeck.RemoveAt(selectedDeck.Count - 1);
+            PlayCardRemoveSE(); // カード削除SE
             UpdateUI();
 
         }
+        PlayButtonClickSE(); // ボタンクリックSE
     }
     
     /// <summary>
@@ -313,7 +329,9 @@ public class DeckBuilderUI : MonoBehaviour
     private void OnClearDeckClicked()
     {
         selectedDeck.Clear();
+        PlayCardRemoveSE(); // カード削除SE
         UpdateUI();
+        PlayButtonClickSE(); // ボタンクリックSE
 
     }
     
@@ -325,9 +343,11 @@ public class DeckBuilderUI : MonoBehaviour
         if (selectedDeck.Count < minDeckSize)
         {
             Debug.LogWarning($"DeckBuilderUI: デッキが最小枚数({minDeckSize}枚)に達していません");
+            PlayCardRemoveSE(); // エラー音
             return;
         }
         
+        PlayButtonClickSE(); // ボタンクリックSE
         // デッキを保存してバトルシーンに遷移
         SaveDeckAndStartBattle();
     }
@@ -407,4 +427,61 @@ public class DeckBuilderUI : MonoBehaviour
             }
         }
     }
+    
+    /// <summary>
+    /// BGMを再生
+    /// </summary>
+    private void PlayBGM()
+    {
+        if (SoundManager.Instance != null)
+        {
+            // 現在のシーンに応じたBGMを再生
+            SoundManager.Instance.PlayBGMForCurrentScene();
+        }
+    }
+    
+    /// <summary>
+    /// ボタンクリックSEを再生
+    /// </summary>
+    private void PlayButtonClickSE()
+    {
+        if (SoundManager.Instance != null)
+        {
+            SoundManager.Instance.PlaySound(buttonClickSE);
+        }
+    }
+    
+    /// <summary>
+    /// カード選択SEを再生
+    /// </summary>
+    private void PlayCardSelectSE()
+    {
+        if (SoundManager.Instance != null)
+        {
+            SoundManager.Instance.PlaySound(cardSelectSE);
+        }
+    }
+    
+    /// <summary>
+    /// カード追加SEを再生
+    /// </summary>
+    private void PlayCardAddSE()
+    {
+        if (SoundManager.Instance != null)
+        {
+            SoundManager.Instance.PlaySound(cardAddSE);
+        }
+    }
+    
+    /// <summary>
+    /// カード削除SEを再生
+    /// </summary>
+    private void PlayCardRemoveSE()
+    {
+        if (SoundManager.Instance != null)
+        {
+            SoundManager.Instance.PlaySound(cardRemoveSE);
+        }
+    }
+    
 } 

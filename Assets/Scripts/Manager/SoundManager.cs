@@ -16,8 +16,19 @@ public class SoundManager : MonoBehaviour
     public AudioClip levelUpSE;
     public AudioClip enhanceSE; // カード強化効果音
     
+    [Header("Additional Sound Effects")]
+    public AudioClip buttonClickSE;
+    public AudioClip cardHoverSE;
+    public AudioClip cardAddSE;
+    public AudioClip cardRemoveSE;
+    public AudioClip errorSE;
+    
     [Header("BGM")]
     public AudioClip bgmMain;
+    public AudioClip bgmDeckBuilder; // デッキビルダー用BGM
+    public AudioClip bgmBattle; // バトル用BGM
+    public AudioClip bgmGameOver; // ゲームオーバー用BGM
+    public AudioClip bgmGameClear; // ゲームクリア用BGM
 
     private void Awake()
     {
@@ -72,32 +83,55 @@ public class SoundManager : MonoBehaviour
 
     public void PlaySound(string type)
     {
+        // まず既存のSEをチェック
+        AudioClip clipToPlay = null;
+        
         switch (type)
         {
             case "Attack": 
-                if (seSource != null && attackSE != null)
-                    seSource.PlayOneShot(attackSE); 
+                clipToPlay = attackSE;
                 break;
             case "Heal": 
-                if (seSource != null && healSE != null)
-                    seSource.PlayOneShot(healSE); 
+                clipToPlay = healSE;
                 break;
             case "Select": 
-                if (seSource != null && selectSE != null)
-                    seSource.PlayOneShot(selectSE); 
+                clipToPlay = selectSE;
                 break;
             case "Death": 
-                if (seSource != null && enemyDeathSE != null)
-                    seSource.PlayOneShot(enemyDeathSE); 
+                clipToPlay = enemyDeathSE;
                 break;
             case "LevelUp": 
-                if (seSource != null && levelUpSE != null)
-                    seSource.PlayOneShot(levelUpSE); 
+                clipToPlay = levelUpSE;
                 break;
             case "Enhance": 
-                if (seSource != null && enhanceSE != null)
-                    seSource.PlayOneShot(enhanceSE); 
+                clipToPlay = enhanceSE;
                 break;
+            case "ButtonClick": 
+                clipToPlay = buttonClickSE;
+                break;
+            case "card_hover": 
+                clipToPlay = cardHoverSE;
+                break;
+            case "アイテムを入手2": 
+                clipToPlay = cardAddSE;
+                break;
+            case "Error": 
+                clipToPlay = errorSE;
+                break;
+            default:
+                // 既存のSEにない場合はResourcesフォルダから読み込み
+                clipToPlay = Resources.Load<AudioClip>($"Sounds/SE/{type}");
+                break;
+        }
+        
+        if (clipToPlay != null && seSource != null)
+        {
+            seSource.PlayOneShot(clipToPlay);
+            Debug.Log($"SoundManager: SE '{type}' を再生");
+        }
+        else
+        {
+            Debug.LogError($"SoundManager: SE '{type}' が見つかりません");
         }
     }
 
@@ -109,10 +143,103 @@ public class SoundManager : MonoBehaviour
         bgmSource.volume = 0.5f;
         bgmSource.Play();
     }
+    
+    /// <summary>
+    /// 文字列で指定されたBGMを再生
+    /// </summary>
+    public void PlayBGM(string bgmName)
+    {
+        AudioClip bgmClip = null;
+        
+        // インスペクターで設定されたBGMをチェック
+        switch (bgmName)
+        {
+            case "街の商人":
+                bgmClip = bgmDeckBuilder;
+                break;
+            default:
+                // ResourcesフォルダからBGMを読み込み
+                bgmClip = Resources.Load<AudioClip>($"Sounds/BGM/{bgmName}");
+                break;
+        }
+        
+        if (bgmClip != null)
+        {
+            PlayBGM(bgmClip);
+            Debug.Log($"SoundManager: BGM '{bgmName}' を再生開始");
+        }
+        else
+        {
+            Debug.LogError($"SoundManager: BGM '{bgmName}' が見つかりません");
+        }
+    }
 
     public void StopBGM()
     {
         if (bgmSource != null)
             bgmSource.Stop();
+    }
+    
+    /// <summary>
+    /// シーンに応じたBGMを再生
+    /// </summary>
+    public void PlayBGMForScene(string sceneName)
+    {
+        switch (sceneName)
+        {
+            case "DeckBuilderScene":
+                if (bgmDeckBuilder != null)
+                {
+                    PlayBGM(bgmDeckBuilder);
+                    Debug.Log("SoundManager: デッキビルダーBGMを再生");
+                }
+                break;
+                
+            case "MainScene":
+                if (bgmBattle != null)
+                {
+                    PlayBGM(bgmBattle);
+                    Debug.Log("SoundManager: バトルBGMを再生");
+                }
+                else if (bgmMain != null)
+                {
+                    PlayBGM(bgmMain);
+                    Debug.Log("SoundManager: メインBGMを再生");
+                }
+                break;
+                
+            case "GameOverScene":
+                if (bgmGameOver != null)
+                {
+                    PlayBGM(bgmGameOver);
+                    Debug.Log("SoundManager: ゲームオーバーBGMを再生");
+                }
+                break;
+                
+            case "GameClearScene":
+                if (bgmGameClear != null)
+                {
+                    PlayBGM(bgmGameClear);
+                    Debug.Log("SoundManager: ゲームクリアBGMを再生");
+                }
+                break;
+                
+            default:
+                if (bgmMain != null)
+                {
+                    PlayBGM(bgmMain);
+                    Debug.Log($"SoundManager: デフォルトBGMを再生 (シーン: {sceneName})");
+                }
+                break;
+        }
+    }
+    
+    /// <summary>
+    /// 現在のシーンのBGMを再生
+    /// </summary>
+    public void PlayBGMForCurrentScene()
+    {
+        string currentSceneName = UnityEngine.SceneManagement.SceneManager.GetActiveScene().name;
+        PlayBGMForScene(currentSceneName);
     }
 } 

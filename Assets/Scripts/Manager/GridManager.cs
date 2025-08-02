@@ -6,6 +6,16 @@ using System.Collections;
 public class GridManager : MonoBehaviour
 {
     public static GridManager Instance { get; private set; }
+    
+    public static GridManager GetOrCreateInstance()
+    {
+        if (Instance == null)
+        {
+            GameObject go = new GameObject("GridManager");
+            Instance = go.AddComponent<GridManager>();
+        }
+        return Instance;
+    }
 
     // イベント定義
     public static event Action<Player> OnPlayerSpawned;
@@ -53,13 +63,21 @@ public class GridManager : MonoBehaviour
 
     private void Awake()
     {
+        Debug.Log("GridManager: Awake開始");
+        
         // Singletonパターンの実装
         if (Instance != null && Instance != this)
         {
+            Debug.LogWarning("GridManager: 重複するGridManagerインスタンスを破棄");
             Destroy(gameObject);
             return;
         }
         Instance = this;
+        
+        // DontDestroyOnLoadで永続化（シーン間で保持）
+        DontDestroyOnLoad(gameObject);
+        
+        Debug.Log("GridManager: Awake完了");
     }
 
     private void Start()
@@ -794,5 +812,37 @@ public class GridManager : MonoBehaviour
         allEnemies = null;
         
         Debug.Log("GridManager: 古いオブジェクトの削除完了");
+    }
+    
+    /// <summary>
+    /// シーン遷移時のクリーンアップ処理
+    /// </summary>
+    public void CleanupForSceneTransition()
+    {
+        Debug.Log("GridManager: シーン遷移時のクリーンアップ開始");
+        
+        // 初期化フラグをリセット
+        ResetInitializationFlags();
+        
+        // 古いオブジェクトを削除
+        ClearOldObjects();
+        
+        Debug.Log("GridManager: シーン遷移時のクリーンアップ完了");
+    }
+    
+    /// <summary>
+    /// メインシーン用の初期化処理
+    /// </summary>
+    public void InitializeForMainScene()
+    {
+        Debug.Log("GridManager: メインシーン初期化開始");
+        
+        // 初期化フラグをリセット
+        ResetInitializationFlags();
+        
+        // 段階的初期化を開始
+        StartCoroutine(InitializeFloorCoroutine());
+        
+        Debug.Log("GridManager: メインシーン初期化完了");
     }
 } 

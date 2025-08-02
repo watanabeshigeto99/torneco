@@ -7,6 +7,16 @@ public class EnemyManager : MonoBehaviour
 {
     public static EnemyManager Instance { get; private set; }
     
+    public static EnemyManager GetOrCreateInstance()
+    {
+        if (Instance == null)
+        {
+            GameObject go = new GameObject("EnemyManager");
+            Instance = go.AddComponent<EnemyManager>();
+        }
+        return Instance;
+    }
+    
     // イベント定義
     public static event Action<Enemy[]> OnEnemiesSpawned;
 
@@ -43,6 +53,9 @@ public class EnemyManager : MonoBehaviour
             return;
         }
         Instance = this;
+        
+        // DontDestroyOnLoadで永続化（シーン間で保持）
+        DontDestroyOnLoad(gameObject);
         
         if (enemyPrefab == null)
         {
@@ -305,5 +318,25 @@ public class EnemyManager : MonoBehaviour
     public bool IsInitialized()
     {
         return true; // This line was changed as per the new_code
+    }
+    
+    /// <summary>
+    /// シーン遷移時のクリーンアップ処理
+    /// </summary>
+    public void CleanupForSceneTransition()
+    {
+        Debug.Log("EnemyManager: シーン遷移時のクリーンアップ開始");
+        
+        // 既存の敵を削除
+        foreach (Enemy enemy in enemies)
+        {
+            if (enemy != null)
+            {
+                DestroyImmediate(enemy.gameObject);
+            }
+        }
+        enemies.Clear();
+        
+        Debug.Log("EnemyManager: シーン遷移時のクリーンアップ完了");
     }
 } 

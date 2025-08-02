@@ -29,6 +29,15 @@ public class DeckBuilderUISetup : EditorWindow
         // 階層情報表示用のUIを追加
         AddFloorInfoUI(deckBuilderUI);
         
+        // SoundManagerを追加
+        AddSoundManager();
+        
+        // SoundManagerの設定も実行
+        SoundManagerSetup.SetupSoundManager();
+        
+        // SceneBGMControllerも追加
+        SceneBGMControllerSetup.SetupSceneBGMController();
+        
         Debug.Log("DeckBuilderUI setup completed successfully!");
     }
     
@@ -189,6 +198,23 @@ public class DeckBuilderUISetup : EditorWindow
         deckBuilderUI.floorInfoText = floorInfoText;
         
         Debug.Log("FloorInfoUI created and assigned");
+    }
+    
+    private static void AddSoundManager()
+    {
+        // SoundManagerが既に存在するかチェック
+        SoundManager existingSoundManager = FindObjectOfType<SoundManager>();
+        if (existingSoundManager != null)
+        {
+            Debug.Log("SoundManager already exists in the scene");
+            return;
+        }
+        
+        // SoundManagerを作成
+        GameObject soundManagerObj = new GameObject("SoundManager");
+        SoundManager soundManager = soundManagerObj.AddComponent<SoundManager>();
+        
+        Debug.Log("SoundManager created and added to the scene");
     }
     
     private static Transform FindChildByName(Transform parent, string name)

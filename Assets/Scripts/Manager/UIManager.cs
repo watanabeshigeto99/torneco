@@ -8,6 +8,16 @@ using System;
 public class UIManager : MonoBehaviour
 {
     public static UIManager Instance { get; private set; }
+    
+    public static UIManager GetOrCreateInstance()
+    {
+        if (Instance == null)
+        {
+            GameObject go = new GameObject("UIManager");
+            Instance = go.AddComponent<UIManager>();
+        }
+        return Instance;
+    }
 
     [Header("HP Display")]
     public UnityEngine.UI.Slider hpSlider;
@@ -41,6 +51,9 @@ public class UIManager : MonoBehaviour
             return;
         }
         Instance = this;
+        
+        // DontDestroyOnLoadで永続化（シーン間で保持）
+        DontDestroyOnLoad(gameObject);
         
         Debug.Log("UIManager: Awake完了");
     }
@@ -223,5 +236,53 @@ public class UIManager : MonoBehaviour
                 logText.text = string.Join("\n", lines, 0, maxLogLines);
             }
         }
+    }
+    
+    /// <summary>
+    /// シーン遷移時のクリーンアップ処理
+    /// </summary>
+    public void CleanupForSceneTransition()
+    {
+        Debug.Log("UIManager: シーン遷移時のクリーンアップ開始");
+        
+        // イベントの購読を解除
+        UnsubscribeFromEvents();
+        
+        // UI要素のクリーンアップ
+        if (logText != null)
+        {
+            logText.text = "";
+        }
+        
+        Debug.Log("UIManager: シーン遷移時のクリーンアップ完了");
+    }
+    
+    /// <summary>
+    /// メインシーン用の初期化処理
+    /// </summary>
+    public void InitializeForMainScene()
+    {
+        Debug.Log("UIManager: メインシーン初期化開始");
+        
+        // イベントを再購読
+        SubscribeToEvents();
+        
+        // 初期表示を設定
+        UpdateFloorDisplay(GameManager.Instance?.currentFloor ?? 1);
+        
+        Debug.Log("UIManager: メインシーン初期化完了");
+    }
+    
+    /// <summary>
+    /// デッキビルダーシーン用の初期化処理
+    /// </summary>
+    public void InitializeForDeckBuilderScene()
+    {
+        Debug.Log("UIManager: デッキビルダーシーン初期化開始");
+        
+        // デッキビルダーシーン固有の初期化処理
+        // 必要に応じて実装
+        
+        Debug.Log("UIManager: デッキビルダーシーン初期化完了");
     }
 } 

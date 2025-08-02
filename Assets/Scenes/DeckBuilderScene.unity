@@ -1648,6 +1648,78 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 50, y: -30, z: 0}
+--- !u!1 &903026003
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 903026005}
+  - component: {fileID: 903026004}
+  m_Layer: 0
+  m_Name: 'TransitionManager '
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &903026004
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 903026003}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8e3ec9b6a414653409dd819b1eb53b2b, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  fadeCanvasGroup: {fileID: 0}
+  fadeDuration: 1
+  fadeCurve:
+    serializedVersion: 2
+    m_Curve:
+    - serializedVersion: 3
+      time: 0
+      value: 0
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0
+      outWeight: 0
+    - serializedVersion: 3
+      time: 1
+      value: 1
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0
+      outWeight: 0
+    m_PreInfinity: 2
+    m_PostInfinity: 2
+    m_RotationOrder: 4
+  transitionCanvas: {fileID: 0}
+  disableInputDuringTransition: 1
+--- !u!4 &903026005
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 903026003}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 16.373371, y: 3.6964798, z: 6.127369}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &905425496
 GameObject:
   m_ObjectHideFlags: 0
@@ -2375,6 +2447,166 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1336276800}
   m_CullTransparentMesh: 1
+--- !u!1 &1373497118
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1373497121}
+  - component: {fileID: 1373497120}
+  - component: {fileID: 1373497119}
+  m_Layer: 0
+  m_Name: SoundManager
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!82 &1373497119
+AudioSource:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1373497118}
+  m_Enabled: 1
+  serializedVersion: 4
+  OutputAudioMixerGroup: {fileID: 0}
+  m_audioClip: {fileID: 0}
+  m_Resource: {fileID: 0}
+  m_PlayOnAwake: 1
+  m_Volume: 1
+  m_Pitch: 1
+  Loop: 0
+  Mute: 0
+  Spatialize: 0
+  SpatializePostEffects: 0
+  Priority: 128
+  DopplerLevel: 1
+  MinDistance: 1
+  MaxDistance: 500
+  Pan2D: 0
+  rolloffMode: 0
+  BypassEffects: 0
+  BypassListenerEffects: 0
+  BypassReverbZones: 0
+  rolloffCustomCurve:
+    serializedVersion: 2
+    m_Curve:
+    - serializedVersion: 3
+      time: 0
+      value: 1
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0.33333334
+      outWeight: 0.33333334
+    - serializedVersion: 3
+      time: 1
+      value: 0
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0.33333334
+      outWeight: 0.33333334
+    m_PreInfinity: 2
+    m_PostInfinity: 2
+    m_RotationOrder: 4
+  panLevelCustomCurve:
+    serializedVersion: 2
+    m_Curve:
+    - serializedVersion: 3
+      time: 0
+      value: 0
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0.33333334
+      outWeight: 0.33333334
+    m_PreInfinity: 2
+    m_PostInfinity: 2
+    m_RotationOrder: 4
+  spreadCustomCurve:
+    serializedVersion: 2
+    m_Curve:
+    - serializedVersion: 3
+      time: 0
+      value: 0
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0.33333334
+      outWeight: 0.33333334
+    m_PreInfinity: 2
+    m_PostInfinity: 2
+    m_RotationOrder: 4
+  reverbZoneMixCustomCurve:
+    serializedVersion: 2
+    m_Curve:
+    - serializedVersion: 3
+      time: 0
+      value: 1
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0.33333334
+      outWeight: 0.33333334
+    m_PreInfinity: 2
+    m_PostInfinity: 2
+    m_RotationOrder: 4
+--- !u!114 &1373497120
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1373497118}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: be244a99c6de8c344a96bf67ec9de613, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  seSource: {fileID: 1373497119}
+  bgmSource: {fileID: 1373497119}
+  attackSE: {fileID: 8300000, guid: f8df84db35f02864fa737e22ffd67120, type: 3}
+  healSE: {fileID: 8300000, guid: 1a5a0ac7131f4894fbb86326067a3fcb, type: 3}
+  selectSE: {fileID: 8300000, guid: f4bfc8894e9f06c449503fbe7847404f, type: 3}
+  enemyDeathSE: {fileID: 8300000, guid: 0e6c7a4c3688ac743b758c54631919f3, type: 3}
+  levelUpSE: {fileID: 8300000, guid: a79c63c829dcc9d40849c90d46f9b7db, type: 3}
+  enhanceSE: {fileID: 8300000, guid: 354a0da51c2fe3d4d9283583a1b3ce8b, type: 3}
+  buttonClickSE: {fileID: 8300000, guid: 22aceaba4c7630247b9aed46559f92cd, type: 3}
+  cardHoverSE: {fileID: 8300000, guid: f4bfc8894e9f06c449503fbe7847404f, type: 3}
+  cardAddSE: {fileID: 8300000, guid: f4bfc8894e9f06c449503fbe7847404f, type: 3}
+  cardRemoveSE: {fileID: 8300000, guid: 1132c4bff8d1b4e4db79849b4d8f8874, type: 3}
+  errorSE: {fileID: 8300000, guid: 1ca8620b1e7ceea429831df40ebe9541, type: 3}
+  bgmMain: {fileID: 8300000, guid: 99c31096e7c779c4bb424cdfc688b9f5, type: 3}
+  bgmDeckBuilder: {fileID: 8300000, guid: 48029e2c220d1384ab84d6a4e624c1e5, type: 3}
+  bgmBattle: {fileID: 8300000, guid: 99c31096e7c779c4bb424cdfc688b9f5, type: 3}
+  bgmGameOver: {fileID: 8300000, guid: 6e01a9b02465723428de1fe2777a2f24, type: 3}
+  bgmGameClear: {fileID: 8300000, guid: 16a0633530a7cdd488708c6d1597ded0, type: 3}
+--- !u!4 &1373497121
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1373497118}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: -0.5363491, y: -2.3302083, z: 6.222202}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1410223337
 GameObject:
   m_ObjectHideFlags: 0
@@ -2442,6 +2674,12 @@ MonoBehaviour:
   healCardsButton: {fileID: 1336276802}
   maxDeckSize: 10
   minDeckSize: 5
+  floorInfoText: {fileID: 0}
+  bgmName: DeckBuilderBGM
+  buttonClickSE: ButtonClick
+  cardSelectSE: card_hover
+  cardAddSE: "\u30A2\u30A4\u30C6\u30E0\u3092\u5165\u624B2"
+  cardRemoveSE: Error
 --- !u!1 &1534165045
 GameObject:
   m_ObjectHideFlags: 0
@@ -3834,4 +4072,6 @@ SceneRoots:
   - {fileID: 1090864231}
   - {fileID: 1768152355}
   - {fileID: 879628489}
+  - {fileID: 903026005}
+  - {fileID: 1373497121}
   - {fileID: 279088662}

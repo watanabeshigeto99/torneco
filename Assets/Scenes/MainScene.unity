@@ -1461,7 +1461,16 @@ MonoBehaviour:
   enemyDeathSE: {fileID: 8300000, guid: 0e6c7a4c3688ac743b758c54631919f3, type: 3}
   levelUpSE: {fileID: 8300000, guid: a79c63c829dcc9d40849c90d46f9b7db, type: 3}
   enhanceSE: {fileID: 8300000, guid: 354a0da51c2fe3d4d9283583a1b3ce8b, type: 3}
+  buttonClickSE: {fileID: 8300000, guid: 22aceaba4c7630247b9aed46559f92cd, type: 3}
+  cardHoverSE: {fileID: 8300000, guid: f4bfc8894e9f06c449503fbe7847404f, type: 3}
+  cardAddSE: {fileID: 8300000, guid: 1d5dcc3698256a94098f724866c9e124, type: 3}
+  cardRemoveSE: {fileID: 8300000, guid: 1132c4bff8d1b4e4db79849b4d8f8874, type: 3}
+  errorSE: {fileID: 8300000, guid: 1ca8620b1e7ceea429831df40ebe9541, type: 3}
   bgmMain: {fileID: 8300000, guid: 99c31096e7c779c4bb424cdfc688b9f5, type: 3}
+  bgmDeckBuilder: {fileID: 8300000, guid: 48029e2c220d1384ab84d6a4e624c1e5, type: 3}
+  bgmBattle: {fileID: 8300000, guid: 99c31096e7c779c4bb424cdfc688b9f5, type: 3}
+  bgmGameOver: {fileID: 8300000, guid: 6e01a9b02465723428de1fe2777a2f24, type: 3}
+  bgmGameClear: {fileID: 8300000, guid: 16a0633530a7cdd488708c6d1597ded0, type: 3}
 --- !u!4 &890020627
 Transform:
   m_ObjectHideFlags: 0
@@ -2181,6 +2190,11 @@ MonoBehaviour:
   gameClear: 0
   currentFloor: 1
   maxFloor: 10
+  playerDeck:
+    selectedDeck: []
+    discardPile: []
+    maxDeckSize: 10
+    minDeckSize: 5
 --- !u!1 &2100520826
 GameObject:
   m_ObjectHideFlags: 0

@@ -91,6 +91,12 @@ public class GameManager : MonoBehaviour
         // ゲームオーバーイベントを発行
         OnGameOver?.Invoke();
         
+        // BGMをゲームオーバー用に切り替え
+        if (SoundManager.Instance != null)
+        {
+            SoundManager.Instance.PlayBGMForScene("GameOverScene");
+        }
+        
         // UI更新
         if (UIManager.Instance != null)
         {
@@ -105,6 +111,12 @@ public class GameManager : MonoBehaviour
         
         // ゲームクリアイベントを発行
         OnGameClear?.Invoke();
+        
+        // BGMをゲームクリア用に切り替え
+        if (SoundManager.Instance != null)
+        {
+            SoundManager.Instance.PlayBGMForScene("GameClearScene");
+        }
         
         // UI更新
         if (UIManager.Instance != null)
@@ -255,5 +267,25 @@ public class GameManager : MonoBehaviour
             Debug.Log($"GameManager: GetPlayerDeck - デッキサイズ: {playerDeck.selectedDeck.Count}枚");
         }
         return playerDeck;
+    }
+    
+    /// <summary>
+    /// メインシーン用の初期化処理
+    /// </summary>
+    public void InitializeForMainScene()
+    {
+        Debug.Log("GameManager: メインシーン初期化開始");
+        
+        // ゲーム状態の初期化
+        gameOver = false;
+        gameClear = false;
+        
+        // 階層システムの初期化
+        if (currentFloor <= 0)
+        {
+            currentFloor = 1;
+        }
+        
+        Debug.Log($"GameManager: メインシーン初期化完了 - 現在階層: {currentFloor}");
     }
 } 

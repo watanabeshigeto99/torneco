@@ -6,6 +6,16 @@ using System;
 public class TurnManager : MonoBehaviour
 {
     public static TurnManager Instance { get; private set; }
+    
+    public static TurnManager GetOrCreateInstance()
+    {
+        if (Instance == null)
+        {
+            GameObject go = new GameObject("TurnManager");
+            Instance = go.AddComponent<TurnManager>();
+        }
+        return Instance;
+    }
 
     private bool playerTurn = true;
     private bool isProcessing = false;
@@ -24,6 +34,9 @@ public class TurnManager : MonoBehaviour
             return;
         }
         Instance = this;
+        
+        // DontDestroyOnLoadで永続化（シーン間で保持）
+        DontDestroyOnLoad(gameObject);
         
         // 基本的な変数の初期化
         playerTurn = true;

@@ -4,9 +4,6 @@ using System.Collections;
 [DefaultExecutionOrder(-20)]
 public class Enemy : Unit
 {
-    public Vector2Int gridPosition;
-    public SpriteRenderer spriteRenderer;
-    
     // SOデータ
     [Header("Enemy Data")]
     public EnemyDataSO enemyData;
@@ -14,24 +11,17 @@ public class Enemy : Unit
     [Header("Growth Data")]
     public EnemyGrowthSO growthData;
     
+    // Stats, Grid Position, Visual, and IsDead are inherited from Unit class
+    
     // 動的な状態
     private bool hasMovedThisTurn = false;
     private Vector2Int lastPosition;
     
-    // 演出用の変数
-    [Header("Effects")]
-    public ParticleSystem moveEffect;
-    public ParticleSystem attackEffect;
-    public float moveAnimationDuration = 0.4f;
-    public float attackAnimationDuration = 0.3f;
-    public float jumpHeight = 0.3f;
+
 
     protected override void Awake()
     {
         base.Awake();
-        if (spriteRenderer == null)
-            spriteRenderer = GetComponentInChildren<SpriteRenderer>();
-            
         SetupForClicking();
     }
     
@@ -39,9 +29,8 @@ public class Enemy : Unit
     public void Initialize(Vector2Int startPos, EnemyDataSO data = null)
     {
         gridPosition = startPos;
+        transform.position = GridManager.Instance.GetWorldPosition(startPos);
         lastPosition = startPos;
-        Vector3 worldPos = GridManager.Instance.GetWorldPosition(gridPosition);
-        transform.position = worldPos;
         
         // SOデータを設定
         if (data != null)
@@ -93,19 +82,16 @@ public class Enemy : Unit
             maxHP = growthDataResult.hp;
             currentHP = maxHP;
             
-            // enemyDataの攻撃力を更新（既存の攻撃処理で使用される）
-            if (enemyData != null)
-            {
-                enemyData.attackPower = growthDataResult.attackPower;
-            }
+            // 攻撃力を一時的に保存（enemyDataを直接変更しない）
+            int enhancedAttackPower = growthDataResult.attackPower;
             
-            Debug.Log($"Enemy: 階層{floor}に応じた強化 (SO使用) - HP: {maxHP}, 攻撃力: {growthDataResult.attackPower}");
+            Debug.Log($"Enemy: 階層{floor}に応じた強化 (SO使用) - HP: {maxHP}, 攻撃力: {enhancedAttackPower}");
             
             // UI更新
             if (UIManager.Instance != null)
             {
                 string enemyName = enemyData != null ? enemyData.enemyName : "敵";
-                UIManager.Instance.AddLog($"階層{floor}の{enemyName} - HP: {maxHP}, 攻撃力: {growthDataResult.attackPower}");
+                UIManager.Instance.AddLog($"階層{floor}の{enemyName} - HP: {maxHP}, 攻撃力: {enhancedAttackPower}");
             }
         }
         else
@@ -117,11 +103,6 @@ public class Enemy : Unit
             
             int baseAttackPower = enemyData != null ? enemyData.attackPower : 1;
             int enhancedAttackPower = baseAttackPower + (floor / 10);
-            
-            if (enemyData != null)
-            {
-                enemyData.attackPower = enhancedAttackPower;
-            }
             
             Debug.Log($"Enemy: 階層{floor}に応じた強化 (従来方式) - HP: {maxHP}, 攻撃力: {enhancedAttackPower}");
             
@@ -209,7 +190,7 @@ public class Enemy : Unit
         // プレイヤーとの距離をチェックして、遠い場合は追跡移動を追加
         if (Player.Instance != null)
         {
-            Vector2Int playerPos = Player.Instance.gridPosition;
+            Vector2Int playerPos = Player.Instance.GetPosition();
             int distanceToPlayer = GetGridDistance(playerPos, gridPosition);
             
             if (distanceToPlayer > 3)
@@ -257,7 +238,7 @@ public class Enemy : Unit
         Vector2Int preferredDirection = Vector2Int.zero;
         if (Player.Instance != null)
         {
-            Vector2Int playerPos = Player.Instance.gridPosition;
+            Vector2Int playerPos = Player.Instance.GetPosition();
             int distanceToPlayer = GetGridDistance(playerPos, gridPosition);
             
             if (distanceToPlayer > 2)
@@ -281,17 +262,14 @@ public class Enemy : Unit
         if (GridManager.Instance.IsInsideGrid(newPos) && !GridManager.Instance.IsOccupied(newPos))
         {
             Vector2Int oldPos = gridPosition;
+            
             gridPosition = newPos;
+            transform.position = GridManager.Instance.GetWorldPosition(newPos);
             
             // 移動演出を実行（アクティブな場合のみ）
             if (gameObject.activeInHierarchy)
             {
                 StartCoroutine(AnimateMove(oldPos, newPos));
-            }
-            else
-            {
-                // 非アクティブの場合は即座に位置を更新
-                transform.position = GridManager.Instance.GetWorldPosition(newPos);
             }
             
             hasMovedThisTurn = true;
@@ -299,7 +277,7 @@ public class Enemy : Unit
             // 敵の移動後に視界範囲を更新
             if (Player.Instance != null && GridManager.Instance != null)
             {
-                GridManager.Instance.UpdateTileVisibility(Player.Instance.gridPosition);
+                GridManager.Instance.UpdateTileVisibility(Player.Instance.GetPosition());
             }
         }
     }
@@ -311,31 +289,28 @@ public class Enemy : Unit
         if (Player.Instance == null) return;
         if (!gameObject.activeInHierarchy) return; // 非アクティブの場合は処理をスキップ
         
-        Vector2Int playerPos = Player.Instance.gridPosition;
+        Vector2Int playerPos = Player.Instance.GetPosition();
         Vector2Int direction = NormalizeVector2Int(playerPos - gridPosition);
         Vector2Int newPos = gridPosition + direction;
 
         if (GridManager.Instance.IsInsideGrid(newPos) && !GridManager.Instance.IsOccupied(newPos))
         {
             Vector2Int oldPos = gridPosition;
+            
             gridPosition = newPos;
+            transform.position = GridManager.Instance.GetWorldPosition(newPos);
             
             // 移動演出を実行（アクティブな場合のみ）
             if (gameObject.activeInHierarchy)
             {
                 StartCoroutine(AnimateMove(oldPos, newPos));
             }
-            else
-            {
-                // 非アクティブの場合は即座に位置を更新
-                transform.position = GridManager.Instance.GetWorldPosition(newPos);
-            }
             
             hasMovedThisTurn = true;
             
             if (Player.Instance != null && GridManager.Instance != null)
             {
-                GridManager.Instance.UpdateTileVisibility(Player.Instance.gridPosition);
+                GridManager.Instance.UpdateTileVisibility(Player.Instance.GetPosition());
             }
         }
         else
@@ -410,13 +385,13 @@ public class Enemy : Unit
         if (Player.Instance == null) return;
         if (!gameObject.activeInHierarchy) return; // 非アクティブの場合は処理をスキップ
         
-        Vector2Int playerPos = Player.Instance.gridPosition;
+        Vector2Int playerPos = Player.Instance.GetPosition();
         int distance = GetGridDistance(playerPos, gridPosition);
         int attackRange = 1;
         
         if (distance <= attackRange)
         {
-            int damage = enemyData != null ? enemyData.attackPower : 1;
+            int damage = GetEnhancedAttackPower();
             string enemyName = enemyData != null ? enemyData.enemyName : "敵";
             
             // 攻撃演出を実行（アクティブな場合のみ）
@@ -435,13 +410,13 @@ public class Enemy : Unit
         if (Player.Instance == null) return;
         if (!gameObject.activeInHierarchy) return; // 非アクティブの場合は処理をスキップ
         
-        Vector2Int playerPos = Player.Instance.gridPosition;
+        Vector2Int playerPos = Player.Instance.GetPosition();
         int distance = GetGridDistance(playerPos, gridPosition);
         int attackRange = enemyData != null ? enemyData.rangedAttackRange : 2;
         
         if (distance <= attackRange)
         {
-            int damage = enemyData != null ? enemyData.attackPower : 1;
+            int damage = GetEnhancedAttackPower();
             string enemyName = enemyData != null ? enemyData.enemyName : "敵";
             
             // 攻撃演出を実行（アクティブな場合のみ）
@@ -460,13 +435,13 @@ public class Enemy : Unit
         if (Player.Instance == null) return;
         if (!gameObject.activeInHierarchy) return; // 非アクティブの場合は処理をスキップ
         
-        Vector2Int playerPos = Player.Instance.gridPosition;
+        Vector2Int playerPos = Player.Instance.GetPosition();
         int distance = GetGridDistance(playerPos, gridPosition);
         int attackRange = 2;
         
         if (distance <= attackRange)
         {
-            int damage = enemyData != null ? enemyData.attackPower : 1;
+            int damage = GetEnhancedAttackPower();
             string enemyName = enemyData != null ? enemyData.enemyName : "敵";
             
             // 攻撃演出を実行（アクティブな場合のみ）
@@ -485,13 +460,13 @@ public class Enemy : Unit
         if (Player.Instance == null) return;
         if (!gameObject.activeInHierarchy) return; // 非アクティブの場合は処理をスキップ
         
-        Vector2Int playerPos = Player.Instance.gridPosition;
+        Vector2Int playerPos = Player.Instance.GetPosition();
         int distance = GetGridDistance(playerPos, gridPosition);
         int attackRange = 1;
         
         if (distance <= attackRange)
         {
-            int damage = enemyData != null ? enemyData.attackPower * 2 : 2;
+            int damage = GetEnhancedAttackPower() * 2;
             string enemyName = enemyData != null ? enemyData.enemyName : "敵";
             
             // 攻撃演出を実行（アクティブな場合のみ）
@@ -811,30 +786,21 @@ public class Enemy : Unit
         Destroy(effect, 0.8f);
     }
 
-    public void TakeDamage(int damage)
+    public override void TakeDamage(int damage)
     {
-        int oldHP = currentHP;
-        currentHP -= damage;
-        currentHP = Mathf.Clamp(currentHP, 0, maxHP);
-        int actualDamage = oldHP - currentHP;
+        base.TakeDamage(damage);
         
-        string enemyName = enemyData != null ? enemyData.enemyName : "敵";
+        // 敵のダメージログを追加
+        if (UIManager.Instance != null)
+        {
+            string enemyName = enemyData != null ? enemyData.enemyName : "敵";
+            UIManager.Instance.AddLog($"{enemyName}がダメージを受けた！HP: {currentHP}/{maxHP}");
+        }
         
         // ダメージ演出を実行（アクティブな場合のみ）
         if (gameObject.activeInHierarchy)
         {
             StartCoroutine(AnimateDamage());
-        }
-        
-        // UI更新
-        if (UIManager.Instance != null)
-        {
-            UIManager.Instance.AddLog($"{enemyName}が{actualDamage}ダメージを受けた！HP: {currentHP}/{maxHP}");
-        }
-        
-        if (IsDead)
-        {
-            Die();
         }
     }
     
@@ -955,5 +921,29 @@ public class Enemy : Unit
         shape.radius = 0.8f;
         
         Destroy(deathEffect, 1.5f);
+    }
+    
+    // 強化された攻撃力を取得（enemyDataを直接変更しない）
+    public int GetEnhancedAttackPower()
+    {
+        if (enemyData == null) return 1;
+        
+        // 基本攻撃力を取得
+        int baseAttackPower = enemyData.attackPower;
+        
+        // 階層強化が適用されている場合は計算
+        if (growthData != null && GameManager.Instance != null)
+        {
+            var growthDataResult = growthData.GetGrowthDataForFloor(GameManager.Instance.currentFloor);
+            return growthDataResult.attackPower;
+        }
+        
+        return baseAttackPower;
+    }
+    
+    // ユニット名を取得
+    public override string GetUnitName()
+    {
+        return enemyData != null ? enemyData.enemyName : "敵";
     }
 }

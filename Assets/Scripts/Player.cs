@@ -14,9 +14,8 @@ public class Player : Unit
     public static event Action OnPlayerDied;
     public static event Action<int> OnPlayerLevelUp; // レベルアップイベントを追加
     
-    public Vector2Int gridPosition;
-    public SpriteRenderer spriteRenderer;
-
+    // Stats, Grid Position, Visual, and IsDead are inherited from Unit class
+    
     private bool isAwaitingMoveInput = false;
     private int allowedMoveDistance = 0;
     
@@ -34,13 +33,7 @@ public class Player : Unit
     [Header("Level Table")]
     public LevelTableSO levelTable;
     
-    // 演出用の変数
-    [Header("Effects")]
-    public ParticleSystem moveEffect;
-    public ParticleSystem attackEffect;
-    public float moveAnimationDuration = 0.3f;
-    public float attackAnimationDuration = 0.2f;
-    public float jumpHeight = 0.5f;
+
 
     protected override void Awake()
     {
@@ -54,14 +47,6 @@ public class Player : Unit
         }
         Instance = this;
         
-        // コンポーネント参照の取得
-        if (spriteRenderer == null)
-            spriteRenderer = GetComponentInChildren<SpriteRenderer>();
-        
-        // プレイヤー固有のHP設定
-        maxHP = 20;
-        currentHP = maxHP;
-        
         // 基本的な変数の初期化
         gridPosition = new Vector2Int(2, 2);
         isAwaitingMoveInput = false;
@@ -69,6 +54,11 @@ public class Player : Unit
         isAwaitingAttackInput = false;
         attackPower = 0;
         
+        // コンポーネント参照の取得
+        if (spriteRenderer == null)
+            spriteRenderer = GetComponentInChildren<SpriteRenderer>();
+        
+        // GameManagerからデータを読み込む（存在する場合）
         if (GameManager.Instance != null)
         {
             level = GameManager.Instance.playerLevel;
@@ -80,11 +70,32 @@ public class Player : Unit
         }
         else
         {
+            // デフォルト値の設定
             level = 1;
             exp = 0;
             expToNext = 10;
+            maxHP = 20;
+            currentHP = maxHP;
+            maxLevel = 10;
         }
     }
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    private void OnDestroy()
+    {
+        // クリーンアップ処理
+    }
+    
+
 
     // 初期化完了後に呼ばれるメソッド
     public void InitializePosition()
@@ -100,11 +111,14 @@ public class Player : Unit
             GridManager.Instance.UpdateTileVisibility(gridPosition);
         }
         
-        // UI更新
+        // HP表示の初期化
         if (UIManager.Instance != null)
         {
             UIManager.Instance.UpdateHP(currentHP, maxHP);
         }
+        
+        // カメラの追従を開始
+        NotifyCameraFollow();
     }
     
 
@@ -151,7 +165,7 @@ public class Player : Unit
     private void HandleAttackDirectionSelection(Vector2Int clickedPos)
     {
         // 攻撃可能範囲内かチェック
-        Vector2Int[] attackRange = GetAttackRange();
+        Vector2Int[] attackRange = GetAttackablePositions();
         bool isValidAttackTarget = false;
         
         foreach (Vector2Int attackPos in attackRange)
@@ -197,7 +211,7 @@ public class Player : Unit
         if (!isAwaitingAttackInput) return;
         
         // 攻撃可能範囲内かチェック
-        Vector2Int[] attackRange = GetAttackRange();
+        Vector2Int[] attackRange = GetAttackablePositions();
         bool isValidAttackTarget = false;
         
         foreach (Vector2Int attackPos in attackRange)
@@ -246,16 +260,15 @@ public class Player : Unit
         if (dist <= allowedMoveDistance && GridManager.Instance.IsWalkable(clickedPos))
         {
             Vector2Int oldPos = gridPosition;
-            gridPosition = clickedPos;
+            
+            // 基底クラスのMoveToを使用
+            MoveTo(clickedPos);
             
             // 移動演出を実行
             StartCoroutine(AnimateMove(oldPos, clickedPos));
 
             isAwaitingMoveInput = false;
             GridManager.Instance.ResetAllTileColors();
-
-            // 移動イベントを発行
-            OnPlayerMoved?.Invoke(gridPosition);
 
             // カメラ追従と視界範囲更新
             NotifyCameraFollow();
@@ -291,10 +304,10 @@ public class Player : Unit
     
     public void ResetPlayerPosition()
     {
-        gridPosition = new Vector2Int(2, 2);
-        Vector3 worldPos = GridManager.Instance.GetWorldPosition(gridPosition);
-        transform.position = worldPos;
+        // 基底クラスのSetPositionを使用
+        SetPosition(new Vector2Int(2, 2));
         
+        // HPを回復
         currentHP = maxHP;
         
         if (GameManager.Instance != null)
@@ -328,7 +341,9 @@ public class Player : Unit
         if (GridManager.Instance.IsWalkable(newPos))
         {
             Vector2Int oldPos = gridPosition;
-            gridPosition = newPos;
+            
+            // 基底クラスのMoveToを使用
+            MoveTo(newPos);
             
             // 移動演出を実行
             StartCoroutine(AnimateMove(oldPos, newPos));
@@ -346,7 +361,9 @@ public class Player : Unit
         if (GridManager.Instance.IsWalkable(newPos))
         {
             Vector2Int oldPos = gridPosition;
-            gridPosition = newPos;
+            
+            // 基底クラスのMoveToを使用
+            MoveTo(newPos);
             
             // 移動演出を実行
             StartCoroutine(AnimateMove(oldPos, newPos));
@@ -365,8 +382,6 @@ public class Player : Unit
             {
                 SoundManager.Instance.PlaySound("Select");
             }
-            
-
         }
         else
         {
@@ -380,9 +395,12 @@ public class Player : Unit
 
     public void SetPosition(Vector2Int newPos)
     {
-        gridPosition = newPos;
-        Vector3 worldPos = GridManager.Instance.GetWorldPosition(gridPosition);
-        transform.position = worldPos;
+        // 位置を設定
+        if (GridManager.Instance.IsInsideGrid(newPos))
+        {
+            gridPosition = newPos;
+            transform.position = GridManager.Instance.GetWorldPosition(newPos);
+        }
         
         // カメラ追従通知
         NotifyCameraFollow();
@@ -424,24 +442,24 @@ public class Player : Unit
         {
             var enemies = EnemyManager.Instance.GetEnemies();
             
-            foreach (Enemy enemy in enemies)
-            {
-                if (enemy != null && enemy.gridPosition == targetPos)
-                {
-                    enemy.TakeDamage(damage);
-                    hitEnemy = true;
-                    
-                    // UI更新
-                    if (UIManager.Instance != null)
-                    {
-                        UIManager.Instance.AddLog($"敵に{damage}ダメージを与えた！");
-                    }
-                    
-                    // 攻撃エフェクト再生
-                    PlayAttackEffect(targetPos);
-                    break;
-                }
-            }
+                         foreach (Enemy enemy in enemies)
+             {
+                 if (enemy != null && enemy.GetPosition() == targetPos)
+                 {
+                     enemy.TakeDamage(damage);
+                     hitEnemy = true;
+                     
+                     // UI更新
+                     if (UIManager.Instance != null)
+                     {
+                         UIManager.Instance.AddLog($"敵に{damage}ダメージを与えた！");
+                     }
+                     
+                     // 攻撃エフェクト再生
+                     PlayAttackEffect(targetPos);
+                     break;
+                 }
+             }
         }
         
         if (!hitEnemy)
@@ -633,22 +651,22 @@ public class Player : Unit
         if (EnemyManager.Instance != null)
         {
             var enemies = EnemyManager.Instance.GetEnemies();
-            Vector2Int[] attackRange = GetAttackRange();
+            Vector2Int[] attackRange = GetAttackablePositions();
             
             foreach (Enemy enemy in enemies)
             {
                 if (enemy != null)
                 {
-                    // 攻撃範囲内かチェック
-                    bool inAttackRange = false;
-                    foreach (Vector2Int attackPos in attackRange)
-                    {
-                        if (attackPos == enemy.gridPosition)
-                        {
-                            inAttackRange = true;
-                            break;
-                        }
-                    }
+                                         // 攻撃範囲内かチェック
+                     bool inAttackRange = false;
+                     foreach (Vector2Int attackPos in attackRange)
+                     {
+                         if (attackPos == enemy.GetPosition())
+                         {
+                             inAttackRange = true;
+                             break;
+                         }
+                     }
                     
                     if (inAttackRange)
                     {
@@ -684,7 +702,7 @@ public class Player : Unit
         }
     }
 
-    public Vector2Int[] GetAttackRange()
+    public Vector2Int[] GetAttackablePositions()
     {
         // 攻撃範囲（隣接マス + 斜め）を返す
         return new Vector2Int[]
@@ -714,31 +732,30 @@ public class Player : Unit
         }
     }
 
-    public void Heal(int amount)
+    public override void TakeDamage(int damage)
     {
-        int oldHP = currentHP;
-        currentHP += amount;
-        currentHP = Mathf.Clamp(currentHP, 0, maxHP);
-        int actualHeal = currentHP - oldHP;
+        base.TakeDamage(damage);
         
-        // GameManagerのデータも更新
-        if (GameManager.Instance != null)
-        {
-            GameManager.Instance.SetPlayerHP(currentHP, maxHP);
-        }
-        
-        // 回復イベントを発行
-        OnPlayerHealed?.Invoke(actualHeal);
-        
-        // 回復演出を実行
-        StartCoroutine(AnimateHeal());
-        
-        // UI更新
         if (UIManager.Instance != null)
         {
             UIManager.Instance.UpdateHP(currentHP, maxHP);
-            UIManager.Instance.AddLog($"回復！回復量: {actualHeal}, HP: {currentHP}/{maxHP}");
         }
+    }
+    
+    public override void Heal(int amount)
+    {
+        base.Heal(amount);
+        
+        if (UIManager.Instance != null)
+        {
+            UIManager.Instance.UpdateHP(currentHP, maxHP);
+        }
+        
+        // 回復イベントを発行
+        OnPlayerHealed?.Invoke(amount);
+        
+        // 回復演出を実行
+        StartCoroutine(AnimateHeal());
         
         // 効果音再生
         if (SoundManager.Instance != null)
@@ -1029,5 +1046,16 @@ public class Player : Unit
         Destroy(deathEffect, 2f);
         
         gameObject.SetActive(false);
+    }
+    
+    // === ユニット情報メソッド ===
+    public override string GetUnitName()
+    {
+        return "Player";
+    }
+    
+    public int GetAttackRange()
+    {
+        return 1; // プレイヤーは近接攻撃
     }
 }

@@ -69,6 +69,12 @@ public class TurnManager : MonoBehaviour
         Player.OnPlayerHealed += OnPlayerHealed;
         Player.OnPlayerDied += OnPlayerDied;
         
+        // Unitイベントを購読
+        Unit.OnUnitMoved += OnUnitMoved;
+        Unit.OnUnitAttacked += OnUnitAttacked;
+        Unit.OnUnitDamaged += OnUnitDamaged;
+        Unit.OnUnitDied += OnUnitDied;
+        
         // 全オブジェクト初期化完了イベントを購読
         GridManager.OnAllObjectsInitialized += OnAllObjectsInitialized;
         
@@ -82,6 +88,12 @@ public class TurnManager : MonoBehaviour
         Player.OnPlayerAttacked -= OnPlayerAttacked;
         Player.OnPlayerHealed -= OnPlayerHealed;
         Player.OnPlayerDied -= OnPlayerDied;
+        
+        // Unitイベントの購読を解除
+        Unit.OnUnitMoved -= OnUnitMoved;
+        Unit.OnUnitAttacked -= OnUnitAttacked;
+        Unit.OnUnitDamaged -= OnUnitDamaged;
+        Unit.OnUnitDied -= OnUnitDied;
         
         GridManager.OnAllObjectsInitialized -= OnAllObjectsInitialized;
         
@@ -111,6 +123,27 @@ public class TurnManager : MonoBehaviour
     {
         Debug.Log("TurnManager: プレイヤー死亡イベント受信");
         // 死亡時の処理（必要に応じて）
+    }
+    
+    // Unitイベントハンドラー
+    private void OnUnitMoved(Unit unit, Vector2Int newPosition)
+    {
+        Debug.Log($"TurnManager: ユニット移動イベント受信 {unit.GetUnitName()} 位置: {newPosition}");
+    }
+    
+    private void OnUnitAttacked(Unit attacker, int damage)
+    {
+        Debug.Log($"TurnManager: ユニット攻撃イベント受信 {attacker.GetUnitName()} ダメージ: {damage}");
+    }
+    
+    private void OnUnitDamaged(Unit target, int damage)
+    {
+        Debug.Log($"TurnManager: ユニットダメージイベント受信 {target.GetUnitName()} ダメージ: {damage}");
+    }
+    
+    private void OnUnitDied(Unit unit)
+    {
+        Debug.Log($"TurnManager: ユニット死亡イベント受信 {unit.GetUnitName()}");
     }
     
     private void OnAllObjectsInitialized()

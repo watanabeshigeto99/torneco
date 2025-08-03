@@ -208,6 +208,14 @@ public class EnemyManager : MonoBehaviour
         }
     }
 
+    /// <summary>
+    /// 敵のターンを実行する（GameStateManagerからの呼び出し用）
+    /// </summary>
+    public void ExecuteEnemyTurns()
+    {
+        EnemyTurn();
+    }
+    
     public void EnemyTurn()
     {
         Debug.Log("EnemyManager: 敵ターン開始");

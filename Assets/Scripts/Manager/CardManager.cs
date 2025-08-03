@@ -207,7 +207,15 @@ public class CardManager : MonoBehaviour
         }
         else
         {
-            Player.Instance.ExecuteCardEffect(card);
+            // CardExecutorを使用してカード効果を実行
+            if (CardExecutor.Instance != null && Player.Instance != null)
+            {
+                CardExecutor.Instance.ExecuteCardEffect(card, Player.Instance);
+            }
+            else
+            {
+                Debug.LogError("CardManager: CardExecutorまたはPlayerが見つかりません");
+            }
             
             if (TurnManager.Instance != null)
             {
@@ -283,9 +291,13 @@ public class CardManager : MonoBehaviour
 
     private IEnumerator ExecuteCardEffect(CardDataSO card)
     {
-        if (Player.Instance != null)
+        if (CardExecutor.Instance != null && Player.Instance != null)
         {
-            Player.Instance.ExecuteCardEffect(card);
+            CardExecutor.Instance.ExecuteCardEffect(card, Player.Instance);
+        }
+        else
+        {
+            Debug.LogError("CardManager: CardExecutorまたはPlayerが見つかりません");
         }
 
         yield return new WaitForSeconds(0.3f);

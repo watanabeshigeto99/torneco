@@ -196,6 +196,12 @@ public class GameManager : MonoBehaviour
         gameOver = true;
         OnGameOver?.Invoke();
         
+        // GameStateManagerに敗北状態を通知
+        if (GameStateManager.Instance != null)
+        {
+            GameStateManager.Instance.Defeat();
+        }
+        
         if (SoundManager.Instance != null)
         {
             SoundManager.Instance.PlayBGMForScene("GameOverScene");
@@ -211,6 +217,12 @@ public class GameManager : MonoBehaviour
     {
         gameClear = true;
         OnGameClear?.Invoke();
+        
+        // GameStateManagerに勝利状態を通知
+        if (GameStateManager.Instance != null)
+        {
+            GameStateManager.Instance.Victory();
+        }
         
         if (SoundManager.Instance != null)
         {

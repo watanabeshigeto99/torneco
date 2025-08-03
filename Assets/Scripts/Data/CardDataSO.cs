@@ -1,6 +1,6 @@
 using UnityEngine;
 
-public enum CardType { Attack, Move, Heal }
+public enum CardType { Attack, Move, Heal, Special }
 
 [CreateAssetMenu(fileName = "NewCard", menuName = "Card Battle/Card Data")]
 public class CardDataSO : ScriptableObject

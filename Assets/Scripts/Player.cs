@@ -406,23 +406,8 @@ public class Player : Unit
         NotifyCameraFollow();
     }
 
-    public void ExecuteCardEffect(CardDataSO card)
-    {
-        if (card == null) return;
-
-        switch (card.type)
-        {
-            case CardType.Attack:
-                StartAttackSelection(card.GetEffectivePower());
-                break;
-            case CardType.Heal:
-                Heal(card.GetEffectiveHealAmount());
-                break;
-            case CardType.Move:
-                MoveWithDistance(card.moveDirection, card.GetEffectiveMoveDistance());
-                break;
-        }
-    }
+    // ExecuteCardEffectはCardExecutorに委譲するため削除
+    // カード効果の実行はCardExecutorクラスで一元管理
     
     // 攻撃実行（方向指定）
     public void ExecuteAttack(Vector2Int direction, int damage)

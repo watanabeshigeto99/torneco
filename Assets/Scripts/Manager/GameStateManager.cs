@@ -2,36 +2,24 @@ using UnityEngine;
 using System;
 
 /// <summary>
-/// ゲーム状態を管理するクラス
+/// ゲーム状態管理専用コンポーネント
+/// 責務：ゲームの基本状態（スコア、ゲームオーバー、ゲームクリア）の管理のみ
 /// </summary>
+[DefaultExecutionOrder(-95)]
 public class GameStateManager : MonoBehaviour
 {
     public static GameStateManager Instance { get; private set; }
     
-    // ゲーム状態の定義
-    public enum GameState
-    {
-        MainMenu,       // メインメニュー
-        DeckBuilder,    // デッキ構築
-        Battle,         // 戦闘中
-        PlayerTurn,     // プレイヤーターン
-        EnemyTurn,      // 敵ターン
-        Victory,        // 勝利
-        Defeat,         // 敗北
-        Paused          // 一時停止
-    }
+    [Header("Game State")]
+    public int score = 0;
+    public bool gameOver = false;
+    public bool gameClear = false;
     
-    // 現在のゲーム状態
-    private GameState currentState = GameState.MainMenu;
-    
-    // 状態変更イベント
-    public static event Action<GameState, GameState> OnGameStateChanged;
-    
-    // プロパティ
-    public GameState CurrentState => currentState;
-    public bool IsInBattle => currentState == GameState.Battle || currentState == GameState.PlayerTurn || currentState == GameState.EnemyTurn;
-    public bool IsPlayerTurn => currentState == GameState.PlayerTurn;
-    public bool IsEnemyTurn => currentState == GameState.EnemyTurn;
+    // ゲーム状態変更イベント
+    public static event Action<int> OnScoreChanged;
+    public static event Action OnGameOver;
+    public static event Action OnGameClear;
+    public static event Action OnGameStateChanged;
     
     private void Awake()
     {
@@ -41,186 +29,102 @@ public class GameStateManager : MonoBehaviour
             return;
         }
         Instance = this;
+        
         DontDestroyOnLoad(gameObject);
+        
+        InitializeGameState();
     }
     
     /// <summary>
-    /// ゲーム状態を変更する
+    /// ゲーム状態の初期化
     /// </summary>
-    /// <param name="newState">新しい状態</param>
-    public void ChangeState(GameState newState)
+    private void InitializeGameState()
     {
-        if (currentState == newState) return;
+        score = 0;
+        gameOver = false;
+        gameClear = false;
         
-        GameState oldState = currentState;
-        currentState = newState;
-        
-        Debug.Log($"GameStateManager: 状態変更 {oldState} → {newState}");
-        
-        // 状態変更イベントを発行
-        OnGameStateChanged?.Invoke(oldState, newState);
-        
-        // 状態に応じた処理
-        HandleStateChange(oldState, newState);
+        Debug.Log("GameStateManager: ゲーム状態を初期化しました");
     }
     
     /// <summary>
-    /// 状態変更時の処理
+    /// スコアを設定
     /// </summary>
-    private void HandleStateChange(GameState oldState, GameState newState)
+    /// <param name="newScore">新しいスコア</param>
+    public void SetScore(int newScore)
     {
-        switch (newState)
+        if (score != newScore)
         {
-            case GameState.MainMenu:
-                HandleMainMenuState();
-                break;
-            case GameState.DeckBuilder:
-                HandleDeckBuilderState();
-                break;
-            case GameState.Battle:
-                HandleBattleState();
-                break;
-            case GameState.PlayerTurn:
-                HandlePlayerTurnState();
-                break;
-            case GameState.EnemyTurn:
-                HandleEnemyTurnState();
-                break;
-            case GameState.Victory:
-                HandleVictoryState();
-                break;
-            case GameState.Defeat:
-                HandleDefeatState();
-                break;
-            case GameState.Paused:
-                HandlePausedState();
-                break;
-        }
-    }
-    
-    private void HandleMainMenuState()
-    {
-        // メインメニュー状態の処理
-        Time.timeScale = 1f;
-    }
-    
-    private void HandleDeckBuilderState()
-    {
-        // デッキ構築状態の処理
-        Time.timeScale = 1f;
-    }
-    
-    private void HandleBattleState()
-    {
-        // 戦闘状態の処理
-        Time.timeScale = 1f;
-    }
-    
-    private void HandlePlayerTurnState()
-    {
-        // プレイヤーターン状態の処理
-        Debug.Log("GameStateManager: プレイヤーターン開始");
-        
-        // プレイヤーの行動可能状態を設定
-        if (Player.Instance != null)
-        {
-            // プレイヤーのターン開始処理
-        }
-    }
-    
-    private void HandleEnemyTurnState()
-    {
-        // 敵ターン状態の処理
-        Debug.Log("GameStateManager: 敵ターン開始");
-        
-        // 敵の行動を実行
-        if (EnemyManager.Instance != null)
-        {
-            EnemyManager.Instance.ExecuteEnemyTurns();
-        }
-    }
-    
-    private void HandleVictoryState()
-    {
-        // 勝利状態の処理
-        Debug.Log("GameStateManager: 勝利");
-        Time.timeScale = 0f; // 一時停止
-    }
-    
-    private void HandleDefeatState()
-    {
-        // 敗北状態の処理
-        Debug.Log("GameStateManager: 敗北");
-        Time.timeScale = 0f; // 一時停止
-    }
-    
-    private void HandlePausedState()
-    {
-        // 一時停止状態の処理
-        Time.timeScale = 0f;
-    }
-    
-    /// <summary>
-    /// 戦闘開始
-    /// </summary>
-    public void StartBattle()
-    {
-        ChangeState(GameState.Battle);
-        ChangeState(GameState.PlayerTurn);
-    }
-    
-    /// <summary>
-    /// プレイヤーターン終了
-    /// </summary>
-    public void EndPlayerTurn()
-    {
-        if (currentState == GameState.PlayerTurn)
-        {
-            ChangeState(GameState.EnemyTurn);
+            score = newScore;
+            OnScoreChanged?.Invoke(score);
+            OnGameStateChanged?.Invoke();
+            
+            Debug.Log($"GameStateManager: スコアを設定しました - {score}");
         }
     }
     
     /// <summary>
-    /// 敵ターン終了
+    /// スコアを加算
     /// </summary>
-    public void EndEnemyTurn()
+    /// <param name="amount">加算するスコア</param>
+    public void AddScore(int amount)
     {
-        if (currentState == GameState.EnemyTurn)
+        if (amount > 0)
         {
-            ChangeState(GameState.PlayerTurn);
+            SetScore(score + amount);
         }
     }
     
     /// <summary>
-    /// 勝利
-    /// </summary>
-    public void Victory()
-    {
-        ChangeState(GameState.Victory);
-    }
-    
-    /// <summary>
-    /// 敗北
+    /// ゲームオーバー状態を設定
     /// </summary>
     public void Defeat()
     {
-        ChangeState(GameState.Defeat);
+        if (!gameOver)
+        {
+            gameOver = true;
+            OnGameOver?.Invoke();
+            OnGameStateChanged?.Invoke();
+            
+            Debug.Log("GameStateManager: ゲームオーバー状態を設定しました");
+        }
     }
     
     /// <summary>
-    /// 一時停止切り替え
+    /// ゲームクリア状態を設定
     /// </summary>
-    public void TogglePause()
+    public void Victory()
     {
-        if (currentState == GameState.Paused)
+        if (!gameClear)
         {
-            // 一時停止解除
-            ChangeState(GameState.Battle);
+            gameClear = true;
+            OnGameClear?.Invoke();
+            OnGameStateChanged?.Invoke();
+            
+            Debug.Log("GameStateManager: ゲームクリア状態を設定しました");
         }
-        else if (IsInBattle)
-        {
-            // 一時停止
-            ChangeState(GameState.Paused);
-        }
+    }
+    
+    /// <summary>
+    /// ゲーム状態をリセット
+    /// </summary>
+    public void ResetGameState()
+    {
+        score = 0;
+        gameOver = false;
+        gameClear = false;
+        
+        OnGameStateChanged?.Invoke();
+        
+        Debug.Log("GameStateManager: ゲーム状態をリセットしました");
+    }
+    
+    /// <summary>
+    /// ゲーム状態の情報を取得
+    /// </summary>
+    /// <returns>ゲーム状態の情報文字列</returns>
+    public string GetGameStateInfo()
+    {
+        return $"GameState - Score: {score}, GameOver: {gameOver}, GameClear: {gameClear}";
     }
 } 

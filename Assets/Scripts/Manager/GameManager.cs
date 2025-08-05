@@ -40,6 +40,12 @@ public class GameManager : MonoBehaviour
     public BattleSystem.BattleStarter battleStarter;
     public BattleSystem.BattleStateSO battleState;
     public BattleSystem.BattleEventChannel battleEventChannel;
+    
+    // プレイヤーデータシステム統合
+    [Header("Player Data System Integration")]
+    public PlayerDataSystem.PlayerDataManager playerDataManager;
+    public PlayerDataSystem.PlayerDataSO playerData;
+    public PlayerDataSystem.PlayerEventChannel playerEventChannel;
 
     private void Awake()
     {
@@ -64,6 +70,9 @@ public class GameManager : MonoBehaviour
         
         // 戦闘システムイベントの購読
         SubscribeToBattleEvents();
+        
+        // プレイヤーデータシステムイベントの購読
+        SubscribeToPlayerDataEvents();
     }
     
     private void InitializePlayerData()
@@ -78,59 +87,86 @@ public class GameManager : MonoBehaviour
     
     public void SyncPlayerDataFromPlayer()
     {
-        if (Player.Instance != null)
+        // プレイヤーデータシステムが利用可能な場合はそちらを使用
+        if (playerDataManager != null)
         {
-            playerLevel = Player.Instance.level;
-            playerExp = Player.Instance.exp;
-            playerExpToNext = Player.Instance.expToNext;
-            playerMaxHP = Player.Instance.maxHP;
-            playerCurrentHP = Player.Instance.currentHP;
-            playerMaxLevel = Player.Instance.maxLevel;
+            playerDataManager.SyncWithGameManager();
+        }
+        else
+        {
+            // 従来の処理（後方互換性のため）
+            if (Player.Instance != null)
+            {
+                playerLevel = Player.Instance.level;
+                playerExp = Player.Instance.exp;
+                playerExpToNext = Player.Instance.expToNext;
+                playerMaxHP = Player.Instance.maxHP;
+                playerCurrentHP = Player.Instance.currentHP;
+                playerMaxLevel = Player.Instance.maxLevel;
+            }
         }
     }
     
     public void ApplyPlayerDataToPlayer()
     {
-        if (Player.Instance != null)
+        // プレイヤーデータシステムが利用可能な場合はそちらを使用
+        if (playerDataManager != null)
         {
-            Player.Instance.level = playerLevel;
-            Player.Instance.exp = playerExp;
-            Player.Instance.expToNext = playerExpToNext;
-            Player.Instance.maxHP = playerMaxHP;
-            Player.Instance.currentHP = playerCurrentHP;
-            Player.Instance.maxLevel = playerMaxLevel;
-            
-            if (UIManager.Instance != null)
+            playerDataManager.ApplyToGameManager();
+        }
+        else
+        {
+            // 従来の処理（後方互換性のため）
+            if (Player.Instance != null)
             {
-                UIManager.Instance.UpdateHP(playerCurrentHP, playerMaxHP);
-                UIManager.Instance.UpdateLevelDisplay(playerLevel, playerExp, playerExpToNext);
+                Player.Instance.level = playerLevel;
+                Player.Instance.exp = playerExp;
+                Player.Instance.expToNext = playerExpToNext;
+                Player.Instance.maxHP = playerMaxHP;
+                Player.Instance.currentHP = playerCurrentHP;
+                Player.Instance.maxLevel = playerMaxLevel;
+                
+                if (UIManager.Instance != null)
+                {
+                    UIManager.Instance.UpdateHP(playerCurrentHP, playerMaxHP);
+                    UIManager.Instance.UpdateLevelDisplay(playerLevel, playerExp, playerExpToNext);
+                }
             }
         }
     }
     
     public void AddPlayerExp(int amount)
     {
-        if (playerLevel >= playerMaxLevel) return;
-        
-        playerExp += amount;
-        
-        if (UIManager.Instance != null)
+        // プレイヤーデータシステムが利用可能な場合はそちらを使用
+        if (playerDataManager != null)
         {
-            UIManager.Instance.AddLog($"経験値獲得！+{amount}");
-            UIManager.Instance.UpdateLevelDisplay(playerLevel, playerExp, playerExpToNext);
+            playerDataManager.AddPlayerExp(amount);
         }
-        
-        while (playerExp >= playerExpToNext && playerLevel < playerMaxLevel)
+        else
         {
-            playerExp -= playerExpToNext;
-            PlayerLevelUp();
-        }
-        
-        if (Player.Instance != null)
-        {
-            Player.Instance.level = playerLevel;
-            Player.Instance.exp = playerExp;
-            Player.Instance.expToNext = playerExpToNext;
+            // 従来の処理（後方互換性のため）
+            if (playerLevel >= playerMaxLevel) return;
+            
+            playerExp += amount;
+            
+            if (UIManager.Instance != null)
+            {
+                UIManager.Instance.AddLog($"経験値獲得！+{amount}");
+                UIManager.Instance.UpdateLevelDisplay(playerLevel, playerExp, playerExpToNext);
+            }
+            
+            while (playerExp >= playerExpToNext && playerLevel < playerMaxLevel)
+            {
+                playerExp -= playerExpToNext;
+                PlayerLevelUp();
+            }
+            
+            if (Player.Instance != null)
+            {
+                Player.Instance.level = playerLevel;
+                Player.Instance.exp = playerExp;
+                Player.Instance.expToNext = playerExpToNext;
+            }
         }
     }
     
@@ -163,21 +199,30 @@ public class GameManager : MonoBehaviour
     
     public void SetPlayerHP(int currentHP, int maxHP = -1)
     {
-        playerCurrentHP = currentHP;
-        if (maxHP > 0)
+        // プレイヤーデータシステムが利用可能な場合はそちらを使用
+        if (playerDataManager != null)
         {
-            playerMaxHP = maxHP;
+            playerDataManager.SetPlayerHP(currentHP, maxHP);
         }
-        
-        if (Player.Instance != null)
+        else
         {
-            Player.Instance.currentHP = playerCurrentHP;
-            Player.Instance.maxHP = playerMaxHP;
-        }
-        
-        if (UIManager.Instance != null)
-        {
-            UIManager.Instance.UpdateHP(playerCurrentHP, playerMaxHP);
+            // 従来の処理（後方互換性のため）
+            playerCurrentHP = currentHP;
+            if (maxHP > 0)
+            {
+                playerMaxHP = maxHP;
+            }
+            
+            if (Player.Instance != null)
+            {
+                Player.Instance.currentHP = playerCurrentHP;
+                Player.Instance.maxHP = playerMaxHP;
+            }
+            
+            if (UIManager.Instance != null)
+            {
+                UIManager.Instance.UpdateHP(playerCurrentHP, playerMaxHP);
+            }
         }
     }
     
@@ -461,5 +506,67 @@ public class GameManager : MonoBehaviour
         return $"BattleSystem Integration - Starter: {(battleStarter != null ? "✓" : "✗")}, " +
                $"State: {(battleState != null ? "✓" : "✗")}, " +
                $"EventChannel: {(battleEventChannel != null ? "✓" : "✗")}";
+    }
+    
+    // プレイヤーデータシステム統合用メソッド
+    
+    /// <summary>
+    /// プレイヤーデータシステムイベントの購読
+    /// </summary>
+    private void SubscribeToPlayerDataEvents()
+    {
+        if (playerEventChannel != null)
+        {
+            playerEventChannel.OnPlayerLevelUp.AddListener(OnPlayerDataLevelUp);
+            playerEventChannel.OnPlayerExpGained.AddListener(OnPlayerExpGained);
+            playerEventChannel.OnPlayerHPChanged.AddListener(OnPlayerHPChanged);
+        }
+    }
+    
+    /// <summary>
+    /// プレイヤーレベルアップ時の処理
+    /// </summary>
+    private void OnPlayerDataLevelUp(int newLevel)
+    {
+        // 既存のレベルアップ処理を呼び出し
+        if (UIManager.Instance != null)
+        {
+            UIManager.Instance.UpdateLevelDisplay(newLevel, playerData?.experience ?? 0, playerData?.experienceToNext ?? 10);
+            UIManager.Instance.AddLog($"レベルアップ！レベル {newLevel}");
+        }
+    }
+    
+    /// <summary>
+    /// プレイヤー経験値獲得時の処理
+    /// </summary>
+    private void OnPlayerExpGained(int expAmount)
+    {
+        // 既存の経験値獲得処理を呼び出し
+        if (UIManager.Instance != null)
+        {
+            UIManager.Instance.AddLog($"経験値獲得！+{expAmount}");
+        }
+    }
+    
+    /// <summary>
+    /// プレイヤーHP変更時の処理
+    /// </summary>
+    private void OnPlayerHPChanged(int currentHP, int maxHP)
+    {
+        // 既存のHP変更処理を呼び出し
+        if (UIManager.Instance != null)
+        {
+            UIManager.Instance.UpdateHP(currentHP, maxHP);
+        }
+    }
+    
+    /// <summary>
+    /// プレイヤーデータシステム統合の情報を取得
+    /// </summary>
+    public string GetPlayerDataSystemIntegrationInfo()
+    {
+        return $"PlayerDataSystem Integration - Manager: {(playerDataManager != null ? "✓" : "✗")}, " +
+               $"Data: {(playerData != null ? "✓" : "✗")}, " +
+               $"EventChannel: {(playerEventChannel != null ? "✓" : "✗")}";
     }
 } 

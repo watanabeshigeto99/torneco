@@ -34,6 +34,12 @@ public class GameManager : MonoBehaviour
     // デッキシステム
     [Header("Deck System")]
     public PlayerDeck playerDeck;
+    
+    // 戦闘システム統合
+    [Header("Battle System Integration")]
+    public BattleSystem.BattleStarter battleStarter;
+    public BattleSystem.BattleStateSO battleState;
+    public BattleSystem.BattleEventChannel battleEventChannel;
 
     private void Awake()
     {
@@ -55,6 +61,9 @@ public class GameManager : MonoBehaviour
         {
             InitializePlayerData();
         }
+        
+        // 戦闘システムイベントの購読
+        SubscribeToBattleEvents();
     }
     
     private void InitializePlayerData()
@@ -237,12 +246,21 @@ public class GameManager : MonoBehaviour
     
     public void EnemyDefeated()
     {
-        score += 100;
-        AddPlayerExp(10);
-        
-        if (UIManager.Instance != null)
+        // 戦闘システムが利用可能な場合はそちらを使用
+        if (battleStarter != null)
         {
-            UIManager.Instance.AddLog($"敵を倒した！スコア: {score}");
+            battleStarter.HandleEnemyDefeated();
+        }
+        else
+        {
+            // 従来の処理（後方互換性のため）
+            score += 100;
+            AddPlayerExp(10);
+            
+            if (UIManager.Instance != null)
+            {
+                UIManager.Instance.AddLog($"敵を倒した！スコア: {score}");
+            }
         }
     }
     
@@ -359,5 +377,89 @@ public class GameManager : MonoBehaviour
     public void InitializeForDeckBuilderScene()
     {
         SyncPlayerDataFromPlayer();
+    }
+    
+    // 戦闘システム統合用メソッド
+    
+    /// <summary>
+    /// 戦闘システムイベントの購読
+    /// </summary>
+    private void SubscribeToBattleEvents()
+    {
+        if (battleEventChannel != null)
+        {
+            battleEventChannel.OnBattleEnded.AddListener(OnBattleEnded);
+            battleEventChannel.OnUnitDefeated.AddListener(OnUnitDefeated);
+        }
+    }
+    
+    /// <summary>
+    /// 戦闘終了時の処理
+    /// </summary>
+    private void OnBattleEnded(BattleSystem.BattleStateSO battleState)
+    {
+        switch (battleState.battleResult)
+        {
+            case BattleSystem.BattleResult.PlayerVictory:
+                HandlePlayerVictory();
+                break;
+            case BattleSystem.BattleResult.EnemyVictory:
+                HandlePlayerDefeat();
+                break;
+        }
+    }
+    
+    /// <summary>
+    /// ユニット撃破時の処理
+    /// </summary>
+    private void OnUnitDefeated(BattleSystem.BattleStateSO battleState)
+    {
+        // プレイヤーデータの同期
+        SyncPlayerDataWithBattleSystem();
+    }
+    
+    /// <summary>
+    /// プレイヤー勝利時の処理
+    /// </summary>
+    private void HandlePlayerVictory()
+    {
+        GameClear();
+    }
+    
+    /// <summary>
+    /// プレイヤー敗北時の処理
+    /// </summary>
+    private void HandlePlayerDefeat()
+    {
+        GameOver();
+    }
+    
+    /// <summary>
+    /// プレイヤーデータを戦闘システムと同期
+    /// </summary>
+    private void SyncPlayerDataWithBattleSystem()
+    {
+        if (battleState != null && battleState.playerUnit != null)
+        {
+            // プレイヤーデータを戦闘システムと同期
+            playerCurrentHP = battleState.playerUnit.currentHP;
+            playerMaxHP = battleState.playerUnit.maxHP;
+            
+            // UI更新
+            if (UIManager.Instance != null)
+            {
+                UIManager.Instance.UpdateHP(playerCurrentHP, playerMaxHP);
+            }
+        }
+    }
+    
+    /// <summary>
+    /// 戦闘システム統合の情報を取得
+    /// </summary>
+    public string GetBattleSystemIntegrationInfo()
+    {
+        return $"BattleSystem Integration - Starter: {(battleStarter != null ? "✓" : "✗")}, " +
+               $"State: {(battleState != null ? "✓" : "✗")}, " +
+               $"EventChannel: {(battleEventChannel != null ? "✓" : "✗")}";
     }
 } 

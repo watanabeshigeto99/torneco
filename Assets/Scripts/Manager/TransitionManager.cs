@@ -87,6 +87,13 @@ public class TransitionManager : MonoBehaviour
             return;
         }
         
+        // シーンが存在するかチェック
+        if (!SceneExists(sceneName))
+        {
+            Debug.LogError($"TransitionManager: シーン '{sceneName}' がビルド設定に含まれていません。");
+            return;
+        }
+        
         Debug.Log($"TransitionManager: {sceneName}への遷移を開始");
         StartCoroutine(TransitionRoutine(sceneName));
     }
@@ -213,6 +220,14 @@ public class TransitionManager : MonoBehaviour
         
         // シーンロード開始（allowSceneActivation = falseで即座にアクティブ化しない）
         AsyncOperation asyncLoad = SceneManager.LoadSceneAsync(sceneName);
+        
+        // シーンが存在しない場合のエラーハンドリング
+        if (asyncLoad == null)
+        {
+            Debug.LogError($"TransitionManager: シーン '{sceneName}' が見つかりません。ビルド設定に追加されているか確認してください。");
+            yield break;
+        }
+        
         asyncLoad.allowSceneActivation = false;
         
         // ロード進捗を監視
@@ -492,6 +507,25 @@ public class TransitionManager : MonoBehaviour
     /// 遷移中かどうかを取得
     /// </summary>
     public bool IsTransitioning => isTransitioning;
+    
+    /// <summary>
+    /// シーンが存在するかチェック
+    /// </summary>
+    /// <param name="sceneName">チェックするシーン名</param>
+    /// <returns>シーンが存在する場合はtrue</returns>
+    private bool SceneExists(string sceneName)
+    {
+        for (int i = 0; i < SceneManager.sceneCountInBuildSettings; i++)
+        {
+            string scenePath = SceneUtility.GetScenePathByBuildIndex(i);
+            string sceneNameFromPath = System.IO.Path.GetFileNameWithoutExtension(scenePath);
+            if (sceneNameFromPath == sceneName)
+            {
+                return true;
+            }
+        }
+        return false;
+    }
     
     /// <summary>
     /// 現在の遷移をキャンセル

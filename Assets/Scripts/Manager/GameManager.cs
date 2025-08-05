@@ -52,6 +52,24 @@ public class GameManager : MonoBehaviour
     public FloorSystem.FloorManager floorManager;
     public FloorSystem.FloorDataSO floorData;
     public FloorSystem.FloorEventChannel floorEventChannel;
+    
+    // セーブシステム統合
+    [Header("Save System Integration")]
+    public SaveSystem.SaveManager saveManager;
+    public SaveSystem.SaveDataSO saveData;
+    public SaveSystem.SaveEventChannel saveEventChannel;
+    
+    // デッキシステム統合
+    [Header("Deck System Integration")]
+    public DeckSystem.DeckManager deckManager;
+    public DeckSystem.DeckDataSO deckData;
+    public DeckSystem.DeckEventChannel deckEventChannel;
+    
+    // UIシステム統合
+    [Header("UI System Integration")]
+    public UISystem.UIManager uiManager;
+    public UISystem.UIDataSO uiData;
+    public UISystem.UIEventChannel uiEventChannel;
 
     private void Awake()
     {
@@ -82,6 +100,15 @@ public class GameManager : MonoBehaviour
         
         // 階層システムイベントの購読
         SubscribeToFloorEvents();
+        
+        // セーブシステムイベントの購読
+        SubscribeToSaveEvents();
+        
+        // デッキシステムイベントの購読
+        SubscribeToDeckEvents();
+        
+        // UIシステムイベントの購読
+        SubscribeToUIEvents();
     }
     
     private void InitializePlayerData()
@@ -654,5 +681,260 @@ public class GameManager : MonoBehaviour
         return $"FloorSystem Integration - Manager: {(floorManager != null ? "✓" : "✗")}, " +
                $"Data: {(floorData != null ? "✓" : "✗")}, " +
                $"EventChannel: {(floorEventChannel != null ? "✓" : "✗")}";
+    }
+    
+    // セーブシステム統合用メソッド
+    
+    /// <summary>
+    /// セーブシステムイベントの購読
+    /// </summary>
+    private void SubscribeToSaveEvents()
+    {
+        if (saveEventChannel != null)
+        {
+            saveEventChannel.OnSaveCompleted.AddListener(OnSaveCompleted);
+            saveEventChannel.OnLoadCompleted.AddListener(OnLoadCompleted);
+            saveEventChannel.OnSaveFailed.AddListener(OnSaveFailed);
+            saveEventChannel.OnLoadFailed.AddListener(OnLoadFailed);
+        }
+    }
+    
+    /// <summary>
+    /// セーブ完了ハンドラー
+    /// </summary>
+    private void OnSaveCompleted(SaveSystem.SaveDataSO saveData)
+    {
+        Debug.Log($"GameManager: セーブが完了しました - {saveData?.GetSaveInfo() ?? "Unknown"}");
+        
+        // UIシステムにログを追加
+        if (uiManager != null)
+        {
+            uiManager.AddLog("ゲームデータを保存しました");
+        }
+    }
+    
+    /// <summary>
+    /// ロード完了ハンドラー
+    /// </summary>
+    private void OnLoadCompleted(SaveSystem.SaveDataSO saveData)
+    {
+        Debug.Log($"GameManager: ロードが完了しました - {saveData?.GetSaveInfo() ?? "Unknown"}");
+        
+        // ロードされたデータを各システムに適用
+        ApplyLoadedDataToSystems(saveData);
+        
+        // UIシステムにログを追加
+        if (uiManager != null)
+        {
+            uiManager.AddLog("ゲームデータを読み込みました");
+        }
+    }
+    
+    /// <summary>
+    /// セーブ失敗ハンドラー
+    /// </summary>
+    private void OnSaveFailed(string errorMessage)
+    {
+        Debug.LogError($"GameManager: セーブに失敗しました - {errorMessage}");
+        
+        // UIシステムにログを追加
+        if (uiManager != null)
+        {
+            uiManager.AddLog($"セーブに失敗しました: {errorMessage}");
+        }
+    }
+    
+    /// <summary>
+    /// ロード失敗ハンドラー
+    /// </summary>
+    private void OnLoadFailed(string errorMessage)
+    {
+        Debug.LogError($"GameManager: ロードに失敗しました - {errorMessage}");
+        
+        // UIシステムにログを追加
+        if (uiManager != null)
+        {
+            uiManager.AddLog($"ロードに失敗しました: {errorMessage}");
+        }
+    }
+    
+    /// <summary>
+    /// ロードされたデータを各システムに適用
+    /// </summary>
+    private void ApplyLoadedDataToSystems(SaveSystem.SaveDataSO saveData)
+    {
+        if (saveData == null) return;
+        
+        // プレイヤーデータシステムに適用
+        if (playerDataManager != null && saveData.playerData != null)
+        {
+            playerDataManager.SetPlayerLevel(saveData.playerData.playerLevel);
+            playerDataManager.SetPlayerHP(saveData.playerData.playerCurrentHP, saveData.playerData.playerMaxHP);
+        }
+        
+        // 階層システムに適用
+        if (floorManager != null)
+        {
+            floorManager.SetFloor(saveData.currentFloor);
+        }
+        
+        // UIシステムに適用
+        if (uiManager != null)
+        {
+            uiManager.UpdateScore(saveData.score);
+            uiManager.UpdateFloor(saveData.currentFloor);
+        }
+    }
+    
+    // デッキシステム統合用メソッド
+    
+    /// <summary>
+    /// デッキシステムイベントの購読
+    /// </summary>
+    private void SubscribeToDeckEvents()
+    {
+        if (deckEventChannel != null)
+        {
+            deckEventChannel.OnDeckChanged.AddListener(OnDeckChanged);
+            deckEventChannel.OnCardAdded.AddListener(OnCardAdded);
+            deckEventChannel.OnCardDrawn.AddListener(OnCardDrawn);
+            deckEventChannel.OnDeckShuffled.AddListener(OnDeckShuffled);
+        }
+    }
+    
+    /// <summary>
+    /// デッキ変更ハンドラー
+    /// </summary>
+    private void OnDeckChanged(DeckSystem.DeckDataSO deckData)
+    {
+        Debug.Log($"GameManager: デッキが変更されました - {deckData?.GetDeckInfo() ?? "Unknown"}");
+        
+        // UIシステムにログを追加
+        if (uiManager != null)
+        {
+            uiManager.AddLog($"デッキが変更されました (サイズ: {deckData?.GetDeckSize() ?? 0})");
+        }
+    }
+    
+    /// <summary>
+    /// カード追加ハンドラー
+    /// </summary>
+    private void OnCardAdded(DeckSystem.CardDataSO cardData)
+    {
+        Debug.Log($"GameManager: カードが追加されました - {cardData?.cardName ?? "Unknown"}");
+        
+        // UIシステムにログを追加
+        if (uiManager != null)
+        {
+            uiManager.AddLog($"カードを追加しました: {cardData?.cardName ?? "Unknown"}");
+        }
+    }
+    
+    /// <summary>
+    /// カードドローハンドラー
+    /// </summary>
+    private void OnCardDrawn(DeckSystem.CardDataSO cardData)
+    {
+        Debug.Log($"GameManager: カードを引きました - {cardData?.cardName ?? "Unknown"}");
+        
+        // UIシステムにログを追加
+        if (uiManager != null)
+        {
+            uiManager.AddLog($"カードを引きました: {cardData?.cardName ?? "Unknown"}");
+        }
+    }
+    
+    /// <summary>
+    /// デッキシャッフルハンドラー
+    /// </summary>
+    private void OnDeckShuffled()
+    {
+        Debug.Log("GameManager: デッキがシャッフルされました");
+        
+        // UIシステムにログを追加
+        if (uiManager != null)
+        {
+            uiManager.AddLog("デッキをシャッフルしました");
+        }
+    }
+    
+    // UIシステム統合用メソッド
+    
+    /// <summary>
+    /// UIシステムイベントの購読
+    /// </summary>
+    private void SubscribeToUIEvents()
+    {
+        if (uiEventChannel != null)
+        {
+            uiEventChannel.OnUIDataChanged.AddListener(OnUIDataChanged);
+            uiEventChannel.OnLogAdded.AddListener(OnUILogAdded);
+            uiEventChannel.OnHPChanged.AddListener(OnUIHPChanged);
+            uiEventChannel.OnLevelChanged.AddListener(OnUILevelChanged);
+        }
+    }
+    
+    /// <summary>
+    /// UIデータ変更ハンドラー
+    /// </summary>
+    private void OnUIDataChanged(UISystem.UIDataSO uiData)
+    {
+        Debug.Log($"GameManager: UIデータが変更されました - {uiData?.GetUIInfo() ?? "Unknown"}");
+    }
+    
+    /// <summary>
+    /// UIログ追加ハンドラー
+    /// </summary>
+    private void OnUILogAdded(string message)
+    {
+        Debug.Log($"GameManager: UIログが追加されました - {message}");
+    }
+    
+    /// <summary>
+    /// UI HP変更ハンドラー
+    /// </summary>
+    private void OnUIHPChanged(int currentHP, int maxHP)
+    {
+        Debug.Log($"GameManager: UI HPが変更されました - {currentHP}/{maxHP}");
+        
+        // プレイヤーデータシステムと同期
+        if (playerDataManager != null)
+        {
+            playerDataManager.SetPlayerHP(currentHP, maxHP);
+        }
+    }
+    
+    /// <summary>
+    /// UI レベル変更ハンドラー
+    /// </summary>
+    private void OnUILevelChanged(int level, int exp, int expToNext)
+    {
+        Debug.Log($"GameManager: UI レベルが変更されました - {level}, Exp: {exp}/{expToNext}");
+        
+        // プレイヤーデータシステムと同期
+        if (playerDataManager != null)
+        {
+            playerDataManager.SetPlayerLevel(level);
+        }
+    }
+    
+    /// <summary>
+    /// 全システム統合の情報を取得
+    /// </summary>
+    public string GetAllSystemIntegrationInfo()
+    {
+        return $"=== GameManager System Integration ===\n" +
+               $"Battle System: {GetBattleSystemIntegrationInfo()}\n" +
+               $"Player Data System: {GetPlayerDataSystemIntegrationInfo()}\n" +
+               $"Floor System: {GetFloorSystemIntegrationInfo()}\n" +
+               $"Save System: {(saveManager != null ? "✓" : "✗")}, " +
+               $"Data: {(saveData != null ? "✓" : "✗")}, " +
+               $"EventChannel: {(saveEventChannel != null ? "✓" : "✗")}\n" +
+               $"Deck System: {(deckManager != null ? "✓" : "✗")}, " +
+               $"Data: {(deckData != null ? "✓" : "✗")}, " +
+               $"EventChannel: {(deckEventChannel != null ? "✓" : "✗")}\n" +
+               $"UI System: {(uiManager != null ? "✓" : "✗")}, " +
+               $"Data: {(uiData != null ? "✓" : "✗")}, " +
+               $"EventChannel: {(uiEventChannel != null ? "✓" : "✗")}";
     }
 } 

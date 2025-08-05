@@ -257,7 +257,15 @@ public class Player : Unit
         
         Debug.Log($"Player: 移動選択 - クリック位置: {clickedPos}, 距離: {dist}, 最大距離: {allowedMoveDistance}, 歩行可能: {GridManager.Instance.IsWalkable(clickedPos)}");
         
-        if (dist <= allowedMoveDistance && GridManager.Instance.IsWalkable(clickedPos))
+        // Exit位置への移動を特別に許可（距離制限を無視）
+        bool isExitPosition = GridManager.Instance != null && GridManager.Instance.IsExitPosition(clickedPos);
+        bool canMoveToExit = isExitPosition && !hasExited && GridManager.Instance.CanMoveToExit(clickedPos);
+        
+        // 通常の移動条件またはExit位置への移動条件
+        bool normalMoveCondition = dist <= allowedMoveDistance && GridManager.Instance.IsWalkable(clickedPos);
+        bool exitMoveCondition = canMoveToExit;
+        
+        if (normalMoveCondition || exitMoveCondition)
         {
             Vector2Int oldPos = gridPosition;
             
@@ -273,21 +281,41 @@ public class Player : Unit
             // カメラ追従と視界範囲更新
             NotifyCameraFollow();
             
-            // Exit判定（階層進行用）
-            CheckExit(clickedPos);
-            
             // ターン終了
             if (TurnManager.Instance != null)
             {
                 TurnManager.Instance.OnPlayerCardUsed();
             }
         }
+        else if (isExitPosition && hasExited)
+        {
+            // 既にExit済みの場合のメッセージ
+            if (UIManager.Instance != null)
+            {
+                UIManager.Instance.AddLog("既にExitを使用済みです");
+            }
+        }
+        else
+        {
+            // 移動できない場合のメッセージ
+            if (UIManager.Instance != null)
+            {
+                UIManager.Instance.AddLog("その位置には移動できません");
+            }
+        }
     }
 
+    private bool hasExited = false; // Exit重複防止フラグ
+    
     private void CheckExit(Vector2Int newPos)
     {
-        if (GridManager.Instance != null && GridManager.Instance.exitPosition == newPos)
+        Debug.Log($"Player: Exitチェック - 現在位置: {newPos}, Exit位置: {GridManager.Instance?.exitPosition}, 既にExit済み: {hasExited}");
+        
+        if (GridManager.Instance != null && GridManager.Instance.exitPosition == newPos && !hasExited)
         {
+            hasExited = true; // 重複防止フラグを設定
+            Debug.Log("Player: Exitに到達！経験値を獲得して次の階層に進みます");
+            
             GainExp(5);
             
             if (UIManager.Instance != null)
@@ -297,7 +325,13 @@ public class Player : Unit
             
             if (GameManager.Instance != null)
             {
+                Debug.Log($"Player: GameManager.GoToNextFloor()を呼び出します - 現在階層: {GameManager.Instance.currentFloor}");
                 GameManager.Instance.GoToNextFloor();
+                Debug.Log($"Player: GameManager.GoToNextFloor()呼び出し完了 - 現在階層: {GameManager.Instance.currentFloor}");
+            }
+            else
+            {
+                Debug.LogError("Player: GameManager.Instanceがnullです");
             }
         }
     }
@@ -319,6 +353,9 @@ public class Player : Unit
         allowedMoveDistance = 0;
         isAwaitingAttackInput = false;
         attackPower = 0;
+        
+        // Exit重複防止フラグをリセット
+        hasExited = false;
         
         NotifyCameraFollow();
         
@@ -393,14 +430,28 @@ public class Player : Unit
         }
     }
 
-    public void SetPosition(Vector2Int newPos)
+    public override void MoveTo(Vector2Int newPos)
     {
-        // 位置を設定
-        if (GridManager.Instance.IsInsideGrid(newPos))
-        {
-            gridPosition = newPos;
-            transform.position = GridManager.Instance.GetWorldPosition(newPos);
-        }
+        if (!GridManager.Instance.IsInsideGrid(newPos) || !GridManager.Instance.IsWalkable(newPos))
+            return;
+        
+        // 基底クラスのMoveToを呼び出し（OnUnitMovedイベントの発行を含む）
+        base.MoveTo(newPos);
+        
+        // Exitチェック
+        CheckExit(newPos);
+        
+        // カメラ追従通知
+        NotifyCameraFollow();
+    }
+    
+    public override void SetPosition(Vector2Int newPos)
+    {
+        // 基底クラスのSetPositionを呼び出し（OnUnitMovedイベントの発行を含む）
+        base.SetPosition(newPos);
+        
+        // Exitチェック
+        CheckExit(newPos);
         
         // カメラ追従通知
         NotifyCameraFollow();
@@ -796,13 +847,74 @@ public class Player : Unit
     // 経験値獲得メソッド
     public void GainExp(int amount)
     {
+        Debug.Log($"Player: 経験値獲得開始 +{amount} (現在のレベル: {level}, 経験値: {exp}/{expToNext})");
+
         // GameManagerを通じて経験値を管理（永続化のため）
         if (GameManager.Instance != null)
         {
+            Debug.Log($"Player: GameManager.AddPlayerExp({amount})を呼び出します");
             GameManager.Instance.AddPlayerExp(amount);
+            Debug.Log($"Player: GameManager.AddPlayerExp()呼び出し後 - GameManager.playerExp: {GameManager.Instance.playerExp}");
+
+            // GameManagerから最新のデータを取得して同期
+            if (GameManager.Instance.useNewSystems)
+            {
+                Debug.Log("Player: 新しいシステムパスで同期を試みます。");
+                // 新しいシステムを使用している場合
+                if (GameManager.Instance.playerDataManager != null && GameManager.Instance.playerDataManager.GetPlayerData() != null)
+                {
+                    var playerData = GameManager.Instance.playerDataManager.GetPlayerData();
+                    level = playerData.level;
+                    exp = playerData.experience;
+                    expToNext = playerData.experienceToNext;
+                    maxHP = playerData.maxHP;
+                    currentHP = playerData.currentHP;
+
+                    Debug.Log($"Player: 新しいシステムからデータを同期 - Level: {level}, Exp: {exp}/{expToNext}");
+                }
+                else
+                {
+                    Debug.LogWarning("Player: 新しいシステムのPlayerDataManagerまたはPlayerDataがnullです。レガシーデータで同期を試みます。");
+                    // Fallback to legacy data if new system managers are not fully set up
+                    level = GameManager.Instance.playerLevel;
+                    exp = GameManager.Instance.playerExp;
+                    expToNext = GameManager.Instance.playerExpToNext;
+                    maxHP = GameManager.Instance.playerMaxHP;
+                    currentHP = GameManager.Instance.playerCurrentHP;
+                    Debug.Log($"Player: レガシーシステムデータで同期しました (フォールバック) - Level: {level}, Exp: {exp}/{expToNext}");
+                }
+            }
+            else
+            {
+                Debug.Log("Player: レガシーシステムパスで同期を試みます。");
+                // レガシーシステムを使用している場合
+                level = GameManager.Instance.playerLevel;
+                exp = GameManager.Instance.playerExp;
+                expToNext = GameManager.Instance.playerExpToNext;
+                maxHP = GameManager.Instance.playerMaxHP;
+                currentHP = GameManager.Instance.playerCurrentHP;
+
+                Debug.Log($"Player: レガシーシステムからデータを同期 - Level: {level}, Exp: {exp}/{expToNext}");
+            }
+
+            Debug.Log($"Player: 同期後 - Player.exp: {exp}");
+            
+            // UI更新
+            if (UIManager.Instance != null)
+            {
+                UIManager.Instance.UpdateHP(currentHP, maxHP);
+                UIManager.Instance.UpdateLevelDisplay(level, exp, expToNext);
+                UIManager.Instance.AddLog($"経験値獲得！+{amount} (現在: {exp}/{expToNext})");
+            }
+            else
+            {
+                Debug.LogWarning("Player: UIManager.Instanceがnullです");
+            }
         }
         else
         {
+            Debug.LogWarning("Player: GameManager.Instanceがnullです。フォールバック処理を使用します");
+            
             // GameManagerが存在しない場合のフォールバック処理
             if (level >= maxLevel) return; // 最大レベルに達している場合は経験値を獲得しない
             
@@ -823,6 +935,9 @@ public class Player : Unit
                 LevelUp();
             }
         }
+        
+        Debug.Log($"Player: 経験値獲得完了 - 最終レベル: {level}, 最終経験値: {exp}/{expToNext}");
+        Debug.Log($"Player: 最終確認 - GameManager.playerExp: {GameManager.Instance?.playerExp}, Player.exp: {exp}");
     }
     
     // レベルアップメソッド

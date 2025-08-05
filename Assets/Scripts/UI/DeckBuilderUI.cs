@@ -387,11 +387,47 @@ public class DeckBuilderUI : MonoBehaviour
         {
             gameManager.SetPlayerDeck(playerDeck);
             Debug.Log($"DeckBuilderUI: GameManagerにデッキを設定完了 - {playerDeck.selectedDeck.Count}枚");
+            
+            // 階層を進める（デッキビルダーから戻る時）
+            // ただし、初回の場合は階層を進めない（1階からスタートするため）
+            if (gameManager.currentFloor > 1)
+            {
+                if (gameManager.useNewSystems && gameManager.floorManager != null)
+                {
+                    int newFloor = gameManager.floorManager.currentFloor + 1;
+                    gameManager.floorManager.SetFloor(newFloor);
+                    Debug.Log($"DeckBuilderUI: 新しいシステムで階層を進行しました - {newFloor}");
+                    
+                    // GameManagerとの同期を確実に行う
+                    gameManager.currentFloor = newFloor;
+                    Debug.Log($"DeckBuilderUI: GameManager.currentFloorを同期しました - {gameManager.currentFloor}");
+                }
+                else
+                {
+                    // レガシーシステムの場合
+                    gameManager.currentFloor++;
+                    Debug.Log($"DeckBuilderUI: レガシーシステムで階層を進行しました - {gameManager.currentFloor}");
+                    
+                    // FloorManagerとの同期を確実に行う
+                    if (gameManager.floorManager != null)
+                    {
+                        gameManager.floorManager.SetFloor(gameManager.currentFloor);
+                        Debug.Log($"DeckBuilderUI: FloorManagerを同期しました - {gameManager.floorManager.currentFloor}");
+                    }
+                }
+            }
+            else
+            {
+                Debug.Log("DeckBuilderUI: 初回のため階層を進めません（1階からスタート）");
+            }
         }
         else
         {
             Debug.LogError("DeckBuilderUI: GameManagerの作成に失敗しました");
         }
+        
+        // 階層更新後の最終確認
+        Debug.Log($"DeckBuilderUI: 最終確認 - GameManager.currentFloor: {gameManager.currentFloor}, FloorManager.currentFloor: {gameManager.floorManager?.currentFloor}");
         
         // バトルシーンに遷移（TransitionManagerを使用）
         if (TransitionManager.Instance != null)

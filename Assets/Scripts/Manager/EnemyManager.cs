@@ -21,7 +21,7 @@ public class EnemyManager : MonoBehaviour
     public static event Action<Enemy[]> OnEnemiesSpawned;
 
     public GameObject enemyPrefab;
-    public int enemyCount = 3;
+    public int enemyCount = 3; // デフォルトは3体
     
     [Header("Enemy Data")]
     public EnemyDataSO[] enemyDataPool; // 敵のデータプール
@@ -105,6 +105,9 @@ public class EnemyManager : MonoBehaviour
         Vector2Int playerPos = Player.Instance.gridPosition;
         Debug.Log($"EnemyManager: プレイヤー位置: {playerPos}");
         
+        // 既存の敵をクリア
+        enemies.Clear();
+        
         int spawnedCount = 0;
         
         for (int i = 0; i < enemyCount; i++)
@@ -159,20 +162,30 @@ public class EnemyManager : MonoBehaviour
                     enemy.InitializeWithFloor(GameManager.Instance.currentFloor);
                 }
                 
-                enemies.Add(enemy);
-                
-                // ターン制システムに敵を登録
-                // RegisterEnemy(enemy); // This line was removed as per the new_code
-                
-                spawnedCount++;
-                string enemyName = selectedData != null ? selectedData.enemyName : "敵";
-                Debug.Log($"EnemyManager: 敵{i + 1}スポーン完了 位置: {pos}, 種類: {enemyName}");
-                
-                // 敵の詳細情報をログ出力
-                if (selectedData != null)
-                {
-                    Debug.Log($"EnemyManager: {enemyName}の設定 - HP: {selectedData.maxHP}, 攻撃力: {selectedData.attackPower}, 移動パターン: {selectedData.movementPattern}, 攻撃パターン: {selectedData.attackPattern}");
-                }
+                                 enemies.Add(enemy);
+                 
+                 // ターン制システムに敵を登録
+                 // RegisterEnemy(enemy); // This line was removed as per the new_code
+                 
+                 spawnedCount++;
+                 string enemyName = selectedData != null ? selectedData.enemyName : "敵";
+                 Debug.Log($"EnemyManager: 敵{i + 1}スポーン完了 位置: {pos}, 種類: {enemyName}");
+                 
+                 // 敵の表示状態を確認
+                 if (enemy.spriteRenderer != null)
+                 {
+                     Debug.Log($"EnemyManager: 敵{i + 1}の表示状態 - スプライト: {(enemy.spriteRenderer.sprite != null ? enemy.spriteRenderer.sprite.name : "null")}, 色: {enemy.spriteRenderer.color}, アクティブ: {enemy.gameObject.activeInHierarchy}");
+                 }
+                 else
+                 {
+                     Debug.LogWarning($"EnemyManager: 敵{i + 1}のspriteRendererがnullです");
+                 }
+                 
+                 // 敵の詳細情報をログ出力
+                 if (selectedData != null)
+                 {
+                     Debug.Log($"EnemyManager: {enemyName}の設定 - HP: {selectedData.maxHP}, 攻撃力: {selectedData.attackPower}, 移動パターン: {selectedData.movementPattern}, 攻撃パターン: {selectedData.attackPattern}");
+                 }
             }
             else
             {
@@ -292,6 +305,13 @@ public class EnemyManager : MonoBehaviour
     // 外部から敵リストを取得するためのメソッド
     public List<Enemy> GetEnemies()
     {
+        Debug.Log($"EnemyManager: GetEnemies()呼び出し - 登録済み敵数: {enemies.Count}");
+        
+        // nullの敵を除去
+        enemies.RemoveAll(e => e == null);
+        
+        Debug.Log($"EnemyManager: null除去後の敵数: {enemies.Count}");
+        
         return enemies;
     }
     

@@ -342,6 +342,22 @@ public class GridManager : MonoBehaviour
         
         return walkable;
     }
+    
+    /// <summary>
+    /// Exit位置かどうかをチェック
+    /// </summary>
+    public bool IsExitPosition(Vector2Int pos)
+    {
+        return pos == exitPosition;
+    }
+    
+    /// <summary>
+    /// Exit位置への移動が可能かどうかをチェック
+    /// </summary>
+    public bool CanMoveToExit(Vector2Int pos)
+    {
+        return IsExitPosition(pos) && IsInsideGrid(pos);
+    }
 
     // 視界範囲内かどうかをチェック
     public bool IsInVisionRange(Vector2Int position, Vector2Int playerPosition)
@@ -529,36 +545,44 @@ public class GridManager : MonoBehaviour
     // 移動可能なタイルをハイライト表示
     public void HighlightMovableTiles(Vector2Int center, int range)
     {
-        Debug.Log($"GridManager: 移動可能タイルハイライト開始 中心: {center}, 範囲: {range}");
+        Debug.Log($"GridManager: 移動可能タイルハイライト開始 - 中心: {center}, 範囲: {range}");
         
-        int highlightedCount = 0;
-        
-        // キャッシュされたallTilesを使用
-        if (allTiles == null || allTiles.Length == 0)
+        if (allTiles == null)
         {
-            Debug.LogWarning("GridManager: タイルが見つかりません");
+            Debug.LogError("GridManager: allTilesがnullです");
             return;
         }
         
-        foreach (var tile in allTiles)
+        foreach (Tile tile in allTiles)
         {
-            if (tile == null) continue;
-            
-            int dist = Mathf.Abs(tile.x - center.x) + Mathf.Abs(tile.y - center.y);
-            if (dist <= range)
+            if (tile != null)
             {
-                // 移動可能なタイルは必ず表示する（非表示でも表示に変更）
-                tile.gameObject.SetActive(true);
-                tile.Highlight();
-                highlightedCount++;
-            }
-            else
-            {
-                tile.ResetColor();
+                Vector2Int tilePos = new Vector2Int(tile.x, tile.y);
+                int distance = Mathf.Abs(tilePos.x - center.x) + Mathf.Abs(tilePos.y - center.y);
+                
+                // 移動可能範囲内かチェック
+                bool inRange = distance <= range;
+                bool walkable = IsWalkable(tilePos);
+                bool isExitPosition = IsExitPosition(tilePos);
+                
+                // Exit位置の場合は特別にハイライト
+                if (isExitPosition)
+                {
+                    tile.Highlight(Color.green); // Exit位置は緑色でハイライト
+                    Debug.Log($"GridManager: Exit位置をハイライト - 位置: {tilePos}");
+                }
+                else if (inRange && walkable)
+                {
+                    tile.Highlight(Color.blue);
+                }
+                else
+                {
+                    tile.ResetColor();
+                }
             }
         }
         
-        Debug.Log($"GridManager: 移動可能タイルハイライト完了 ハイライト数: {highlightedCount}");
+        Debug.Log("GridManager: 移動可能タイルハイライト完了");
     }
     
     // 攻撃可能タイルをハイライト表示
@@ -800,7 +824,18 @@ public class GridManager : MonoBehaviour
             }
         }
         
-        // 古いExitを削除
+        // 古いExitを削除（複数存在する可能性があるため、すべてのExitを検索して削除）
+        GameObject[] allGameObjects = FindObjectsOfType<GameObject>();
+        foreach (GameObject obj in allGameObjects)
+        {
+            if (obj != null && obj.name.Contains("Exit"))
+            {
+                DestroyImmediate(obj);
+                Debug.Log("GridManager: 古いExitを削除しました");
+            }
+        }
+        
+        // 現在のExitオブジェクトも削除
         if (exitObject != null)
         {
             DestroyImmediate(exitObject);

@@ -1,76 +1,65 @@
 using UnityEngine;
+using System.Collections;
+using System.Collections.Generic;
+using PlayerDataSystem;
 
+/// <summary>
+/// ゲーム全体の管理を行うクラス（旧版 - 段階的移行中）
+/// 新しいシステムとの互換性レイヤーを追加
+/// </summary>
 [DefaultExecutionOrder(-100)]
 public class GameManager : MonoBehaviour
 {
     public static GameManager Instance { get; private set; }
     
-    // ゲーム状態
-    [Header("Game State")]
+    [Header("Legacy Game State")]
     public int score = 0;
-    public bool gameOver = false;
-    public bool gameClear = false;
-    
-    // 階層システム関連（準備段階）
-    [Header("Floor System - Preparation")]
-    public int currentFloor = 1;
-    public int maxFloor = 10;
-    
-    // プレイヤーデータ（永続化）
-    [Header("Player Data - Persistent")]
     public int playerLevel = 1;
     public int playerExp = 0;
     public int playerExpToNext = 10;
     public int playerMaxHP = 20;
     public int playerCurrentHP = 20;
     public int playerMaxLevel = 10;
+    public int currentFloor = 1;
+    public int maxFloor = 10;
+    public bool gameOver = false;
+    public bool gameClear = false;
     
-    // 階層システムイベント（準備段階）
-    public static event System.Action<int> OnFloorChanged;
-    public static event System.Action OnGameClear;
-    public static event System.Action OnGameOver;
-    public static event System.Action<int> OnPlayerLevelUp; // プレイヤーレベルアップイベント
-    
-    // デッキシステム
-    [Header("Deck System")]
-    public PlayerDeck playerDeck;
-    
-    // 戦闘システム統合
-    [Header("Battle System Integration")]
-    public BattleSystem.BattleStarter battleStarter;
-    public BattleSystem.BattleStateSO battleState;
-    public BattleSystem.BattleEventChannel battleEventChannel;
-    
-    // プレイヤーデータシステム統合
-    [Header("Player Data System Integration")]
+    [Header("New System Integration")]
+    public GameManagerNew newGameManager;
+    public GameStateManager gameStateManager;
     public PlayerDataSystem.PlayerDataManager playerDataManager;
-    public PlayerDataSystem.PlayerDataSO playerData;
-    public PlayerDataSystem.PlayerEventChannel playerEventChannel;
+    public FloorManager floorManager;
+    public SystemIntegrationManager systemIntegrationManager;
     
-    // 階層システム統合
-    [Header("Floor System Integration")]
-    public FloorSystem.FloorManager floorManager;
-    public FloorSystem.FloorDataSO floorData;
-    public FloorSystem.FloorEventChannel floorEventChannel;
-    
-    // セーブシステム統合
-    [Header("Save System Integration")]
+    [Header("Legacy Managers")]
     public SaveSystem.SaveManager saveManager;
-    public SaveSystem.SaveDataSO saveData;
-    public SaveSystem.SaveEventChannel saveEventChannel;
-    
-    // デッキシステム統合
-    [Header("Deck System Integration")]
     public DeckSystem.DeckManager deckManager;
-    public DeckSystem.DeckDataSO deckData;
-    public DeckSystem.DeckEventChannel deckEventChannel;
-    
-    // UIシステム統合
-    [Header("UI System Integration")]
     public UISystem.UIManager uiManager;
-    public UISystem.UIDataSO uiData;
+    public SoundManager soundManager;
+    
+    [Header("Event Channels")]
+    public SaveSystem.SaveEventChannel saveEventChannel;
+    public DeckSystem.DeckEventChannel deckEventChannel;
     public UISystem.UIEventChannel uiEventChannel;
-
+    
+    [Header("Auto Setup")]
+    public AutoSetupManager autoSetupManager;
+    
+    // レガシーイベント（後方互換性のため）
+    public static event System.Action<int> OnScoreChanged;
+    public static event System.Action<int> OnPlayerLevelUp;
+    public static event System.Action<int> OnPlayerExpGained;
+    public static event System.Action<int, int> OnPlayerHPChanged;
+    public static event System.Action<int> OnFloorChanged;
+    public static event System.Action OnGameOver;
+    public static event System.Action OnGameClear;
+    
+    // 移行フラグ
+    [Header("Migration Settings")]
+    public bool useNewSystems = true;  // 新しいシステムを有効化
+    public bool enableLegacyMode = true;
+    
     private void Awake()
     {
         if (Instance != null && Instance != this)
@@ -82,71 +71,568 @@ public class GameManager : MonoBehaviour
         
         DontDestroyOnLoad(gameObject);
         
-        score = 0;
-        gameOver = false;
-        gameClear = false;
-        currentFloor = 1;
-        
-        if (playerLevel <= 0)
-        {
-            InitializePlayerData();
-        }
-        
-        // 戦闘システムイベントの購読
-        SubscribeToBattleEvents();
-        
-        // プレイヤーデータシステムイベントの購読
-        SubscribeToPlayerDataEvents();
-        
-        // 階層システムイベントの購読
-        SubscribeToFloorEvents();
-        
-        // セーブシステムイベントの購読
-        SubscribeToSaveEvents();
-        
-        // デッキシステムイベントの購読
-        SubscribeToDeckEvents();
-        
-        // UIシステムイベントの購読
-        SubscribeToUIEvents();
+        InitializeGameManager();
     }
     
-    private void InitializePlayerData()
+    /// <summary>
+    /// ゲームマネージャーの初期化
+    /// </summary>
+    private void InitializeGameManager()
     {
+        Debug.Log("GameManager: 初期化開始");
+        
+        // 新しいシステムの参照を取得
+        if (newGameManager == null)
+            newGameManager = GameManagerNew.Instance;
+        if (gameStateManager == null)
+            gameStateManager = GameStateManager.Instance;
+        if (playerDataManager == null)
+        {
+            playerDataManager = PlayerDataSystem.PlayerDataManager.Instance;
+            if (playerDataManager == null)
+            {
+                Debug.LogWarning("GameManager: PlayerDataManager.Instanceがnullです。PlayerDataManagerを探して取得します。");
+                playerDataManager = FindObjectOfType<PlayerDataSystem.PlayerDataManager>();
+                if (playerDataManager == null)
+                {
+                    Debug.LogError("GameManager: PlayerDataManagerが見つかりません。新しいPlayerDataManagerを作成します。");
+                    GameObject playerDataManagerObj = new GameObject("PlayerDataManager");
+                    playerDataManager = playerDataManagerObj.AddComponent<PlayerDataSystem.PlayerDataManager>();
+                }
+            }
+        }
+        if (floorManager == null)
+        {
+            floorManager = FloorManager.Instance;
+            if (floorManager == null)
+            {
+                Debug.LogWarning("GameManager: FloorManager.Instanceがnullです。FloorManagerを探して取得します。");
+                floorManager = FindObjectOfType<FloorManager>();
+                if (floorManager == null)
+                {
+                    Debug.LogError("GameManager: FloorManagerが見つかりません。新しいFloorManagerを作成します。");
+                    GameObject floorManagerObj = new GameObject("FloorManager");
+                    floorManager = floorManagerObj.AddComponent<FloorManager>();
+                }
+            }
+        }
+        if (systemIntegrationManager == null)
+            systemIntegrationManager = SystemIntegrationManager.Instance;
+        
+        // AutoSetupManagerの設定
+        if (autoSetupManager == null)
+            autoSetupManager = FindObjectOfType<AutoSetupManager>();
+            
+        // レガシーモードが有効な場合のみ旧システムを初期化
+        if (enableLegacyMode)
+        {
+            InitializeLegacySystems();
+        }
+        
+        // 新しいシステムとの統合を設定
+        if (useNewSystems)
+        {
+            SetupNewSystemIntegration();
+        }
+        
+        // 初期化完了後のデータ同期
+        StartCoroutine(DelayedInitialization());
+        
+        Debug.Log("GameManager: 初期化完了（移行モード）");
+    }
+    
+    /// <summary>
+    /// 遅延初期化処理
+    /// </summary>
+    private System.Collections.IEnumerator DelayedInitialization()
+    {
+        // 1フレーム待機して他のシステムの初期化を待つ
+        yield return null;
+        
+        // データ同期
+        if (useNewSystems)
+        {
+            SyncLegacyDataToNewSystems();
+        }
+        
+        Debug.Log("GameManager: 遅延初期化完了");
+    }
+    
+    /// <summary>
+    /// レガシーシステムの初期化
+    /// </summary>
+    private void InitializeLegacySystems()
+    {
+        // 初期値の設定
+        score = 0;
         playerLevel = 1;
         playerExp = 0;
         playerExpToNext = 10;
         playerMaxHP = 20;
         playerCurrentHP = 20;
         playerMaxLevel = 10;
+        currentFloor = 1; // 必ず1階からスタート
+        maxFloor = 10;
+        gameOver = false;
+        gameClear = false;
+        
+        Debug.Log("GameManager: レガシーシステムを初期化しました - 階層: " + currentFloor);
     }
     
-    public void SyncPlayerDataFromPlayer()
+    /// <summary>
+    /// 新しいシステムとの統合設定
+    /// </summary>
+    private void SetupNewSystemIntegration()
     {
-        // プレイヤーデータシステムが利用可能な場合はそちらを使用
+        if (newGameManager != null)
+        {
+            // 新しいシステムのイベントを購読
+            GameManagerNew.OnGameInitialized += OnNewGameInitialized;
+            GameManagerNew.OnGameStateChanged += OnNewGameStateChanged;
+        }
+        
+        Debug.Log("GameManager: 新しいシステムとの統合を設定しました");
+    }
+    
+    // 新しいシステムイベントハンドラー
+    
+    /// <summary>
+    /// 新しいゲーム初期化完了時の処理
+    /// </summary>
+    private void OnNewGameInitialized()
+    {
+        Debug.Log("GameManager: 新しいゲームシステムの初期化を検知しました");
+        
+        // レガシーデータを新しいシステムに同期
+        SyncLegacyDataToNewSystems();
+    }
+    
+    /// <summary>
+    /// 新しいゲーム状態変更時の処理
+    /// </summary>
+    private void OnNewGameStateChanged()
+    {
+        Debug.Log("GameManager: 新しいゲーム状態変更を検知しました");
+        
+        // 新しいシステムからレガシーデータに同期
+        SyncNewDataToLegacySystems();
+    }
+    
+    /// <summary>
+    /// レガシーデータを新しいシステムに同期
+    /// </summary>
+    private void SyncLegacyDataToNewSystems()
+    {
+        if (gameStateManager != null)
+        {
+            gameStateManager.SetScore(score);
+        }
+        
         if (playerDataManager != null)
         {
-            playerDataManager.SyncWithGameManager();
+            playerDataManager.SetPlayerLevel(playerLevel);
+            playerDataManager.SetPlayerHP(playerCurrentHP, playerMaxHP);
+            // playerMaxLevelは新しいシステムでは固定値として扱う
+        }
+        
+        if (floorManager != null)
+        {
+            floorManager.SetFloor(currentFloor);
+        }
+        
+        Debug.Log("GameManager: レガシーデータを新しいシステムに同期しました");
+    }
+    
+    /// <summary>
+    /// 新しいシステムからレガシーデータに同期
+    /// </summary>
+    private void SyncNewDataToLegacySystems()
+    {
+        if (gameStateManager != null)
+        {
+            score = gameStateManager.score;
+            gameOver = gameStateManager.gameOver;
+            gameClear = gameStateManager.gameClear;
+        }
+        
+        if (playerDataManager != null && playerDataManager.GetPlayerData() != null)
+        {
+            var playerData = playerDataManager.GetPlayerData();
+            playerLevel = playerData.level;
+            playerExp = playerData.experience;
+            playerExpToNext = playerData.experienceToNext;
+            playerCurrentHP = playerData.currentHP;
+            playerMaxHP = playerData.maxHP;
+            // playerMaxLevelは新しいシステムでは固定値として扱う
+        }
+        
+        if (floorManager != null)
+        {
+            currentFloor = floorManager.currentFloor;
+            maxFloor = floorManager.maxFloor;
+        }
+        
+        Debug.Log("GameManager: 新しいシステムからレガシーデータに同期しました");
+    }
+    
+    // レガシーメソッド（後方互換性のため）
+    
+    /// <summary>
+    /// スコアを加算（レガシー）
+    /// </summary>
+    /// <param name="amount">加算するスコア</param>
+    public void AddScore(int amount)
+    {
+        if (useNewSystems && gameStateManager != null)
+        {
+            gameStateManager.AddScore(amount);
         }
         else
         {
-            // 従来の処理（後方互換性のため）
-            if (Player.Instance != null)
+            score += amount;
+            OnScoreChanged?.Invoke(score);
+        }
+        
+        Debug.Log($"GameManager: スコアを加算しました - +{amount} (合計: {score})");
+    }
+    
+    /// <summary>
+    /// プレイヤーに経験値を加算（レガシー）
+    /// </summary>
+    /// <param name="amount">加算する経験値</param>
+    public void AddPlayerExp(int amount)
+    {
+        Debug.Log($"GameManager: AddPlayerExp({amount})呼び出し - useNewSystems: {useNewSystems}, playerDataManager: {(playerDataManager != null ? "NotNull" : "Null")}, 現在のplayerExp: {playerExp}");
+        if (useNewSystems && playerDataManager != null)
+        {
+            playerDataManager.AddPlayerExp(amount);
+            Debug.Log($"GameManager: 新しいシステムで経験値を加算しました - +{amount}");
+        }
+        else
+        {
+            playerExp += amount;
+            Debug.Log($"GameManager: レガシーシステムでプレイヤーに経験値を加算しました - +{amount} (合計: {playerExp})");
+            CheckLevelUp();
+            Debug.Log($"GameManager: CheckLevelUp()後 - playerExp: {playerExp}");
+            OnPlayerExpGained?.Invoke(playerExp);
+        }
+    }
+    
+    /// <summary>
+    /// レベルアップチェック（レガシー）
+    /// </summary>
+    private void CheckLevelUp()
+    {
+        while (playerExp >= playerExpToNext && playerLevel < 10)
+        {
+            playerExp -= playerExpToNext;
+            playerLevel++;
+            
+            // レベルアップ時の成長
+            int oldMaxHP = playerMaxHP;
+            playerMaxHP += 5;
+            playerCurrentHP = playerMaxHP; // レベルアップ時はHP全回復
+            playerExpToNext = Mathf.RoundToInt(playerExpToNext * 1.5f);
+            
+            OnPlayerLevelUp?.Invoke(playerLevel);
+            OnPlayerHPChanged?.Invoke(playerCurrentHP, playerMaxHP);
+            
+            Debug.Log($"GameManager: プレイヤーがレベルアップしました - レベル{playerLevel}, HP {oldMaxHP} → {playerMaxHP}");
+        }
+    }
+    
+    /// <summary>
+    /// プレイヤーのHPを設定（レガシー）
+    /// </summary>
+    /// <param name="currentHP">現在のHP</param>
+    /// <param name="maxHP">最大HP（-1の場合は変更しない）</param>
+    public void SetPlayerHP(int currentHP, int maxHP = -1)
+    {
+        if (useNewSystems && playerDataManager != null)
+        {
+            playerDataManager.SetPlayerHP(currentHP, maxHP);
+        }
+        else
+        {
+            if (currentHP != playerCurrentHP)
             {
-                playerLevel = Player.Instance.level;
-                playerExp = Player.Instance.exp;
-                playerExpToNext = Player.Instance.expToNext;
-                playerMaxHP = Player.Instance.maxHP;
-                playerCurrentHP = Player.Instance.currentHP;
-                playerMaxLevel = Player.Instance.maxLevel;
+                playerCurrentHP = Mathf.Clamp(currentHP, 0, playerMaxHP);
+            }
+            
+            if (maxHP > 0 && maxHP != playerMaxHP)
+            {
+                playerMaxHP = maxHP;
+                playerCurrentHP = Mathf.Clamp(playerCurrentHP, 0, playerMaxHP);
+            }
+            
+            OnPlayerHPChanged?.Invoke(playerCurrentHP, playerMaxHP);
+        }
+        
+        Debug.Log($"GameManager: プレイヤーHPを設定しました - {playerCurrentHP}/{playerMaxHP}");
+    }
+    
+    /// <summary>
+    /// プレイヤーのレベルを設定（レガシー）
+    /// </summary>
+    /// <param name="level">新しいレベル</param>
+    public void SetPlayerLevel(int level)
+    {
+        if (useNewSystems && playerDataManager != null)
+        {
+            playerDataManager.SetPlayerLevel(level);
+        }
+        else
+        {
+            if (level != playerLevel && level >= 1 && level <= 10)
+            {
+                int oldLevel = playerLevel;
+                playerLevel = level;
+                
+                OnPlayerLevelUp?.Invoke(playerLevel);
+            }
+        }
+        
+        Debug.Log($"GameManager: プレイヤーレベルを設定しました - {playerLevel}");
+    }
+    
+    /// <summary>
+    /// 次の階層に進む（レガシー）
+    /// </summary>
+    public void GoToNextFloor()
+    {
+        Debug.Log($"GameManager: GoToNextFloor()開始 - useNewSystems: {useNewSystems}, floorManager: {(floorManager != null ? "存在" : "null")}");
+        
+        if (useNewSystems && floorManager != null)
+        {
+            Debug.Log("GameManager: 新しいシステムを使用して階層進行");
+            floorManager.GoToNextFloor();
+        }
+        else
+        {
+            Debug.Log("GameManager: レガシーシステムを使用して階層進行");
+            if (currentFloor < maxFloor)
+            {
+                int oldFloor = currentFloor;
+                currentFloor++;
+                
+                OnFloorChanged?.Invoke(currentFloor);
+                
+                Debug.Log($"GameManager: 階層を進行しました - {oldFloor} → {currentFloor}");
+                
+                // 最終階層到達時の処理
+                if (currentFloor >= maxFloor)
+                {
+                    GameClear();
+                }
+            }
+            else
+            {
+                Debug.LogWarning($"GameManager: 既に最終階層です - currentFloor: {currentFloor}, maxFloor: {maxFloor}");
             }
         }
     }
     
+    /// <summary>
+    /// ゲームオーバー（レガシー）
+    /// </summary>
+    public void GameOver()
+    {
+        if (useNewSystems && gameStateManager != null)
+        {
+            gameStateManager.Defeat();
+        }
+        else
+        {
+            gameOver = true;
+            OnGameOver?.Invoke();
+        }
+        
+        Debug.Log("GameManager: ゲームオーバー");
+    }
+    
+    /// <summary>
+    /// ゲームクリア（レガシー）
+    /// </summary>
+    public void GameClear()
+    {
+        if (useNewSystems && gameStateManager != null)
+        {
+            gameStateManager.Victory();
+        }
+        else
+        {
+            gameClear = true;
+            OnGameClear?.Invoke();
+        }
+        
+        Debug.Log("GameManager: ゲームクリア");
+    }
+    
+    /// <summary>
+    /// 新しいシステムに移行
+    /// </summary>
+    public void MigrateToNewSystems()
+    {
+        useNewSystems = true;
+        enableLegacyMode = false;
+        
+        // データを新しいシステムに同期
+        SyncLegacyDataToNewSystems();
+        
+        Debug.Log("GameManager: 新しいシステムに移行しました");
+    }
+    
+    /// <summary>
+    /// レガシーモードに戻す
+    /// </summary>
+    public void RevertToLegacyMode()
+    {
+        useNewSystems = false;
+        enableLegacyMode = true;
+        
+        // レガシーシステムを再初期化
+        InitializeLegacySystems();
+        
+        Debug.Log("GameManager: レガシーモードに戻しました");
+    }
+    
+    /// <summary>
+    /// ハイブリッドモードを有効化
+    /// </summary>
+    public void EnableHybridMode()
+    {
+        useNewSystems = true;
+        enableLegacyMode = true;
+        
+        Debug.Log("GameManager: ハイブリッドモードを有効化しました");
+    }
+    
+    private void OnDestroy()
+    {
+        if (newGameManager != null)
+        {
+            GameManagerNew.OnGameInitialized -= OnNewGameInitialized;
+            GameManagerNew.OnGameStateChanged -= OnNewGameStateChanged;
+        }
+    }
+    
+    /// <summary>
+    /// ゲームマネージャーの情報を取得
+    /// </summary>
+    /// <returns>ゲームマネージャーの情報文字列</returns>
+    public string GetGameManagerInfo()
+    {
+        return $"GameManager - Mode: {(useNewSystems ? "New" : "Legacy")}, " +
+               $"LegacyMode: {enableLegacyMode}, " +
+               $"Score: {score}, Level: {playerLevel}, Floor: {currentFloor}, " +
+               $"GameOver: {gameOver}, GameClear: {gameClear}";
+    }
+    
+    // 後方互換性のためのメソッド
+    
+    /// <summary>
+    /// GameManagerインスタンスを取得または作成（後方互換性）
+    /// </summary>
+    /// <returns>GameManagerインスタンス</returns>
+    public static GameManager GetOrCreateInstance()
+    {
+        if (Instance == null)
+        {
+            GameManager existingManager = FindObjectOfType<GameManager>();
+            if (existingManager != null)
+            {
+                Instance = existingManager;
+            }
+            else
+            {
+                GameObject gameManagerObj = new GameObject("GameManager");
+                Instance = gameManagerObj.AddComponent<GameManager>();
+            }
+        }
+        
+        return Instance;
+    }
+    
+    /// <summary>
+    /// プレイヤーデッキを取得（後方互換性）
+    /// </summary>
+    /// <returns>プレイヤーデッキ</returns>
+    public PlayerDeck GetPlayerDeck()
+    {
+        // 新しいシステムが利用可能な場合はそちらを使用
+        if (useNewSystems && deckManager != null)
+        {
+            // 新しいデッキシステムはDeckDataSOを使用するため、
+            // レガシーデッキを返す（後方互換性のため）
+            Debug.LogWarning("GameManager: 新しいデッキシステムはPlayerDeckと互換性がありません。レガシーデッキを使用します。");
+        }
+        
+        // レガシーデッキを返す（後方互換性のため）
+        if (playerDeck == null)
+        {
+            Debug.LogWarning("GameManager: playerDeckがnullです");
+        }
+        return playerDeck;
+    }
+    
+    /// <summary>
+    /// プレイヤーデッキを設定（後方互換性）
+    /// </summary>
+    /// <param name="deck">設定するデッキ</param>
+    public void SetPlayerDeck(PlayerDeck deck)
+    {
+        if (deck == null)
+        {
+            Debug.LogError("GameManager: SetPlayerDeck - deckがnullです");
+            return;
+        }
+        
+        // 新しいシステムが利用可能な場合はそちらを使用
+        if (useNewSystems && deckManager != null)
+        {
+            // 新しいデッキシステムはDeckDataSOを使用するため、
+            // レガシーデッキを設定（後方互換性のため）
+            Debug.LogWarning("GameManager: 新しいデッキシステムはPlayerDeckと互換性がありません。レガシーデッキを使用します。");
+        }
+        
+        // レガシーデッキを設定
+        playerDeck = deck;
+        playerDeck.InitializeDrawPile();
+    }
+    
+    /// <summary>
+    /// メインシーン用の初期化（後方互換性）
+    /// </summary>
+    public void InitializeForMainScene()
+    {
+        gameOver = false;
+        gameClear = false;
+        
+        if (currentFloor <= 0)
+        {
+            currentFloor = 1;
+        }
+        
+        // プレイヤーデータを適用
+        ApplyPlayerDataToPlayer();
+    }
+    
+    /// <summary>
+    /// デッキビルダーシーン用の初期化（後方互換性）
+    /// </summary>
+    public void InitializeForDeckBuilderScene()
+    {
+        // プレイヤーデータを同期
+        SyncPlayerDataFromPlayer();
+    }
+    
+    /// <summary>
+    /// プレイヤーデータをプレイヤーに適用（後方互換性）
+    /// </summary>
     public void ApplyPlayerDataToPlayer()
     {
         // プレイヤーデータシステムが利用可能な場合はそちらを使用
-        if (playerDataManager != null)
+        if (useNewSystems && playerDataManager != null)
         {
             playerDataManager.ApplyToGameManager();
         }
@@ -171,166 +657,49 @@ public class GameManager : MonoBehaviour
         }
     }
     
-    public void AddPlayerExp(int amount)
+    /// <summary>
+    /// プレイヤーからプレイヤーデータを同期（後方互換性）
+    /// </summary>
+    public void SyncPlayerDataFromPlayer()
     {
         // プレイヤーデータシステムが利用可能な場合はそちらを使用
-        if (playerDataManager != null)
+        if (useNewSystems && playerDataManager != null)
         {
-            playerDataManager.AddPlayerExp(amount);
+            playerDataManager.SyncWithGameManager();
         }
         else
         {
             // 従来の処理（後方互換性のため）
-            if (playerLevel >= playerMaxLevel) return;
-            
-            playerExp += amount;
-            
-            if (UIManager.Instance != null)
-            {
-                UIManager.Instance.AddLog($"経験値獲得！+{amount}");
-                UIManager.Instance.UpdateLevelDisplay(playerLevel, playerExp, playerExpToNext);
-            }
-            
-            while (playerExp >= playerExpToNext && playerLevel < playerMaxLevel)
-            {
-                playerExp -= playerExpToNext;
-                PlayerLevelUp();
-            }
-            
             if (Player.Instance != null)
             {
-                Player.Instance.level = playerLevel;
-                Player.Instance.exp = playerExp;
-                Player.Instance.expToNext = playerExpToNext;
+                playerLevel = Player.Instance.level;
+                playerExp = Player.Instance.exp;
+                playerExpToNext = Player.Instance.expToNext;
+                playerMaxHP = Player.Instance.maxHP;
+                playerCurrentHP = Player.Instance.currentHP;
+                playerMaxLevel = Player.Instance.maxLevel;
             }
         }
     }
     
-    private void PlayerLevelUp()
-    {
-        playerLevel++;
-        
-        int oldMaxHP = playerMaxHP;
-        playerMaxHP += 5;
-        playerCurrentHP = playerMaxHP;
-        playerExpToNext = Mathf.RoundToInt(playerExpToNext * 1.5f);
-        
-        OnPlayerLevelUp?.Invoke(playerLevel);
-        
-        if (UIManager.Instance != null)
-        {
-            UIManager.Instance.UpdateHP(playerCurrentHP, playerMaxHP);
-            UIManager.Instance.UpdateLevelDisplay(playerLevel, playerExp, playerExpToNext);
-            UIManager.Instance.AddLog($"レベルアップ！レベル {playerLevel}、HP {playerMaxHP}");
-        }
-        
-        if (Player.Instance != null)
-        {
-            Player.Instance.level = playerLevel;
-            Player.Instance.maxHP = playerMaxHP;
-            Player.Instance.currentHP = playerCurrentHP;
-            Player.Instance.expToNext = playerExpToNext;
-        }
-    }
-    
-    public void SetPlayerHP(int currentHP, int maxHP = -1)
-    {
-        // プレイヤーデータシステムが利用可能な場合はそちらを使用
-        if (playerDataManager != null)
-        {
-            playerDataManager.SetPlayerHP(currentHP, maxHP);
-        }
-        else
-        {
-            // 従来の処理（後方互換性のため）
-            playerCurrentHP = currentHP;
-            if (maxHP > 0)
-            {
-                playerMaxHP = maxHP;
-            }
-            
-            if (Player.Instance != null)
-            {
-                Player.Instance.currentHP = playerCurrentHP;
-                Player.Instance.maxHP = playerMaxHP;
-            }
-            
-            if (UIManager.Instance != null)
-            {
-                UIManager.Instance.UpdateHP(playerCurrentHP, playerMaxHP);
-            }
-        }
-    }
-    
-    public static GameManager GetOrCreateInstance()
-    {
-        if (Instance == null)
-        {
-            GameManager existingManager = FindObjectOfType<GameManager>();
-            if (existingManager != null)
-            {
-                Instance = existingManager;
-            }
-            else
-            {
-                GameObject gameManagerObj = new GameObject("GameManager");
-                Instance = gameManagerObj.AddComponent<GameManager>();
-            }
-        }
-        
-        return Instance;
-    }
-
-    public void GameOver()
-    {
-        gameOver = true;
-        OnGameOver?.Invoke();
-        
-        // GameStateManagerに敗北状態を通知
-        if (GameStateManager.Instance != null)
-        {
-            GameStateManager.Instance.Defeat();
-        }
-        
-        if (SoundManager.Instance != null)
-        {
-            SoundManager.Instance.PlayBGMForScene("GameOverScene");
-        }
-        
-        if (UIManager.Instance != null)
-        {
-            UIManager.Instance.AddLog("ゲームオーバー！");
-        }
-    }
-
-    public void GameClear()
-    {
-        gameClear = true;
-        OnGameClear?.Invoke();
-        
-        // GameStateManagerに勝利状態を通知
-        if (GameStateManager.Instance != null)
-        {
-            GameStateManager.Instance.Victory();
-        }
-        
-        if (SoundManager.Instance != null)
-        {
-            SoundManager.Instance.PlayBGMForScene("GameClearScene");
-        }
-        
-        if (UIManager.Instance != null)
-        {
-            UIManager.Instance.AddLog("ゲームクリア！");
-        }
-    }
-    
+    /// <summary>
+    /// 敵撃破時の処理（後方互換性）
+    /// </summary>
     public void EnemyDefeated()
     {
-        // 戦闘システムが利用可能な場合はそちらを使用
-        if (battleStarter != null)
+        Debug.Log("GameManager: EnemyDefeated()が呼び出されました");
+        
+        // 新しいシステムが利用可能な場合はそちらを使用
+        if (useNewSystems && gameStateManager != null)
         {
-            battleStarter.HandleEnemyDefeated();
+            gameStateManager.AddScore(100);
+            Debug.Log("GameManager: 新しいシステムでスコアを加算しました");
+            
+            // 経験値はPlayer.GainExp()で処理されるため、ここでは加算しない
+            // if (playerDataManager != null)
+            // {
+            //     playerDataManager.AddPlayerExp(10);
+            // }
         }
         else
         {
@@ -342,599 +711,12 @@ public class GameManager : MonoBehaviour
             {
                 UIManager.Instance.AddLog($"敵を倒した！スコア: {score}");
             }
-        }
-    }
-    
-    public void GoToNextFloor()
-    {
-        // 階層システムが利用可能な場合はそちらを使用
-        if (floorManager != null)
-        {
-            floorManager.GoToNextFloor();
-        }
-        else
-        {
-            // 従来の処理（後方互換性のため）
-            if (gameOver || gameClear) 
-            {
-                return;
-            }
             
-            currentFloor++;
-            OnFloorChanged?.Invoke(currentFloor);
-            
-            if (currentFloor > maxFloor)
-            {
-                GameClear();
-                return;
-            }
-            
-            StartCoroutine(GoToDeckBuilderCoroutine());
+            Debug.Log("GameManager: レガシーシステムでスコアと経験値を加算しました");
         }
     }
     
-    private System.Collections.IEnumerator GoToDeckBuilderCoroutine()
-    {
-        if (UIManager.Instance != null)
-        {
-            UIManager.Instance.AddLog($"階層 {currentFloor} に進みます。デッキを再構築してください。");
-        }
-        
-        yield return new WaitForSeconds(1f);
-        
-        if (TransitionManager.Instance != null)
-        {
-            TransitionManager.Instance.LoadSceneWithFade("DeckBuilderScene");
-        }
-        else
-        {
-            UnityEngine.SceneManagement.SceneManager.LoadScene(0);
-        }
-    }
-    
-    private System.Collections.IEnumerator GenerateFloorCoroutine(int floorNumber)
-    {
-        if (GridManager.Instance != null)
-        {
-            GridManager.Instance.GenerateNewFloor();
-            yield return new WaitForSeconds(0.2f);
-        }
-        else
-        {
-            Debug.LogError("GameManager: GridManager.Instanceが見つかりません");
-        }
-        
-        if (EnemyManager.Instance != null)
-        {
-            EnemyManager.Instance.RespawnEnemies();
-            yield return new WaitForSeconds(0.2f);
-        }
-        else
-        {
-            Debug.LogError("GameManager: EnemyManager.Instanceが見つかりません");
-        }
-        
-        if (Player.Instance != null)
-        {
-            Player.Instance.ResetPlayerPosition();
-            yield return new WaitForSeconds(0.2f);
-        }
-        else
-        {
-            Debug.LogError("GameManager: Player.Instanceが見つかりません");
-        }
-        
-        if (UIManager.Instance != null)
-        {
-            UIManager.Instance.AddLog($"階層 {floorNumber} に到達しました");
-        }
-    }
-    
-    public void SetPlayerDeck(PlayerDeck deck)
-    {
-        if (deck == null)
-        {
-            Debug.LogError("GameManager: SetPlayerDeck - deckがnullです");
-            return;
-        }
-        
-        playerDeck = deck;
-        playerDeck.InitializeDrawPile();
-    }
-    
-    public PlayerDeck GetPlayerDeck()
-    {
-        if (playerDeck == null)
-        {
-            Debug.LogWarning("GameManager: GetPlayerDeck - playerDeckがnullです");
-        }
-        return playerDeck;
-    }
-    
-    public void InitializeForMainScene()
-    {
-        gameOver = false;
-        gameClear = false;
-        
-        if (currentFloor <= 0)
-        {
-            currentFloor = 1;
-        }
-        
-        ApplyPlayerDataToPlayer();
-    }
-    
-    public void InitializeForDeckBuilderScene()
-    {
-        SyncPlayerDataFromPlayer();
-    }
-    
-    // 戦闘システム統合用メソッド
-    
-    /// <summary>
-    /// 戦闘システムイベントの購読
-    /// </summary>
-    private void SubscribeToBattleEvents()
-    {
-        if (battleEventChannel != null)
-        {
-            battleEventChannel.OnBattleEnded.AddListener(OnBattleEnded);
-            battleEventChannel.OnUnitDefeated.AddListener(OnUnitDefeated);
-        }
-    }
-    
-    /// <summary>
-    /// 戦闘終了時の処理
-    /// </summary>
-    private void OnBattleEnded(BattleSystem.BattleStateSO battleState)
-    {
-        switch (battleState.battleResult)
-        {
-            case BattleSystem.BattleResult.PlayerVictory:
-                HandlePlayerVictory();
-                break;
-            case BattleSystem.BattleResult.EnemyVictory:
-                HandlePlayerDefeat();
-                break;
-        }
-    }
-    
-    /// <summary>
-    /// ユニット撃破時の処理
-    /// </summary>
-    private void OnUnitDefeated(BattleSystem.BattleStateSO battleState)
-    {
-        // プレイヤーデータの同期
-        SyncPlayerDataWithBattleSystem();
-    }
-    
-    /// <summary>
-    /// プレイヤー勝利時の処理
-    /// </summary>
-    private void HandlePlayerVictory()
-    {
-        GameClear();
-    }
-    
-    /// <summary>
-    /// プレイヤー敗北時の処理
-    /// </summary>
-    private void HandlePlayerDefeat()
-    {
-        GameOver();
-    }
-    
-    /// <summary>
-    /// プレイヤーデータを戦闘システムと同期
-    /// </summary>
-    private void SyncPlayerDataWithBattleSystem()
-    {
-        if (battleState != null && battleState.playerUnit != null)
-        {
-            // プレイヤーデータを戦闘システムと同期
-            playerCurrentHP = battleState.playerUnit.currentHP;
-            playerMaxHP = battleState.playerUnit.maxHP;
-            
-            // UI更新
-            if (UIManager.Instance != null)
-            {
-                UIManager.Instance.UpdateHP(playerCurrentHP, playerMaxHP);
-            }
-        }
-    }
-    
-    /// <summary>
-    /// 戦闘システム統合の情報を取得
-    /// </summary>
-    public string GetBattleSystemIntegrationInfo()
-    {
-        return $"BattleSystem Integration - Starter: {(battleStarter != null ? "✓" : "✗")}, " +
-               $"State: {(battleState != null ? "✓" : "✗")}, " +
-               $"EventChannel: {(battleEventChannel != null ? "✓" : "✗")}";
-    }
-    
-    // プレイヤーデータシステム統合用メソッド
-    
-    /// <summary>
-    /// プレイヤーデータシステムイベントの購読
-    /// </summary>
-    private void SubscribeToPlayerDataEvents()
-    {
-        if (playerEventChannel != null)
-        {
-            playerEventChannel.OnPlayerLevelUp.AddListener(OnPlayerDataLevelUp);
-            playerEventChannel.OnPlayerExpGained.AddListener(OnPlayerExpGained);
-            playerEventChannel.OnPlayerHPChanged.AddListener(OnPlayerHPChanged);
-        }
-    }
-    
-    /// <summary>
-    /// プレイヤーレベルアップ時の処理
-    /// </summary>
-    private void OnPlayerDataLevelUp(int newLevel)
-    {
-        // 既存のレベルアップ処理を呼び出し
-        if (UIManager.Instance != null)
-        {
-            UIManager.Instance.UpdateLevelDisplay(newLevel, playerData?.experience ?? 0, playerData?.experienceToNext ?? 10);
-            UIManager.Instance.AddLog($"レベルアップ！レベル {newLevel}");
-        }
-    }
-    
-    /// <summary>
-    /// プレイヤー経験値獲得時の処理
-    /// </summary>
-    private void OnPlayerExpGained(int expAmount)
-    {
-        // 既存の経験値獲得処理を呼び出し
-        if (UIManager.Instance != null)
-        {
-            UIManager.Instance.AddLog($"経験値獲得！+{expAmount}");
-        }
-    }
-    
-    /// <summary>
-    /// プレイヤーHP変更時の処理
-    /// </summary>
-    private void OnPlayerHPChanged(int currentHP, int maxHP)
-    {
-        // 既存のHP変更処理を呼び出し
-        if (UIManager.Instance != null)
-        {
-            UIManager.Instance.UpdateHP(currentHP, maxHP);
-        }
-    }
-    
-    /// <summary>
-    /// プレイヤーデータシステム統合の情報を取得
-    /// </summary>
-    public string GetPlayerDataSystemIntegrationInfo()
-    {
-        return $"PlayerDataSystem Integration - Manager: {(playerDataManager != null ? "✓" : "✗")}, " +
-               $"Data: {(playerData != null ? "✓" : "✗")}, " +
-               $"EventChannel: {(playerEventChannel != null ? "✓" : "✗")}";
-    }
-    
-    // 階層システム統合用メソッド
-    
-    /// <summary>
-    /// 階層システムイベントの購読
-    /// </summary>
-    private void SubscribeToFloorEvents()
-    {
-        if (floorEventChannel != null)
-        {
-            floorEventChannel.OnFloorChanged.AddListener(OnFloorSystemChanged);
-            floorEventChannel.OnGameClear.AddListener(OnFloorGameClear);
-        }
-    }
-    
-    /// <summary>
-    /// 階層変更時の処理
-    /// </summary>
-    private void OnFloorSystemChanged(int newFloor)
-    {
-        // 既存の階層変更処理を呼び出し
-        if (UIManager.Instance != null)
-        {
-            UIManager.Instance.AddLog($"階層 {newFloor} に進みました");
-        }
-    }
-    
-    /// <summary>
-    /// 階層システムからのゲームクリア処理
-    /// </summary>
-    private void OnFloorGameClear()
-    {
-        // 既存のゲームクリア処理を呼び出し
-        GameClear();
-    }
-    
-    /// <summary>
-    /// 階層データを階層システムと同期
-    /// </summary>
-    private void SyncFloorDataWithFloorSystem()
-    {
-        if (floorData != null)
-        {
-            currentFloor = floorData.currentFloor;
-            maxFloor = floorData.maxFloor;
-        }
-    }
-    
-    /// <summary>
-    /// 階層データを階層システムに適用
-    /// </summary>
-    private void ApplyFloorDataToFloorSystem()
-    {
-        if (floorData != null)
-        {
-            floorData.SetFloor(currentFloor);
-        }
-    }
-    
-    /// <summary>
-    /// 階層システム統合の情報を取得
-    /// </summary>
-    public string GetFloorSystemIntegrationInfo()
-    {
-        return $"FloorSystem Integration - Manager: {(floorManager != null ? "✓" : "✗")}, " +
-               $"Data: {(floorData != null ? "✓" : "✗")}, " +
-               $"EventChannel: {(floorEventChannel != null ? "✓" : "✗")}";
-    }
-    
-    // セーブシステム統合用メソッド
-    
-    /// <summary>
-    /// セーブシステムイベントの購読
-    /// </summary>
-    private void SubscribeToSaveEvents()
-    {
-        if (saveEventChannel != null)
-        {
-            saveEventChannel.OnSaveCompleted.AddListener(OnSaveCompleted);
-            saveEventChannel.OnLoadCompleted.AddListener(OnLoadCompleted);
-            saveEventChannel.OnSaveFailed.AddListener(OnSaveFailed);
-            saveEventChannel.OnLoadFailed.AddListener(OnLoadFailed);
-        }
-    }
-    
-    /// <summary>
-    /// セーブ完了ハンドラー
-    /// </summary>
-    private void OnSaveCompleted(SaveSystem.SaveDataSO saveData)
-    {
-        Debug.Log($"GameManager: セーブが完了しました - {saveData?.GetSaveInfo() ?? "Unknown"}");
-        
-        // UIシステムにログを追加
-        if (uiManager != null)
-        {
-            uiManager.AddLog("ゲームデータを保存しました");
-        }
-    }
-    
-    /// <summary>
-    /// ロード完了ハンドラー
-    /// </summary>
-    private void OnLoadCompleted(SaveSystem.SaveDataSO saveData)
-    {
-        Debug.Log($"GameManager: ロードが完了しました - {saveData?.GetSaveInfo() ?? "Unknown"}");
-        
-        // ロードされたデータを各システムに適用
-        ApplyLoadedDataToSystems(saveData);
-        
-        // UIシステムにログを追加
-        if (uiManager != null)
-        {
-            uiManager.AddLog("ゲームデータを読み込みました");
-        }
-    }
-    
-    /// <summary>
-    /// セーブ失敗ハンドラー
-    /// </summary>
-    private void OnSaveFailed(string errorMessage)
-    {
-        Debug.LogError($"GameManager: セーブに失敗しました - {errorMessage}");
-        
-        // UIシステムにログを追加
-        if (uiManager != null)
-        {
-            uiManager.AddLog($"セーブに失敗しました: {errorMessage}");
-        }
-    }
-    
-    /// <summary>
-    /// ロード失敗ハンドラー
-    /// </summary>
-    private void OnLoadFailed(string errorMessage)
-    {
-        Debug.LogError($"GameManager: ロードに失敗しました - {errorMessage}");
-        
-        // UIシステムにログを追加
-        if (uiManager != null)
-        {
-            uiManager.AddLog($"ロードに失敗しました: {errorMessage}");
-        }
-    }
-    
-    /// <summary>
-    /// ロードされたデータを各システムに適用
-    /// </summary>
-    private void ApplyLoadedDataToSystems(SaveSystem.SaveDataSO saveData)
-    {
-        if (saveData == null) return;
-        
-        // プレイヤーデータシステムに適用
-        if (playerDataManager != null && saveData.playerData != null)
-        {
-            playerDataManager.SetPlayerLevel(saveData.playerData.playerLevel);
-            playerDataManager.SetPlayerHP(saveData.playerData.playerCurrentHP, saveData.playerData.playerMaxHP);
-        }
-        
-        // 階層システムに適用
-        if (floorManager != null)
-        {
-            floorManager.SetFloor(saveData.currentFloor);
-        }
-        
-        // UIシステムに適用
-        if (uiManager != null)
-        {
-            uiManager.UpdateScore(saveData.score);
-            uiManager.UpdateFloor(saveData.currentFloor);
-        }
-    }
-    
-    // デッキシステム統合用メソッド
-    
-    /// <summary>
-    /// デッキシステムイベントの購読
-    /// </summary>
-    private void SubscribeToDeckEvents()
-    {
-        if (deckEventChannel != null)
-        {
-            deckEventChannel.OnDeckChanged.AddListener(OnDeckChanged);
-            deckEventChannel.OnCardAdded.AddListener(OnCardAdded);
-            deckEventChannel.OnCardDrawn.AddListener(OnCardDrawn);
-            deckEventChannel.OnDeckShuffled.AddListener(OnDeckShuffled);
-        }
-    }
-    
-    /// <summary>
-    /// デッキ変更ハンドラー
-    /// </summary>
-    private void OnDeckChanged(DeckSystem.DeckDataSO deckData)
-    {
-        Debug.Log($"GameManager: デッキが変更されました - {deckData?.GetDeckInfo() ?? "Unknown"}");
-        
-        // UIシステムにログを追加
-        if (uiManager != null)
-        {
-            uiManager.AddLog($"デッキが変更されました (サイズ: {deckData?.GetDeckSize() ?? 0})");
-        }
-    }
-    
-    /// <summary>
-    /// カード追加ハンドラー
-    /// </summary>
-    private void OnCardAdded(DeckSystem.CardDataSO cardData)
-    {
-        Debug.Log($"GameManager: カードが追加されました - {cardData?.cardName ?? "Unknown"}");
-        
-        // UIシステムにログを追加
-        if (uiManager != null)
-        {
-            uiManager.AddLog($"カードを追加しました: {cardData?.cardName ?? "Unknown"}");
-        }
-    }
-    
-    /// <summary>
-    /// カードドローハンドラー
-    /// </summary>
-    private void OnCardDrawn(DeckSystem.CardDataSO cardData)
-    {
-        Debug.Log($"GameManager: カードを引きました - {cardData?.cardName ?? "Unknown"}");
-        
-        // UIシステムにログを追加
-        if (uiManager != null)
-        {
-            uiManager.AddLog($"カードを引きました: {cardData?.cardName ?? "Unknown"}");
-        }
-    }
-    
-    /// <summary>
-    /// デッキシャッフルハンドラー
-    /// </summary>
-    private void OnDeckShuffled()
-    {
-        Debug.Log("GameManager: デッキがシャッフルされました");
-        
-        // UIシステムにログを追加
-        if (uiManager != null)
-        {
-            uiManager.AddLog("デッキをシャッフルしました");
-        }
-    }
-    
-    // UIシステム統合用メソッド
-    
-    /// <summary>
-    /// UIシステムイベントの購読
-    /// </summary>
-    private void SubscribeToUIEvents()
-    {
-        if (uiEventChannel != null)
-        {
-            uiEventChannel.OnUIDataChanged.AddListener(OnUIDataChanged);
-            uiEventChannel.OnLogAdded.AddListener(OnUILogAdded);
-            uiEventChannel.OnHPChanged.AddListener(OnUIHPChanged);
-            uiEventChannel.OnLevelChanged.AddListener(OnUILevelChanged);
-        }
-    }
-    
-    /// <summary>
-    /// UIデータ変更ハンドラー
-    /// </summary>
-    private void OnUIDataChanged(UISystem.UIDataSO uiData)
-    {
-        Debug.Log($"GameManager: UIデータが変更されました - {uiData?.GetUIInfo() ?? "Unknown"}");
-    }
-    
-    /// <summary>
-    /// UIログ追加ハンドラー
-    /// </summary>
-    private void OnUILogAdded(string message)
-    {
-        Debug.Log($"GameManager: UIログが追加されました - {message}");
-    }
-    
-    /// <summary>
-    /// UI HP変更ハンドラー
-    /// </summary>
-    private void OnUIHPChanged(int currentHP, int maxHP)
-    {
-        Debug.Log($"GameManager: UI HPが変更されました - {currentHP}/{maxHP}");
-        
-        // プレイヤーデータシステムと同期
-        if (playerDataManager != null)
-        {
-            playerDataManager.SetPlayerHP(currentHP, maxHP);
-        }
-    }
-    
-    /// <summary>
-    /// UI レベル変更ハンドラー
-    /// </summary>
-    private void OnUILevelChanged(int level, int exp, int expToNext)
-    {
-        Debug.Log($"GameManager: UI レベルが変更されました - {level}, Exp: {exp}/{expToNext}");
-        
-        // プレイヤーデータシステムと同期
-        if (playerDataManager != null)
-        {
-            playerDataManager.SetPlayerLevel(level);
-        }
-    }
-    
-    /// <summary>
-    /// 全システム統合の情報を取得
-    /// </summary>
-    public string GetAllSystemIntegrationInfo()
-    {
-        return $"=== GameManager System Integration ===\n" +
-               $"Battle System: {GetBattleSystemIntegrationInfo()}\n" +
-               $"Player Data System: {GetPlayerDataSystemIntegrationInfo()}\n" +
-               $"Floor System: {GetFloorSystemIntegrationInfo()}\n" +
-               $"Save System: {(saveManager != null ? "✓" : "✗")}, " +
-               $"Data: {(saveData != null ? "✓" : "✗")}, " +
-               $"EventChannel: {(saveEventChannel != null ? "✓" : "✗")}\n" +
-               $"Deck System: {(deckManager != null ? "✓" : "✗")}, " +
-               $"Data: {(deckData != null ? "✓" : "✗")}, " +
-               $"EventChannel: {(deckEventChannel != null ? "✓" : "✗")}\n" +
-               $"UI System: {(uiManager != null ? "✓" : "✗")}, " +
-               $"Data: {(uiData != null ? "✓" : "✗")}, " +
-               $"EventChannel: {(uiEventChannel != null ? "✓" : "✗")}";
-    }
+    // レガシーデッキシステム（後方互換性のため）
+    [Header("Legacy Deck System")]
+    public PlayerDeck playerDeck;
 } 

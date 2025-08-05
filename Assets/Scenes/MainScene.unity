@@ -323,6 +323,56 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &323841898
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 323841899}
+  - component: {fileID: 323841900}
+  m_Layer: 0
+  m_Name: AutoSetupManager
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &323841899
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 323841898}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 750068710}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &323841900
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 323841898}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 64f766d62a88c4c4fb254296e2ad9e99, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  enableAutoSetup: 1
+  enableEventChannelSetup: 1
+  enableDataObjectSetup: 1
+  eventChannelsSetup: 0
+  dataObjectsSetup: 0
+  managersSetup: 0
 --- !u!1 &348014168
 GameObject:
   m_ObjectHideFlags: 0
@@ -1253,6 +1303,7 @@ Transform:
   - {fileID: 1083540440}
   - {fileID: 1677262506}
   - {fileID: 1882641215}
+  - {fileID: 323841899}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &801867834
@@ -1681,6 +1732,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d639e60253ab4574e870a6d3fe50b658, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  score: 0
+  gameOver: 0
+  gameClear: 0
 --- !u!1 &1355573693
 GameObject:
   m_ObjectHideFlags: 0
@@ -2326,16 +2380,31 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   score: 0
-  gameOver: 0
-  gameClear: 0
-  currentFloor: 1
-  maxFloor: 10
   playerLevel: 1
   playerExp: 0
   playerExpToNext: 10
   playerMaxHP: 20
   playerCurrentHP: 20
   playerMaxLevel: 10
+  currentFloor: 1
+  maxFloor: 10
+  gameOver: 0
+  gameClear: 0
+  newGameManager: {fileID: 0}
+  gameStateManager: {fileID: 0}
+  playerDataManager: {fileID: 0}
+  floorManager: {fileID: 0}
+  systemIntegrationManager: {fileID: 0}
+  saveManager: {fileID: 0}
+  deckManager: {fileID: 0}
+  uiManager: {fileID: 0}
+  soundManager: {fileID: 0}
+  saveEventChannel: {fileID: 0}
+  deckEventChannel: {fileID: 0}
+  uiEventChannel: {fileID: 0}
+  autoSetupManager: {fileID: 0}
+  useNewSystems: 1
+  enableLegacyMode: 1
   playerDeck:
     selectedDeck: []
     discardPile: []

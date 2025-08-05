@@ -51,11 +51,14 @@ public class FloorManager : MonoBehaviour
     /// <param name="floor">設定する階層</param>
     public void SetFloor(int floor)
     {
+        Debug.Log($"FloorManager: SetFloor({floor})呼び出し - 現在の階層: {currentFloor}, 最大階層: {maxFloor}");
+        
         if (floor != currentFloor && floor >= 1 && floor <= maxFloor)
         {
             int oldFloor = currentFloor;
             currentFloor = floor;
             
+            Debug.Log($"FloorManager: 階層変更イベントを発火します - {oldFloor} → {currentFloor}");
             OnFloorChanged?.Invoke(currentFloor);
             OnFloorSystemChanged?.Invoke();
             
@@ -68,6 +71,10 @@ public class FloorManager : MonoBehaviour
                 Debug.Log("FloorManager: 最終階層に到達しました");
             }
         }
+        else
+        {
+            Debug.Log($"FloorManager: 階層設定をスキップしました - 条件不一致 (floor: {floor}, currentFloor: {currentFloor}, maxFloor: {maxFloor})");
+        }
     }
     
     /// <summary>
@@ -75,9 +82,18 @@ public class FloorManager : MonoBehaviour
     /// </summary>
     public void GoToNextFloor()
     {
+        Debug.Log($"FloorManager: GoToNextFloor()開始 - currentFloor: {currentFloor}, maxFloor: {maxFloor}");
+        
         if (currentFloor < maxFloor)
         {
-            SetFloor(currentFloor + 1);
+            // 次の階層に進む
+            int nextFloor = currentFloor + 1;
+            Debug.Log($"FloorManager: 階層を進行します - {currentFloor} → {nextFloor}");
+            SetFloor(nextFloor);
+            
+            Debug.Log("FloorManager: デッキビルダーシーンに遷移します");
+            // デッキビルダーシーンに遷移
+            GoToDeckBuilderScene();
         }
         else
         {
@@ -133,5 +149,57 @@ public class FloorManager : MonoBehaviour
     public float GetFloorProgress()
     {
         return (float)(currentFloor - 1) / (maxFloor - 1);
+    }
+    
+    /// <summary>
+    /// デッキビルダーシーンに遷移
+    /// </summary>
+    public void GoToDeckBuilderScene()
+    {
+        Debug.Log($"FloorManager: デッキビルダーシーンに遷移します - 現在階層: {currentFloor}");
+        
+        // シーン存在チェック
+        bool sceneExists = false;
+        for (int i = 0; i < UnityEngine.SceneManagement.SceneManager.sceneCountInBuildSettings; i++)
+        {
+            string scenePath = UnityEngine.SceneManagement.SceneUtility.GetScenePathByBuildIndex(i);
+            string sceneNameFromPath = System.IO.Path.GetFileNameWithoutExtension(scenePath);
+            if (sceneNameFromPath == "DeckBuilderScene")
+            {
+                sceneExists = true;
+                Debug.Log($"FloorManager: DeckBuilderSceneが見つかりました - ビルドインデックス: {i}");
+                break;
+            }
+        }
+        
+        if (!sceneExists)
+        {
+            Debug.LogError("FloorManager: DeckBuilderSceneがビルド設定に含まれていません！");
+            Debug.Log("FloorManager: 利用可能なシーン:");
+            for (int i = 0; i < UnityEngine.SceneManagement.SceneManager.sceneCountInBuildSettings; i++)
+            {
+                string scenePath = UnityEngine.SceneManagement.SceneUtility.GetScenePathByBuildIndex(i);
+                string sceneNameFromPath = System.IO.Path.GetFileNameWithoutExtension(scenePath);
+                Debug.Log($"FloorManager: - {sceneNameFromPath} (インデックス: {i})");
+            }
+            return;
+        }
+        
+        if (UIManager.Instance != null)
+        {
+            UIManager.Instance.AddLog($"階層 {currentFloor} に進みます。デッキを再構築してください。");
+        }
+        
+        if (TransitionManager.Instance != null)
+        {
+            Debug.Log("FloorManager: TransitionManagerを使用してシーン遷移を開始");
+            TransitionManager.Instance.LoadSceneWithFade("DeckBuilderScene");
+        }
+        else
+        {
+            Debug.LogError("FloorManager: TransitionManager.Instanceが見つかりません");
+            Debug.Log("FloorManager: SceneManagerを使用してシーン遷移を開始");
+            UnityEngine.SceneManagement.SceneManager.LoadScene("DeckBuilderScene");
+        }
     }
 } 

@@ -87,6 +87,10 @@ public class UIManager : MonoBehaviour
         GameManager.OnGameClear += OnGameClear;
         GameManager.OnGameOver += OnGameOver;
         
+        // 新しい階層システムイベントを購読
+        FloorManager.OnFloorChanged += OnFloorChanged;
+        FloorManager.OnGameClear += OnGameClear;
+        
         // プレイヤーレベルアップイベントを購読
         Player.OnPlayerLevelUp += OnPlayerLevelUp;
         
@@ -103,6 +107,10 @@ public class UIManager : MonoBehaviour
         GameManager.OnGameClear -= OnGameClear;
         GameManager.OnGameOver -= OnGameOver;
         
+        // 新しい階層システムイベントの購読を解除
+        FloorManager.OnFloorChanged -= OnFloorChanged;
+        FloorManager.OnGameClear -= OnGameClear;
+        
         // プレイヤーレベルアップイベントの購読を解除
         Player.OnPlayerLevelUp -= OnPlayerLevelUp;
     }
@@ -118,8 +126,20 @@ public class UIManager : MonoBehaviour
             UpdateLevelDisplay(Player.Instance.level, Player.Instance.exp, Player.Instance.expToNext);
         }
         
-        // 階層表示を更新（準備段階）
-        UpdateFloorDisplay(GameManager.Instance.currentFloor);
+        // 階層表示を更新（新しいシステムを優先）
+        int currentFloor = 1;
+        if (GameManager.Instance != null && GameManager.Instance.useNewSystems && FloorManager.Instance != null)
+        {
+            currentFloor = FloorManager.Instance.currentFloor;
+            Debug.Log($"UIManager: FloorManager.currentFloor = {currentFloor}");
+        }
+        else if (GameManager.Instance != null)
+        {
+            currentFloor = GameManager.Instance.currentFloor;
+            Debug.Log($"UIManager: GameManager.currentFloor = {currentFloor}");
+        }
+        
+        UpdateFloorDisplay(currentFloor);
         
         // 強化ボタンの設定
         SetupEnhanceButton();
@@ -154,7 +174,9 @@ public class UIManager : MonoBehaviour
     private void OnFloorChanged(int newFloor)
     {
         Debug.Log($"UIManager: 階層変更イベントを受信 - 新しい階層: {newFloor}");
+        Debug.Log($"UIManager: UpdateFloorDisplay({newFloor})を呼び出します");
         UpdateFloorDisplay(newFloor);
+        Debug.Log($"UIManager: UpdateFloorDisplay完了 - 現在のfloorLabel.text: {(floorLabel != null ? floorLabel.text : "null")}");
     }
     
     private void OnGameClear()
@@ -192,10 +214,18 @@ public class UIManager : MonoBehaviour
     
     public void UpdateFloorDisplay(int floor)
     {
+        Debug.Log($"UIManager: UpdateFloorDisplay()開始 - floor: {floor}, floorLabel: {(floorLabel != null ? "NotNull" : "Null")}");
         if (floorLabel != null)
         {
+            string oldText = floorLabel.text;
             floorLabel.text = $"階層: {floor}";
+            Debug.Log($"UIManager: 階層表示を更新しました - '{oldText}' → '{floorLabel.text}'");
         }
+        else
+        {
+            Debug.LogWarning("UIManager: floorLabelがnullです");
+        }
+        Debug.Log($"UIManager: UpdateFloorDisplay()完了");
     }
     
     // レベルアップイベントハンドラー
@@ -267,8 +297,20 @@ public class UIManager : MonoBehaviour
         // イベントを再購読
         SubscribeToEvents();
         
-        // 初期表示を設定
-        UpdateFloorDisplay(GameManager.Instance?.currentFloor ?? 1);
+        // 初期表示を設定（新しいシステムを優先）
+        int currentFloor = 1;
+        if (GameManager.Instance != null && GameManager.Instance.useNewSystems && FloorManager.Instance != null)
+        {
+            currentFloor = FloorManager.Instance.currentFloor;
+            Debug.Log($"UIManager: FloorManager.currentFloor = {currentFloor}");
+        }
+        else if (GameManager.Instance != null)
+        {
+            currentFloor = GameManager.Instance.currentFloor;
+            Debug.Log($"UIManager: GameManager.currentFloor = {currentFloor}");
+        }
+        
+        UpdateFloorDisplay(currentFloor);
         
         Debug.Log("UIManager: メインシーン初期化完了");
     }

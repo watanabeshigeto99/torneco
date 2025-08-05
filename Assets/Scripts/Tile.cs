@@ -73,19 +73,34 @@ public class Tile : MonoBehaviour
         if (EnemyManager.Instance != null)
         {
             var enemies = EnemyManager.Instance.GetEnemies();
+            Debug.Log($"Tile: EnemyManagerから取得した敵の数: {enemies.Count}");
+            
             foreach (Enemy enemy in enemies)
             {
-                if (enemy != null && enemy.gridPosition == new Vector2Int(x, y))
+                if (enemy != null)
                 {
-                    Debug.Log($"Tile: この位置に敵がいます。敵のクリック処理を優先します");
-                    // 敵のクリック処理を優先
-                    if (Player.Instance != null)
+                    Debug.Log($"Tile: 敵チェック - 敵位置: {enemy.gridPosition}, タイル位置: ({x}, {y}), 一致: {enemy.gridPosition == new Vector2Int(x, y)}");
+                    if (enemy.gridPosition == new Vector2Int(x, y))
                     {
-                        Player.Instance.OnEnemyClicked(new Vector2Int(x, y));
+                        Debug.Log($"Tile: この位置に敵がいます。敵のクリック処理を優先します");
+                        // 敵のクリック処理を優先
+                        if (Player.Instance != null)
+                        {
+                            Player.Instance.OnEnemyClicked(new Vector2Int(x, y));
+                        }
+                        return; // タイルのクリック処理をスキップ
                     }
-                    return; // タイルのクリック処理をスキップ
+                }
+                else
+                {
+                    Debug.LogWarning("Tile: nullの敵がリストに含まれています");
                 }
             }
+            Debug.Log($"Tile: この位置に敵はいません。通常のタイルクリック処理を実行します");
+        }
+        else
+        {
+            Debug.LogWarning("Tile: EnemyManager.Instanceがnullです");
         }
         
         // 敵がいない場合は通常のタイルクリック処理
@@ -109,6 +124,12 @@ public class Tile : MonoBehaviour
     public void Highlight()
     {
         spriteRenderer.color = highlightColor;
+    }
+    
+    // 指定した色でハイライト
+    public void Highlight(Color color)
+    {
+        spriteRenderer.color = color;
     }
     
     // 攻撃可能タイルをハイライト

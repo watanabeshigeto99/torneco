@@ -59,9 +59,21 @@ public class Enemy : Unit
             if (enemyData.sprite != null)
             {
                 spriteRenderer.sprite = enemyData.sprite;
+                Debug.Log($"Enemy: スプライトを設定 - {enemyData.sprite.name}");
             }
+            else
+            {
+                Debug.LogWarning($"Enemy: enemyData.spriteがnullです - 敵名: {enemyData.enemyName}");
+            }
+            
             spriteRenderer.color = enemyData.spriteColor;
             spriteRenderer.sortingOrder = enemyData.sortingOrder;
+            
+            Debug.Log($"Enemy: 表示設定完了 - 位置: {gridPosition}, 色: {spriteRenderer.color}, ソート順: {spriteRenderer.sortingOrder}, アクティブ: {gameObject.activeInHierarchy}");
+        }
+        else
+        {
+            Debug.LogError($"Enemy: spriteRendererがnullです - 位置: {gridPosition}");
         }
         
         // Collider2D設定

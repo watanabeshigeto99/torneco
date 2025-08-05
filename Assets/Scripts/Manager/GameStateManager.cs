@@ -55,7 +55,15 @@ public class GameStateManager : MonoBehaviour
     {
         if (score != newScore)
         {
+            int oldScore = score;
             score = newScore;
+            
+            // StateChangeManagerに状態変化を記録
+            if (StateChangeManager.Instance != null)
+            {
+                StateChangeManager.Instance.RecordStateChange("Score", oldScore, newScore, "GameStateManager", "スコア設定");
+            }
+            
             OnScoreChanged?.Invoke(score);
             OnGameStateChanged?.Invoke();
             
@@ -82,7 +90,15 @@ public class GameStateManager : MonoBehaviour
     {
         if (!gameOver)
         {
+            bool oldGameOver = gameOver;
             gameOver = true;
+            
+            // StateChangeManagerに状態変化を記録
+            if (StateChangeManager.Instance != null)
+            {
+                StateChangeManager.Instance.RecordStateChange("GameOver", oldGameOver, gameOver, "GameStateManager", "ゲームオーバー設定");
+            }
+            
             OnGameOver?.Invoke();
             OnGameStateChanged?.Invoke();
             
@@ -97,7 +113,15 @@ public class GameStateManager : MonoBehaviour
     {
         if (!gameClear)
         {
+            bool oldGameClear = gameClear;
             gameClear = true;
+            
+            // StateChangeManagerに状態変化を記録
+            if (StateChangeManager.Instance != null)
+            {
+                StateChangeManager.Instance.RecordStateChange("GameClear", oldGameClear, gameClear, "GameStateManager", "ゲームクリア設定");
+            }
+            
             OnGameClear?.Invoke();
             OnGameStateChanged?.Invoke();
             
@@ -110,9 +134,21 @@ public class GameStateManager : MonoBehaviour
     /// </summary>
     public void ResetGameState()
     {
+        int oldScore = score;
+        bool oldGameOver = gameOver;
+        bool oldGameClear = gameClear;
+        
         score = 0;
         gameOver = false;
         gameClear = false;
+        
+        // StateChangeManagerに状態変化を記録
+        if (StateChangeManager.Instance != null)
+        {
+            StateChangeManager.Instance.RecordStateChange("Score", oldScore, score, "GameStateManager", "ゲーム状態リセット");
+            StateChangeManager.Instance.RecordStateChange("GameOver", oldGameOver, gameOver, "GameStateManager", "ゲーム状態リセット");
+            StateChangeManager.Instance.RecordStateChange("GameClear", oldGameClear, gameClear, "GameStateManager", "ゲーム状態リセット");
+        }
         
         OnGameStateChanged?.Invoke();
         
@@ -120,11 +156,26 @@ public class GameStateManager : MonoBehaviour
     }
     
     /// <summary>
-    /// ゲーム状態の情報を取得
+    /// ゲーム状態情報を取得
     /// </summary>
-    /// <returns>ゲーム状態の情報文字列</returns>
     public string GetGameStateInfo()
     {
-        return $"GameState - Score: {score}, GameOver: {gameOver}, GameClear: {gameClear}";
+        return $"Score: {score}, GameOver: {gameOver}, GameClear: {gameClear}";
+    }
+    
+    /// <summary>
+    /// 状態変化の影響範囲を分析
+    /// </summary>
+    /// <returns>分析結果</returns>
+    public string AnalyzeStateImpact()
+    {
+        if (StateChangeManager.Instance != null)
+        {
+            return StateChangeManager.Instance.AnalyzeStateImpact("Score") + 
+                   StateChangeManager.Instance.AnalyzeStateImpact("GameOver") + 
+                   StateChangeManager.Instance.AnalyzeStateImpact("GameClear");
+        }
+        
+        return "StateChangeManagerが見つかりません";
     }
 } 

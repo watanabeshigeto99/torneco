@@ -111,35 +111,31 @@ public class GridManager : MonoBehaviour
     {
         Debug.Log("GridManager: 段階的初期化開始");
         
+        // 従来の順次実行方式を使用（AsyncOperationManagerは問題を引き起こすため）
         // 1. グリッド生成
-        GenerateGrid();
+        yield return StartCoroutine(GenerateGridCoroutine());
         isGridGenerated = true;
         Debug.Log("GridManager: グリッド生成完了");
-        yield return null; // 1フレーム待機
         
         // 2. オブジェクト参照保存
-        StoreAllObjects();
+        yield return StartCoroutine(StoreAllObjectsCoroutine());
         isAllObjectsStored = true;
         Debug.Log("GridManager: オブジェクト参照保存完了");
-        yield return null; // 1フレーム待機
         
         // 3. プレイヤー生成
-        SpawnPlayer(new Vector2Int(width / 2, height / 2));
+        yield return StartCoroutine(SpawnPlayerCoroutine(new Vector2Int(width / 2, height / 2)));
         isPlayerSpawned = true;
         Debug.Log("GridManager: プレイヤー生成完了");
-        yield return null; // 1フレーム待機
         
         // 4. Exit生成
-        SpawnExit();
+        yield return StartCoroutine(SpawnExitCoroutine());
         isExitSpawned = true;
         Debug.Log("GridManager: Exit生成完了");
-        yield return null; // 1フレーム待機
         
         // 5. 敵生成
-        SpawnEnemies();
+        yield return StartCoroutine(SpawnEnemiesCoroutine());
         isEnemiesSpawned = true;
         Debug.Log("GridManager: 敵生成完了");
-        yield return null; // 1フレーム待機
         
         // 6. 全オブジェクト初期化完了チェック
         yield return StartCoroutine(WaitForAllObjectsInitialized());
@@ -239,17 +235,43 @@ public class GridManager : MonoBehaviour
         Debug.Log("GridManager: プレイヤー生成完了");
     }
     
-    private void SpawnExit()
-    {
-        Debug.Log($"GridManager: Exit生成開始 - グリッドサイズ: {width}x{height}");
-        
-        Vector2Int exitPos;
-        do
-        {
-            exitPos = new Vector2Int(UnityEngine.Random.Range(0, width), UnityEngine.Random.Range(0, height));
-        }
-        while (exitPos == new Vector2Int(width / 2, height / 2) || 
-               (Player.Instance != null && exitPos == Player.Instance.gridPosition)); // プレイヤー位置と被らない
+         private void SpawnExit()
+     {
+         Debug.Log($"GridManager: Exit生成開始 - グリッドサイズ: {width}x{height}");
+         
+         Vector2Int exitPos;
+         int attempts = 0;
+         do
+         {
+             exitPos = new Vector2Int(UnityEngine.Random.Range(0, width), UnityEngine.Random.Range(0, height));
+             attempts++;
+             
+             // プレイヤー位置と被らないかチェック
+             bool isPlayerPosition = (Player.Instance != null && exitPos == Player.Instance.gridPosition);
+             bool isCenterPosition = (exitPos == new Vector2Int(width / 2, height / 2));
+             
+             // グリッド範囲内かチェック（UnityEngine.Random.Range(0, width)は0からwidth-1を返すので、実際には常にグリッド内）
+             if (!IsInsideGrid(exitPos))
+             {
+                 Debug.LogWarning($"GridManager: Exit位置がグリッド外 - {exitPos}, グリッドサイズ: {width}x{height}");
+                 continue;
+             }
+             
+             // プレイヤー位置や中心位置と被らない場合はループを抜ける
+             if (!isPlayerPosition && !isCenterPosition)
+             {
+                 break;
+             }
+         }
+         while (attempts < 100); // 最大試行回数を制限
+         
+         // 最終的な位置を確認
+         if (!IsInsideGrid(exitPos))
+         {
+             Debug.LogError($"GridManager: Exit位置がグリッド外です - {exitPos}, グリッドサイズ: {width}x{height}");
+             // フォールバック: グリッド内の安全な位置を使用
+             exitPos = new Vector2Int(width - 1, height - 1);
+         }
 
         Vector3 pos = new Vector3(exitPos.x * tileSpacing, exitPos.y * tileSpacing, 0);
         GameObject exitObj = Instantiate(exitPrefab, pos, Quaternion.identity);
@@ -371,11 +393,26 @@ public class GridManager : MonoBehaviour
     {
         Debug.Log("GridManager: オブジェクト参照保存開始");
         
-        allTiles = FindObjectsOfType<Tile>();
+        // タイル配列が既に設定されている場合は確認のみ
+        if (allTiles == null)
+        {
+            allTiles = FindObjectsOfType<Tile>();
+        }
+        
         // 敵の参照も保存（既に生成されている場合があるため）
         allEnemies = FindObjectsOfType<Enemy>();
         
-        Debug.Log($"GridManager: タイル数: {allTiles?.Length ?? 0}, 敵数: {allEnemies?.Length ?? 0}");
+        // 有効なタイル数をカウント
+        int validTileCount = 0;
+        if (allTiles != null)
+        {
+            foreach (var tile in allTiles)
+            {
+                if (tile != null) validTileCount++;
+            }
+        }
+        
+        Debug.Log($"GridManager: タイル数: {validTileCount}/{allTiles?.Length ?? 0}, 敵数: {allEnemies?.Length ?? 0}");
         
         // exitObjectはSpawnExitで既に設定済み
         if (exitObject == null)
@@ -879,5 +916,270 @@ public class GridManager : MonoBehaviour
         StartCoroutine(InitializeFloorCoroutine());
         
         Debug.Log("GridManager: メインシーン初期化完了");
+    }
+
+    /// <summary>
+    /// グリッド生成コルーチン
+    /// </summary>
+    private System.Collections.IEnumerator GenerateGridCoroutine()
+    {
+        Debug.Log($"GridManager: グリッド生成開始 ({width}x{height})");
+        
+        // タイル配列を事前に初期化
+        allTiles = new Tile[width * height];
+        int tileIndex = 0;
+        
+        for (int x = 0; x < width; x++)
+        {
+            for (int y = 0; y < height; y++)
+            {
+                Vector3 pos = new Vector3(x * tileSpacing, y * tileSpacing, 0);
+                GameObject tile = Instantiate(tilePrefab, pos, Quaternion.identity, transform);
+                tile.name = $"Tile_{x}_{y}";
+
+                Tile tileScript = tile.GetComponent<Tile>();
+                if (tileScript == null)
+                {
+                    Debug.LogError($"GridManager: Tile_{x}_{y}にTileコンポーネントが見つかりません");
+                    continue;
+                }
+                
+                tileScript.Initialize(x, y);
+                
+                // 配列に直接保存
+                allTiles[tileIndex] = tileScript;
+                tileIndex++;
+            }
+            
+            // フレーム分割（より頻繁に）
+            if (x % 2 == 0)
+                yield return null;
+        }
+        
+        Debug.Log($"GridManager: グリッド生成完了 - {tileIndex}タイル生成、配列サイズ: {allTiles.Length}");
+    }
+    
+    /// <summary>
+    /// オブジェクト参照保存コルーチン
+    /// </summary>
+    private System.Collections.IEnumerator StoreAllObjectsCoroutine()
+    {
+        Debug.Log("GridManager: オブジェクト参照保存開始");
+        
+        // プレイヤー参照を保存
+        var existingPlayer = FindObjectOfType<Player>();
+        if (existingPlayer == null)
+        {
+            Debug.LogError("GridManager: Playerが見つかりません");
+        }
+        
+        // 敵参照を保存
+        allEnemies = FindObjectsOfType<Enemy>();
+        Debug.Log($"GridManager: {allEnemies.Length}体の敵を検出");
+        
+        // Exit参照を保存（既に生成されている場合）
+        if (exitObject == null)
+        {
+            exitObject = GameObject.FindGameObjectWithTag("Exit");
+            if (exitObject != null)
+            {
+                exitPosition = Vector2Int.RoundToInt(exitObject.transform.position);
+            }
+        }
+        
+        // タイル配列の確認
+        if (allTiles != null)
+        {
+            int validTileCount = 0;
+            foreach (var tile in allTiles)
+            {
+                if (tile != null) validTileCount++;
+            }
+            Debug.Log($"GridManager: 有効なタイル数: {validTileCount}/{allTiles.Length}");
+        }
+        else
+        {
+            Debug.LogWarning("GridManager: allTilesがnullです");
+        }
+        
+        yield return null;
+        Debug.Log("GridManager: オブジェクト参照保存完了");
+    }
+    
+    /// <summary>
+    /// プレイヤー生成コルーチン
+    /// </summary>
+    private System.Collections.IEnumerator SpawnPlayerCoroutine(Vector2Int position)
+    {
+        Debug.Log($"GridManager: プレイヤー生成開始 - 位置: {position}");
+        
+        if (Player.Instance == null)
+        {
+            Vector3 worldPos = GetWorldPosition(position);
+            GameObject playerObj = Instantiate(playerPrefab, worldPos, Quaternion.identity);
+            var playerComponent = playerObj.GetComponent<Player>();
+            
+            if (playerComponent != null)
+            {
+                playerComponent.InitializePosition();
+                OnPlayerSpawned?.Invoke(playerComponent);
+                Debug.Log("GridManager: プレイヤー生成完了");
+                
+                // カメラ追従を開始
+                if (CameraFollow.Instance != null)
+                {
+                    CameraFollow.Instance.OnPlayerMoved(playerObj.transform.position);
+                    Debug.Log("GridManager: カメラ追従開始");
+                }
+                else
+                {
+                    Debug.LogWarning("GridManager: CameraFollow.Instanceが見つかりません");
+                }
+            }
+            else
+            {
+                Debug.LogError("GridManager: プレイヤーコンポーネントが見つかりません");
+            }
+        }
+        else
+        {
+            Player.Instance.Initialize(position);
+            OnPlayerSpawned?.Invoke(Player.Instance);
+            Debug.Log("GridManager: 既存プレイヤーを初期化");
+        }
+        
+        yield return null;
+    }
+    
+    /// <summary>
+    /// Exit生成コルーチン
+    /// </summary>
+    private System.Collections.IEnumerator SpawnExitCoroutine()
+    {
+        Debug.Log("GridManager: Exit生成開始");
+        
+        // 新しいExit位置を生成（グリッド範囲内に制限）
+        Vector2Int exitPos;
+        int attempts = 0;
+        do
+        {
+            exitPos = new Vector2Int(UnityEngine.Random.Range(0, width), UnityEngine.Random.Range(0, height));
+            attempts++;
+            
+            // プレイヤー位置と被らないかチェック
+            bool isPlayerPosition = (Player.Instance != null && exitPos == Player.Instance.gridPosition);
+            bool isCenterPosition = (exitPos == new Vector2Int(width / 2, height / 2));
+            
+            // グリッド範囲内かチェック（UnityEngine.Random.Range(0, width)は0からwidth-1を返すので、実際には常にグリッド内）
+            if (!IsInsideGrid(exitPos))
+            {
+                Debug.LogWarning($"GridManager: Exit位置がグリッド外 - {exitPos}, グリッドサイズ: {width}x{height}");
+                continue;
+            }
+            
+            // プレイヤー位置や中心位置と被らない場合はループを抜ける
+            if (!isPlayerPosition && !isCenterPosition)
+            {
+                break;
+            }
+        }
+        while (attempts < 100); // 最大試行回数を制限
+        
+        // 最終的な位置を確認
+        if (!IsInsideGrid(exitPos))
+        {
+            Debug.LogError($"GridManager: Exit位置がグリッド外です - {exitPos}, グリッドサイズ: {width}x{height}");
+            // フォールバック: グリッド内の安全な位置を使用
+            exitPos = new Vector2Int(width - 1, height - 1);
+        }
+        
+        Vector3 worldPos = GetWorldPosition(exitPos);
+        exitObject = Instantiate(exitPrefab, worldPos, Quaternion.identity);
+        exitPosition = exitPos;
+        
+        OnExitSpawned?.Invoke(exitObject);
+        Debug.Log($"GridManager: Exit生成完了 - 位置: {exitPosition}, グリッド内: {IsInsideGrid(exitPosition)}");
+        
+        yield return null;
+    }
+    
+    /// <summary>
+    /// 敵生成コルーチン
+    /// </summary>
+    private System.Collections.IEnumerator SpawnEnemiesCoroutine()
+    {
+        Debug.Log("GridManager: 敵生成開始");
+        
+        if (EnemyManager.Instance != null)
+        {
+            // EnemyManagerを使用して敵を生成
+            EnemyManager.Instance.SpawnEnemies();
+            allEnemies = FindObjectsOfType<Enemy>();
+            OnEnemiesSpawned?.Invoke(allEnemies);
+            Debug.Log($"GridManager: 敵生成完了 - {allEnemies.Length}体");
+        }
+        else
+        {
+            Debug.LogWarning("GridManager: EnemyManagerが見つかりません。手動で敵を生成します。");
+            
+                         // 手動で敵を生成（デフォルト値を使用）
+             int enemyCount = 3; // デフォルト値
+             GameObject enemyPrefab = Resources.Load<GameObject>("Prefabs/Enemy"); // デフォルトプレハブ
+             
+             for (int i = 0; i < enemyCount; i++)
+             {
+                 Vector2Int enemyPos;
+                 int attempts = 0;
+                 
+                 do
+                 {
+                     enemyPos = new Vector2Int(UnityEngine.Random.Range(0, width), UnityEngine.Random.Range(0, height));
+                     attempts++;
+                     
+                     // グリッド範囲内かチェック（UnityEngine.Random.Range(0, width)は0からwidth-1を返すので、実際には常にグリッド内）
+                     if (!IsInsideGrid(enemyPos))
+                     {
+                         Debug.LogWarning($"GridManager: 敵位置がグリッド外 - {enemyPos}, グリッドサイズ: {width}x{height}");
+                         continue;
+                     }
+                     
+                     // 占有されていない場合はループを抜ける
+                     if (!IsOccupied(enemyPos))
+                     {
+                         break;
+                     }
+                 } while (attempts < 100);
+                 
+                 // 最終的な位置を確認
+                 if (!IsInsideGrid(enemyPos))
+                 {
+                     Debug.LogError($"GridManager: 敵位置がグリッド外です - {enemyPos}, グリッドサイズ: {width}x{height}");
+                     continue; // この敵はスキップ
+                 }
+                 
+                 if (!IsOccupied(enemyPos))
+                 {
+                     Vector3 worldPos = GetWorldPosition(enemyPos);
+                     GameObject enemyObj = Instantiate(enemyPrefab, worldPos, Quaternion.identity);
+                     Enemy enemy = enemyObj.GetComponent<Enemy>();
+                     
+                     if (enemy != null)
+                     {
+                         enemy.Initialize(enemyPos);
+                         Debug.Log($"GridManager: 敵生成完了 - 位置: {enemyPos}, グリッド内: {IsInsideGrid(enemyPos)}");
+                     }
+                 }
+                 else
+                 {
+                     Debug.LogWarning($"GridManager: 敵の生成位置が占有されています - {enemyPos}");
+                 }
+             }
+            
+            allEnemies = FindObjectsOfType<Enemy>();
+            OnEnemiesSpawned?.Invoke(allEnemies);
+            Debug.Log($"GridManager: 手動敵生成完了 - {allEnemies.Length}体");
+        }
+        
+        yield return null;
     }
 } 

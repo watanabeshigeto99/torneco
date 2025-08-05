@@ -341,8 +341,8 @@ public class Player : Unit
         // 基底クラスのSetPositionを使用
         SetPosition(new Vector2Int(2, 2));
         
-        // HPを回復
-        currentHP = maxHP;
+        // HP回復は削除（敵を倒した際にHPがマックスになるバグを修正）
+        // currentHP = maxHP; // この行を削除
         
         if (GameManager.Instance != null)
         {
@@ -367,7 +367,8 @@ public class Player : Unit
         if (UIManager.Instance != null)
         {
             UIManager.Instance.UpdateHP(currentHP, maxHP);
-            UIManager.Instance.AddLog($"階層 {GameManager.Instance.currentFloor} に到達！HPが回復しました");
+            // HP回復のログも削除
+            // UIManager.Instance.AddLog($"階層 {GameManager.Instance.currentFloor} に到達！HPが回復しました");
         }
     }
 
@@ -868,7 +869,8 @@ public class Player : Unit
                     exp = playerData.experience;
                     expToNext = playerData.experienceToNext;
                     maxHP = playerData.maxHP;
-                    currentHP = playerData.currentHP;
+                    // HPは同期しない（敵を倒した際にHPがマックスになるバグを修正）
+                    // currentHP = playerData.currentHP;
 
                     Debug.Log($"Player: 新しいシステムからデータを同期 - Level: {level}, Exp: {exp}/{expToNext}");
                 }
@@ -880,7 +882,8 @@ public class Player : Unit
                     exp = GameManager.Instance.playerExp;
                     expToNext = GameManager.Instance.playerExpToNext;
                     maxHP = GameManager.Instance.playerMaxHP;
-                    currentHP = GameManager.Instance.playerCurrentHP;
+                    // HPは同期しない（敵を倒した際にHPがマックスになるバグを修正）
+                    // currentHP = GameManager.Instance.playerCurrentHP;
                     Debug.Log($"Player: レガシーシステムデータで同期しました (フォールバック) - Level: {level}, Exp: {exp}/{expToNext}");
                 }
             }
@@ -892,7 +895,8 @@ public class Player : Unit
                 exp = GameManager.Instance.playerExp;
                 expToNext = GameManager.Instance.playerExpToNext;
                 maxHP = GameManager.Instance.playerMaxHP;
-                currentHP = GameManager.Instance.playerCurrentHP;
+                // HPは同期しない（敵を倒した際にHPがマックスになるバグを修正）
+                // currentHP = GameManager.Instance.playerCurrentHP;
 
                 Debug.Log($"Player: レガシーシステムからデータを同期 - Level: {level}, Exp: {exp}/{expToNext}");
             }

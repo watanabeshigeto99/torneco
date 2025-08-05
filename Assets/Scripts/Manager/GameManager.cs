@@ -46,6 +46,12 @@ public class GameManager : MonoBehaviour
     public PlayerDataSystem.PlayerDataManager playerDataManager;
     public PlayerDataSystem.PlayerDataSO playerData;
     public PlayerDataSystem.PlayerEventChannel playerEventChannel;
+    
+    // 階層システム統合
+    [Header("Floor System Integration")]
+    public FloorSystem.FloorManager floorManager;
+    public FloorSystem.FloorDataSO floorData;
+    public FloorSystem.FloorEventChannel floorEventChannel;
 
     private void Awake()
     {
@@ -73,6 +79,9 @@ public class GameManager : MonoBehaviour
         
         // プレイヤーデータシステムイベントの購読
         SubscribeToPlayerDataEvents();
+        
+        // 階層システムイベントの購読
+        SubscribeToFloorEvents();
     }
     
     private void InitializePlayerData()
@@ -311,21 +320,30 @@ public class GameManager : MonoBehaviour
     
     public void GoToNextFloor()
     {
-        if (gameOver || gameClear) 
+        // 階層システムが利用可能な場合はそちらを使用
+        if (floorManager != null)
         {
-            return;
+            floorManager.GoToNextFloor();
         }
-        
-        currentFloor++;
-        OnFloorChanged?.Invoke(currentFloor);
-        
-        if (currentFloor > maxFloor)
+        else
         {
-            GameClear();
-            return;
+            // 従来の処理（後方互換性のため）
+            if (gameOver || gameClear) 
+            {
+                return;
+            }
+            
+            currentFloor++;
+            OnFloorChanged?.Invoke(currentFloor);
+            
+            if (currentFloor > maxFloor)
+            {
+                GameClear();
+                return;
+            }
+            
+            StartCoroutine(GoToDeckBuilderCoroutine());
         }
-        
-        StartCoroutine(GoToDeckBuilderCoroutine());
     }
     
     private System.Collections.IEnumerator GoToDeckBuilderCoroutine()
@@ -568,5 +586,73 @@ public class GameManager : MonoBehaviour
         return $"PlayerDataSystem Integration - Manager: {(playerDataManager != null ? "✓" : "✗")}, " +
                $"Data: {(playerData != null ? "✓" : "✗")}, " +
                $"EventChannel: {(playerEventChannel != null ? "✓" : "✗")}";
+    }
+    
+    // 階層システム統合用メソッド
+    
+    /// <summary>
+    /// 階層システムイベントの購読
+    /// </summary>
+    private void SubscribeToFloorEvents()
+    {
+        if (floorEventChannel != null)
+        {
+            floorEventChannel.OnFloorChanged.AddListener(OnFloorSystemChanged);
+            floorEventChannel.OnGameClear.AddListener(OnFloorGameClear);
+        }
+    }
+    
+    /// <summary>
+    /// 階層変更時の処理
+    /// </summary>
+    private void OnFloorSystemChanged(int newFloor)
+    {
+        // 既存の階層変更処理を呼び出し
+        if (UIManager.Instance != null)
+        {
+            UIManager.Instance.AddLog($"階層 {newFloor} に進みました");
+        }
+    }
+    
+    /// <summary>
+    /// 階層システムからのゲームクリア処理
+    /// </summary>
+    private void OnFloorGameClear()
+    {
+        // 既存のゲームクリア処理を呼び出し
+        GameClear();
+    }
+    
+    /// <summary>
+    /// 階層データを階層システムと同期
+    /// </summary>
+    private void SyncFloorDataWithFloorSystem()
+    {
+        if (floorData != null)
+        {
+            currentFloor = floorData.currentFloor;
+            maxFloor = floorData.maxFloor;
+        }
+    }
+    
+    /// <summary>
+    /// 階層データを階層システムに適用
+    /// </summary>
+    private void ApplyFloorDataToFloorSystem()
+    {
+        if (floorData != null)
+        {
+            floorData.SetFloor(currentFloor);
+        }
+    }
+    
+    /// <summary>
+    /// 階層システム統合の情報を取得
+    /// </summary>
+    public string GetFloorSystemIntegrationInfo()
+    {
+        return $"FloorSystem Integration - Manager: {(floorManager != null ? "✓" : "✗")}, " +
+               $"Data: {(floorData != null ? "✓" : "✗")}, " +
+               $"EventChannel: {(floorEventChannel != null ? "✓" : "✗")}";
     }
 } 

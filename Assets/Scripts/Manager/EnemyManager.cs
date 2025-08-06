@@ -321,6 +321,20 @@ public class EnemyManager : MonoBehaviour
         return enemies.Count;
     }
     
+    // ミニマップ用：全ての敵の位置を取得
+    public List<Vector2Int> GetAllEnemyPositions()
+    {
+        List<Vector2Int> positions = new List<Vector2Int>();
+        foreach (var enemy in enemies)
+        {
+            if (enemy != null && !enemy.IsDead)
+            {
+                positions.Add(enemy.gridPosition);
+            }
+        }
+        return positions;
+    }
+    
     // 敵を再スポーン（段階2実装）
     public void RespawnEnemies()
     {

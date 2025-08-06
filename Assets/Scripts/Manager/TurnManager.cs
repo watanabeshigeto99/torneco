@@ -1,6 +1,7 @@
 using System.Collections;
 using UnityEngine;
 using System;
+using System.Collections.Generic;
 
 [DefaultExecutionOrder(-70)]
 public class TurnManager : MonoBehaviour
@@ -104,7 +105,8 @@ public class TurnManager : MonoBehaviour
     private void OnPlayerMoved(Vector2Int newPosition)
     {
         Debug.Log($"TurnManager: プレイヤー移動イベント受信 位置: {newPosition}");
-        // 移動後の処理（必要に応じて）
+        // ミニマップを更新
+        UpdateMiniMap();
     }
     
     private void OnPlayerAttacked(int damage)
@@ -129,6 +131,8 @@ public class TurnManager : MonoBehaviour
     private void OnUnitMoved(Unit unit, Vector2Int newPosition)
     {
         Debug.Log($"TurnManager: ユニット移動イベント受信 {unit.GetUnitName()} 位置: {newPosition}");
+        // ミニマップを更新
+        UpdateMiniMap();
     }
     
     private void OnUnitAttacked(Unit attacker, int damage)
@@ -168,7 +172,21 @@ public class TurnManager : MonoBehaviour
         playerTurn = true;
         isProcessing = false;
         
+        // ミニマップの初期更新
+        UpdateMiniMap();
+        
         Debug.Log("TurnManager: ターン管理初期化完了 - プレイヤーターン開始");
+    }
+    
+    // ミニマップ更新処理
+    private void UpdateMiniMap()
+    {
+        if (MiniMapManager.Instance == null || Player.Instance == null || EnemyManager.Instance == null || GridManager.Instance == null)
+            return;
+            
+        List<Vector2Int> enemies = EnemyManager.Instance.GetAllEnemyPositions();
+        Vector2Int exitPos = GridManager.Instance.exitPosition;
+        MiniMapManager.Instance.UpdateMiniMap(Player.Instance.gridPosition, enemies, exitPos);
     }
 
     public void OnPlayerCardUsed()

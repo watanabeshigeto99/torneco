@@ -1,6 +1,7 @@
 using UnityEngine;
 using System;
 using System.Collections;
+using System.Collections.Generic;
 
 [DefaultExecutionOrder(-90)]
 public class GridManager : MonoBehaviour
@@ -53,6 +54,9 @@ public class GridManager : MonoBehaviour
     private Enemy[] allEnemies;
     private GameObject exitObject;
     public Vector2Int exitPosition; // Exitの位置を記録（publicに変更）
+    
+    // ミニマップ用のTile管理Dict
+    public Dictionary<Vector2Int, Tile> tileDict = new();
 
     // 初期化完了フラグ
     private bool isGridGenerated = false;
@@ -76,6 +80,12 @@ public class GridManager : MonoBehaviour
         
         // DontDestroyOnLoadで永続化（シーン間で保持）
         DontDestroyOnLoad(gameObject);
+        
+        // ミニマップ用のTile管理Dictを初期化
+        if (tileDict == null)
+        {
+            tileDict = new Dictionary<Vector2Int, Tile>();
+        }
         
         Debug.Log("GridManager: Awake完了");
     }
@@ -183,8 +193,9 @@ public class GridManager : MonoBehaviour
         {
             for (int y = 0; y < height; y++)
             {
-                Vector3 pos = new Vector3(x * tileSpacing, y * tileSpacing, 0);
-                GameObject tile = Instantiate(tilePrefab, pos, Quaternion.identity, transform);
+                Vector2Int pos = new(x, y);
+                Vector3 worldPos = new Vector3(x * tileSpacing, y * tileSpacing, 0);
+                GameObject tile = Instantiate(tilePrefab, worldPos, Quaternion.identity, transform);
                 tile.name = $"Tile_{x}_{y}";
 
                 Tile tileScript = tile.GetComponent<Tile>();
@@ -195,6 +206,12 @@ public class GridManager : MonoBehaviour
                 }
                 
                 tileScript.Initialize(x, y);
+                if (tileDict == null)
+                {
+                    Debug.LogWarning("GridManager: tileDictがnullです。新しく初期化します。");
+                    tileDict = new Dictionary<Vector2Int, Tile>();
+                }
+                tileDict[pos] = tileScript; // ミニマップ用にTile管理Dictに登録
             }
         }
         
@@ -883,6 +900,12 @@ public class GridManager : MonoBehaviour
         allTiles = null;
         allEnemies = null;
         
+        // ミニマップ用のTile管理Dictもクリア
+        if (tileDict != null)
+        {
+            tileDict.Clear();
+        }
+        
         Debug.Log("GridManager: 古いオブジェクトの削除完了");
     }
     
@@ -927,6 +950,17 @@ public class GridManager : MonoBehaviour
         
         // タイル配列を事前に初期化
         allTiles = new Tile[width * height];
+        
+        // ミニマップ用のTile管理Dictを初期化
+        if (tileDict == null)
+        {
+            tileDict = new Dictionary<Vector2Int, Tile>();
+        }
+        else
+        {
+            tileDict.Clear();
+        }
+        
         int tileIndex = 0;
         
         for (int x = 0; x < width; x++)
@@ -948,6 +982,16 @@ public class GridManager : MonoBehaviour
                 
                 // 配列に直接保存
                 allTiles[tileIndex] = tileScript;
+                
+                // ミニマップ用にTile管理Dictに登録
+                Vector2Int gridPos = new Vector2Int(x, y);
+                if (tileDict == null)
+                {
+                    Debug.LogWarning("GridManager: tileDictがnullです。新しく初期化します。");
+                    tileDict = new Dictionary<Vector2Int, Tile>();
+                }
+                tileDict[gridPos] = tileScript;
+                
                 tileIndex++;
             }
             

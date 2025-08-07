@@ -289,7 +289,7 @@ public class EnemyManager : MonoBehaviour
         // 敵のターン終了後に視界範囲を更新
         if (Player.Instance != null && GridManager.Instance != null)
         {
-            GridManager.Instance.UpdateTileVisibility(Player.Instance.gridPosition);
+            VisionManager.Instance.UpdateTileVisibility(Player.Instance.gridPosition);
             Debug.Log("EnemyManager: 視界範囲更新完了");
         }
         else

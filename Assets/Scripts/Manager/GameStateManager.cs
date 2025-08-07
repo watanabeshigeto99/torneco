@@ -20,6 +20,7 @@ public class GameStateManager : MonoBehaviour
     public static event Action OnGameOver;
     public static event Action OnGameClear;
     public static event Action OnGameStateChanged;
+    public static event Action OnGameInitialized;
     
     private void Awake()
     {
@@ -45,6 +46,9 @@ public class GameStateManager : MonoBehaviour
         gameClear = false;
         
         Debug.Log("GameStateManager: ゲーム状態を初期化しました");
+        
+        // ゲーム初期化完了イベントを発火
+        OnGameInitialized?.Invoke();
     }
     
     /// <summary>

@@ -20,5 +20,5 @@ MonoBehaviour:
   maxLevel: 5
   upgradeData: {fileID: 11400000, guid: 45678901234567890123456789012345, type: 2}
   moveDirection: {x: 2, y: 0}
-  moveDistance: 3
+  moveDistance: 2
   healAmount: 0

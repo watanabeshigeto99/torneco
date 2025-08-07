@@ -1,0 +1,46 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 42dbf58d59859fb4cb19fbf2a7b9fd05, type: 3}
+  m_Name: SaveData
+  m_EditorClassIdentifier: 
+  saveDateTime: 
+  saveVersion: 1.0.0
+  isNewGame: 1
+  score: 0
+  currentFloor: 1
+  gameOver: 0
+  gameClear: 0
+  playerData:
+    playerLevel: 1
+    playerExp: 0
+    playerExpToNext: 10
+    playerCurrentHP: 20
+    playerMaxHP: 20
+    playerMaxLevel: 10
+  deckData:
+    deckSize: 0
+    handSize: 0
+    discardSize: 0
+    cardNames: []
+  floorData:
+    currentFloor: 1
+    maxFloor: 10
+    isFloorCleared: 0
+  uiData:
+    showHUD: 1
+    showLog: 1
+    uiScale: 1
+    logMessages: []
+  totalSaveCount: 0
+  totalLoadCount: 0
+  totalPlayTime: 0
+  lastSaveDateTime: 

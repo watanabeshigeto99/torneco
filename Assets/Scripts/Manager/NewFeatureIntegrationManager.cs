@@ -161,21 +161,14 @@ public class NewFeatureIntegrationManager : MonoBehaviour
             },
             true, "Conflict");
             
-        // システム互換性チェックルール
+        // システム互換性チェックルール（CompatibilityManager削除により簡略化）
         RegisterIntegrationRule("SystemCompatibilityCheck", "システム互換性チェック",
             (featureId) => {
-                if (CompatibilityManager.Instance != null)
-                {
-                    var result = CompatibilityManager.Instance.CheckFeatureCompatibility(featureId);
-                    return result != null && result.isCompatible;
-                }
-                return true; // CompatibilityManagerがない場合は互換性ありとみなす
+                // CompatibilityManagerが削除されたため、常に互換性ありとみなす
+                return true;
             },
             (featureId) => {
-                if (CompatibilityManager.Instance != null)
-                {
-                    CompatibilityManager.Instance.CheckFeatureCompatibility(featureId);
-                }
+                // 互換性チェックは不要
             },
             false, "Compatibility");
     }

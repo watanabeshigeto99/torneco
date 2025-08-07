@@ -4,35 +4,28 @@ using System.Collections.Generic;
 using PlayerDataSystem;
 
 /// <summary>
-/// ゲーム全体の管理を行うクラス（旧版 - 段階的移行中）
-/// 新しいシステムとの互換性レイヤーを追加
+/// 統合GameManager（新旧システムの統合版）
+/// 責務：ゲーム全体の制御とシステム統合
 /// </summary>
 [DefaultExecutionOrder(-100)]
 public class GameManager : MonoBehaviour
 {
     public static GameManager Instance { get; private set; }
     
-    [Header("Legacy Game State")]
+    [Header("Game State")]
     public int score = 0;
-    public int playerLevel = 1;
-    public int playerExp = 0;
-    public int playerExpToNext = 10;
-    public int playerMaxHP = 20;
-    public int playerCurrentHP = 20;
-    public int playerMaxLevel = 10;
     public int currentFloor = 1;
     public int maxFloor = 10;
     public bool gameOver = false;
     public bool gameClear = false;
     
-    [Header("New System Integration")]
-    public GameManagerNew newGameManager;
+    [Header("System Managers")]
     public GameStateManager gameStateManager;
-    public PlayerDataSystem.PlayerDataManager playerDataManager;
+    public PlayerDataManager playerDataManager;
     public FloorManager floorManager;
     public SystemIntegrationManager systemIntegrationManager;
     
-    [Header("Legacy Managers")]
+    [Header("Legacy Managers (Deprecated)")]
     public SaveSystem.SaveManager saveManager;
     public DeckSystem.DeckManager deckManager;
     public UISystem.UIManager uiManager;
@@ -46,7 +39,7 @@ public class GameManager : MonoBehaviour
     [Header("Auto Setup")]
     public AutoSetupManager autoSetupManager;
     
-    // レガシーイベント（後方互換性のため）
+    // 統合イベント
     public static event System.Action<int> OnScoreChanged;
     public static event System.Action<int> OnPlayerLevelUp;
     public static event System.Action<int> OnPlayerExpGained;
@@ -54,11 +47,12 @@ public class GameManager : MonoBehaviour
     public static event System.Action<int> OnFloorChanged;
     public static event System.Action OnGameOver;
     public static event System.Action OnGameClear;
+    public static event System.Action OnGameInitialized;
     
     // 移行フラグ
     [Header("Migration Settings")]
     public bool useNewSystems = true;  // 新しいシステムを有効化
-    public bool enableLegacyMode = true;
+    public bool enableLegacyMode = false; // レガシーモードは無効化
     
     private void Awake()
     {
@@ -82,22 +76,20 @@ public class GameManager : MonoBehaviour
         Debug.Log("GameManager: 初期化開始");
         
         // 新しいシステムの参照を取得
-        if (newGameManager == null)
-            newGameManager = GameManagerNew.Instance;
         if (gameStateManager == null)
             gameStateManager = GameStateManager.Instance;
         if (playerDataManager == null)
         {
-            playerDataManager = PlayerDataSystem.PlayerDataManager.Instance;
+            playerDataManager = PlayerDataManager.Instance;
             if (playerDataManager == null)
             {
                 Debug.LogWarning("GameManager: PlayerDataManager.Instanceがnullです。PlayerDataManagerを探して取得します。");
-                playerDataManager = FindObjectOfType<PlayerDataSystem.PlayerDataManager>();
+                playerDataManager = FindObjectOfType<PlayerDataManager>();
                 if (playerDataManager == null)
                 {
                     Debug.LogError("GameManager: PlayerDataManagerが見つかりません。新しいPlayerDataManagerを作成します。");
                     GameObject playerDataManagerObj = new GameObject("PlayerDataManager");
-                    playerDataManager = playerDataManagerObj.AddComponent<PlayerDataSystem.PlayerDataManager>();
+                    playerDataManager = playerDataManagerObj.AddComponent<PlayerDataManager>();
                 }
             }
         }
@@ -165,12 +157,6 @@ public class GameManager : MonoBehaviour
     {
         // 初期値の設定
         score = 0;
-        playerLevel = 1;
-        playerExp = 0;
-        playerExpToNext = 10;
-        playerMaxHP = 20;
-        playerCurrentHP = 20;
-        playerMaxLevel = 10;
         currentFloor = 1; // 必ず1階からスタート
         maxFloor = 10;
         gameOver = false;
@@ -184,11 +170,11 @@ public class GameManager : MonoBehaviour
     /// </summary>
     private void SetupNewSystemIntegration()
     {
-        if (newGameManager != null)
+        if (gameStateManager != null)
         {
             // 新しいシステムのイベントを購読
-            GameManagerNew.OnGameInitialized += OnNewGameInitialized;
-            GameManagerNew.OnGameStateChanged += OnNewGameStateChanged;
+            GameStateManager.OnGameInitialized += OnNewGameInitialized;
+            GameStateManager.OnGameStateChanged += OnNewGameStateChanged;
         }
         
         Debug.Log("GameManager: 新しいシステムとの統合を設定しました");
@@ -230,9 +216,8 @@ public class GameManager : MonoBehaviour
         
         if (playerDataManager != null)
         {
-            playerDataManager.SetPlayerLevel(playerLevel);
-            playerDataManager.SetPlayerHP(playerCurrentHP, playerMaxHP);
-            // playerMaxLevelは新しいシステムでは固定値として扱う
+            // 新しいシステムではPlayerDataManagerが直接管理するため、
+            // レガシーデータからの同期は不要
         }
         
         if (floorManager != null)
@@ -255,15 +240,10 @@ public class GameManager : MonoBehaviour
             gameClear = gameStateManager.gameClear;
         }
         
-        if (playerDataManager != null && playerDataManager.GetPlayerData() != null)
+        if (playerDataManager != null)
         {
-            var playerData = playerDataManager.GetPlayerData();
-            playerLevel = playerData.level;
-            playerExp = playerData.experience;
-            playerExpToNext = playerData.experienceToNext;
-            playerCurrentHP = playerData.currentHP;
-            playerMaxHP = playerData.maxHP;
-            // playerMaxLevelは新しいシステムでは固定値として扱う
+            // 新しいシステムではPlayerDataManagerが直接管理するため、
+            // レガシーデータへの同期は不要
         }
         
         if (floorManager != null)
@@ -297,12 +277,12 @@ public class GameManager : MonoBehaviour
     }
     
     /// <summary>
-    /// プレイヤーに経験値を加算（レガシー）
+    /// プレイヤーに経験値を加算
     /// </summary>
     /// <param name="amount">加算する経験値</param>
     public void AddPlayerExp(int amount)
     {
-        Debug.Log($"GameManager: AddPlayerExp({amount})呼び出し - useNewSystems: {useNewSystems}, playerDataManager: {(playerDataManager != null ? "NotNull" : "Null")}, 現在のplayerExp: {playerExp}");
+        Debug.Log($"GameManager: AddPlayerExp({amount})呼び出し - useNewSystems: {useNewSystems}, playerDataManager: {(playerDataManager != null ? "NotNull" : "Null")}");
         if (useNewSystems && playerDataManager != null)
         {
             playerDataManager.AddPlayerExp(amount);
@@ -310,11 +290,8 @@ public class GameManager : MonoBehaviour
         }
         else
         {
-            playerExp += amount;
-            Debug.Log($"GameManager: レガシーシステムでプレイヤーに経験値を加算しました - +{amount} (合計: {playerExp})");
-            CheckLevelUp();
-            Debug.Log($"GameManager: CheckLevelUp()後 - playerExp: {playerExp}");
-            OnPlayerExpGained?.Invoke(playerExp);
+            Debug.LogWarning("GameManager: レガシーシステムは非推奨です。PlayerDataManagerを使用してください。");
+            OnPlayerExpGained?.Invoke(amount);
         }
     }
     
@@ -323,26 +300,12 @@ public class GameManager : MonoBehaviour
     /// </summary>
     private void CheckLevelUp()
     {
-        while (playerExp >= playerExpToNext && playerLevel < 10)
-        {
-            playerExp -= playerExpToNext;
-            playerLevel++;
-            
-            // レベルアップ時の成長
-            int oldMaxHP = playerMaxHP;
-            playerMaxHP += 5;
-            playerCurrentHP = playerMaxHP; // レベルアップ時はHP全回復
-            playerExpToNext = Mathf.RoundToInt(playerExpToNext * 1.5f);
-            
-            OnPlayerLevelUp?.Invoke(playerLevel);
-            OnPlayerHPChanged?.Invoke(playerCurrentHP, playerMaxHP);
-            
-            Debug.Log($"GameManager: プレイヤーがレベルアップしました - レベル{playerLevel}, HP {oldMaxHP} → {playerMaxHP}");
-        }
+        // レガシーシステムは非推奨。PlayerDataManagerが自動的に処理します。
+        Debug.LogWarning("GameManager: CheckLevelUp()は非推奨です。PlayerDataManagerを使用してください。");
     }
     
     /// <summary>
-    /// プレイヤーのHPを設定（レガシー）
+    /// プレイヤーのHPを設定
     /// </summary>
     /// <param name="currentHP">現在のHP</param>
     /// <param name="maxHP">最大HP（-1の場合は変更しない）</param>
@@ -354,25 +317,15 @@ public class GameManager : MonoBehaviour
         }
         else
         {
-            if (currentHP != playerCurrentHP)
-            {
-                playerCurrentHP = Mathf.Clamp(currentHP, 0, playerMaxHP);
-            }
-            
-            if (maxHP > 0 && maxHP != playerMaxHP)
-            {
-                playerMaxHP = maxHP;
-                playerCurrentHP = Mathf.Clamp(playerCurrentHP, 0, playerMaxHP);
-            }
-            
-            OnPlayerHPChanged?.Invoke(playerCurrentHP, playerMaxHP);
+            Debug.LogWarning("GameManager: レガシーシステムは非推奨です。PlayerDataManagerを使用してください。");
+            OnPlayerHPChanged?.Invoke(currentHP, maxHP > 0 ? maxHP : 20);
         }
         
-        Debug.Log($"GameManager: プレイヤーHPを設定しました - {playerCurrentHP}/{playerMaxHP}");
+        Debug.Log($"GameManager: プレイヤーHPを設定しました - {currentHP}/{maxHP}");
     }
     
     /// <summary>
-    /// プレイヤーのレベルを設定（レガシー）
+    /// プレイヤーのレベルを設定
     /// </summary>
     /// <param name="level">新しいレベル</param>
     public void SetPlayerLevel(int level)
@@ -383,16 +336,11 @@ public class GameManager : MonoBehaviour
         }
         else
         {
-            if (level != playerLevel && level >= 1 && level <= 10)
-            {
-                int oldLevel = playerLevel;
-                playerLevel = level;
-                
-                OnPlayerLevelUp?.Invoke(playerLevel);
-            }
+            Debug.LogWarning("GameManager: レガシーシステムは非推奨です。PlayerDataManagerを使用してください。");
+            OnPlayerLevelUp?.Invoke(level);
         }
         
-        Debug.Log($"GameManager: プレイヤーレベルを設定しました - {playerLevel}");
+        Debug.Log($"GameManager: プレイヤーレベルを設定しました - {level}");
     }
     
     /// <summary>
@@ -509,10 +457,10 @@ public class GameManager : MonoBehaviour
     
     private void OnDestroy()
     {
-        if (newGameManager != null)
+        if (gameStateManager != null)
         {
-            GameManagerNew.OnGameInitialized -= OnNewGameInitialized;
-            GameManagerNew.OnGameStateChanged -= OnNewGameStateChanged;
+            GameStateManager.OnGameInitialized -= OnNewGameInitialized;
+            GameStateManager.OnGameStateChanged -= OnNewGameStateChanged;
         }
     }
     
@@ -524,7 +472,7 @@ public class GameManager : MonoBehaviour
     {
         return $"GameManager - Mode: {(useNewSystems ? "New" : "Legacy")}, " +
                $"LegacyMode: {enableLegacyMode}, " +
-               $"Score: {score}, Level: {playerLevel}, Floor: {currentFloor}, " +
+               $"Score: {score}, Floor: {currentFloor}, " +
                $"GameOver: {gameOver}, GameClear: {gameClear}";
     }
     
@@ -634,25 +582,14 @@ public class GameManager : MonoBehaviour
         // プレイヤーデータシステムが利用可能な場合はそちらを使用
         if (useNewSystems && playerDataManager != null)
         {
-            playerDataManager.ApplyToGameManager();
+            Debug.Log("GameManager: 新しいプレイヤーデータシステムを使用します");
         }
         else
         {
             // 従来の処理（後方互換性のため）
             if (Player.Instance != null)
             {
-                Player.Instance.level = playerLevel;
-                Player.Instance.exp = playerExp;
-                Player.Instance.expToNext = playerExpToNext;
-                Player.Instance.maxHP = playerMaxHP;
-                Player.Instance.currentHP = playerCurrentHP;
-                Player.Instance.maxLevel = playerMaxLevel;
-                
-                if (UIManager.Instance != null)
-                {
-                    UIManager.Instance.UpdateHP(playerCurrentHP, playerMaxHP);
-                    UIManager.Instance.UpdateLevelDisplay(playerLevel, playerExp, playerExpToNext);
-                }
+                Debug.Log("GameManager: レガシーシステムは非推奨です。PlayerDataManagerを使用してください。");
             }
         }
     }
@@ -665,19 +602,14 @@ public class GameManager : MonoBehaviour
         // プレイヤーデータシステムが利用可能な場合はそちらを使用
         if (useNewSystems && playerDataManager != null)
         {
-            playerDataManager.SyncWithGameManager();
+            Debug.Log("GameManager: 新しいプレイヤーデータシステムを使用します");
         }
         else
         {
             // 従来の処理（後方互換性のため）
             if (Player.Instance != null)
             {
-                playerLevel = Player.Instance.level;
-                playerExp = Player.Instance.exp;
-                playerExpToNext = Player.Instance.expToNext;
-                playerMaxHP = Player.Instance.maxHP;
-                playerCurrentHP = Player.Instance.currentHP;
-                playerMaxLevel = Player.Instance.maxLevel;
+                Debug.Log("GameManager: レガシーシステムは非推奨です。PlayerDataManagerを使用してください。");
             }
         }
     }

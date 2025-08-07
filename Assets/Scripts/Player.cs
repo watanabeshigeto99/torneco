@@ -58,15 +58,15 @@ public class Player : Unit
         if (spriteRenderer == null)
             spriteRenderer = GetComponentInChildren<SpriteRenderer>();
         
-        // GameManagerからデータを読み込む（存在する場合）
-        if (GameManager.Instance != null)
+        // PlayerDataManagerからデータを読み込む（存在する場合）
+        if (PlayerDataManager.Instance != null)
         {
-            level = GameManager.Instance.playerLevel;
-            exp = GameManager.Instance.playerExp;
-            expToNext = GameManager.Instance.playerExpToNext;
-            maxHP = GameManager.Instance.playerMaxHP;
-            currentHP = GameManager.Instance.playerCurrentHP;
-            maxLevel = GameManager.Instance.playerMaxLevel;
+            level = PlayerDataManager.Instance.playerLevel;
+            exp = PlayerDataManager.Instance.playerExp;
+            expToNext = PlayerDataManager.Instance.playerExpToNext;
+            maxHP = PlayerDataManager.Instance.playerMaxHP;
+            currentHP = PlayerDataManager.Instance.playerCurrentHP;
+            maxLevel = PlayerDataManager.Instance.playerMaxLevel;
         }
         else
         {
@@ -106,9 +106,9 @@ public class Player : Unit
         transform.position = worldPos;
         
         // 視界範囲を更新
-        if (GridManager.Instance != null)
+        if (VisionManager.Instance != null)
         {
-            GridManager.Instance.UpdateTileVisibility(gridPosition);
+            VisionManager.Instance.UpdateTileVisibility(gridPosition);
         }
         
         // HP表示の初期化
@@ -144,20 +144,21 @@ public class Player : Unit
 
     public void OnTileClicked(Vector2Int clickedPos)
     {
-        if (GridManager.Instance == null) return;
-
-        // 攻撃方向選択中の場合
-        if (isAwaitingAttackInput)
-        {
-            HandleAttackDirectionSelection(clickedPos);
-            return;
-        }
-        
-        // 移動選択中の場合
         if (isAwaitingMoveInput)
         {
             HandleMoveSelection(clickedPos);
-            return;
+        }
+        else if (isAwaitingAttackInput)
+        {
+            HandleAttackDirectionSelection(clickedPos);
+        }
+        else
+        {
+            // 通常のタイルクリック処理
+            int dist = Mathf.Abs(clickedPos.x - gridPosition.x) + Mathf.Abs(clickedPos.y - gridPosition.y);
+#if UNITY_EDITOR
+            Debug.Log($"Player: 移動選択 - クリック位置: {clickedPos}, 距離: {dist}, 最大距離: {allowedMoveDistance}, 歩行可能: {GridManager.Instance.IsWalkable(clickedPos)}");
+#endif
         }
     }
     
@@ -763,9 +764,9 @@ public class Player : Unit
         }
         
         // 視界範囲を更新
-        if (GridManager.Instance != null)
+        if (VisionManager.Instance != null)
         {
-            GridManager.Instance.UpdateTileVisibility(gridPosition);
+            VisionManager.Instance.UpdateTileVisibility(gridPosition);
         }
     }
 
@@ -855,33 +856,30 @@ public class Player : Unit
         {
             Debug.Log($"Player: GameManager.AddPlayerExp({amount})を呼び出します");
             GameManager.Instance.AddPlayerExp(amount);
-            Debug.Log($"Player: GameManager.AddPlayerExp()呼び出し後 - GameManager.playerExp: {GameManager.Instance.playerExp}");
+            Debug.Log($"Player: GameManager.AddPlayerExp()呼び出し後 - PlayerDataManager.playerExp: {PlayerDataManager.Instance.playerExp}");
 
             // GameManagerから最新のデータを取得して同期
             if (GameManager.Instance.useNewSystems)
             {
                 Debug.Log("Player: 新しいシステムパスで同期を試みます。");
                 // 新しいシステムを使用している場合
-                if (GameManager.Instance.playerDataManager != null && GameManager.Instance.playerDataManager.GetPlayerData() != null)
+                if (GameManager.Instance.playerDataManager != null)
                 {
-                    var playerData = GameManager.Instance.playerDataManager.GetPlayerData();
-                    level = playerData.level;
-                    exp = playerData.experience;
-                    expToNext = playerData.experienceToNext;
-                    maxHP = playerData.maxHP;
+                    // PlayerDataManagerのフィールドに直接アクセス
+                    level = GameManager.Instance.playerDataManager.playerLevel;
+                    exp = GameManager.Instance.playerDataManager.playerExp;
+                    expToNext = GameManager.Instance.playerDataManager.playerExpToNext;
+                    maxHP = GameManager.Instance.playerDataManager.playerMaxHP;
                     // HPは同期しない（敵を倒した際にHPがマックスになるバグを修正）
-                    // currentHP = playerData.currentHP;
+                    // currentHP = GameManager.Instance.playerDataManager.playerCurrentHP;
 
                     Debug.Log($"Player: 新しいシステムからデータを同期 - Level: {level}, Exp: {exp}/{expToNext}");
                 }
                 else
                 {
-                    Debug.LogWarning("Player: 新しいシステムのPlayerDataManagerまたはPlayerDataがnullです。レガシーデータで同期を試みます。");
+                    Debug.LogWarning("Player: 新しいシステムのPlayerDataManagerがnullです。レガシーデータで同期を試みます。");
                     // Fallback to legacy data if new system managers are not fully set up
-                    level = GameManager.Instance.playerLevel;
-                    exp = GameManager.Instance.playerExp;
-                    expToNext = GameManager.Instance.playerExpToNext;
-                    maxHP = GameManager.Instance.playerMaxHP;
+                    Debug.LogWarning("Player: レガシーフィールドは削除されました。PlayerDataManagerを使用してください。");
                     // HPは同期しない（敵を倒した際にHPがマックスになるバグを修正）
                     // currentHP = GameManager.Instance.playerCurrentHP;
                     Debug.Log($"Player: レガシーシステムデータで同期しました (フォールバック) - Level: {level}, Exp: {exp}/{expToNext}");
@@ -891,10 +889,7 @@ public class Player : Unit
             {
                 Debug.Log("Player: レガシーシステムパスで同期を試みます。");
                 // レガシーシステムを使用している場合
-                level = GameManager.Instance.playerLevel;
-                exp = GameManager.Instance.playerExp;
-                expToNext = GameManager.Instance.playerExpToNext;
-                maxHP = GameManager.Instance.playerMaxHP;
+                Debug.LogWarning("Player: レガシーフィールドは削除されました。PlayerDataManagerを使用してください。");
                 // HPは同期しない（敵を倒した際にHPがマックスになるバグを修正）
                 // currentHP = GameManager.Instance.playerCurrentHP;
 
@@ -941,7 +936,7 @@ public class Player : Unit
         }
         
         Debug.Log($"Player: 経験値獲得完了 - 最終レベル: {level}, 最終経験値: {exp}/{expToNext}");
-        Debug.Log($"Player: 最終確認 - GameManager.playerExp: {GameManager.Instance?.playerExp}, Player.exp: {exp}");
+        Debug.Log($"Player: 最終確認 - Player.exp: {exp}");
     }
     
     // レベルアップメソッド

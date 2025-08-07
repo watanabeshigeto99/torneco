@@ -243,13 +243,16 @@ namespace SaveSystem
                 saveData.currentFloor = GameManager.Instance.currentFloor;
                 saveData.gameOver = GameManager.Instance.gameOver;
                 saveData.gameClear = GameManager.Instance.gameClear;
-                
-                // プレイヤーデータ
-                saveData.playerData.playerLevel = GameManager.Instance.playerLevel;
-                saveData.playerData.playerExp = GameManager.Instance.playerExp;
-                saveData.playerData.playerExpToNext = GameManager.Instance.playerExpToNext;
-                saveData.playerData.playerCurrentHP = GameManager.Instance.playerCurrentHP;
-                saveData.playerData.playerMaxHP = GameManager.Instance.playerMaxHP;
+            }
+            
+            // PlayerDataManagerからプレイヤーデータを収集
+            if (PlayerDataManager.Instance != null)
+            {
+                saveData.playerData.playerLevel = PlayerDataManager.Instance.playerLevel;
+                saveData.playerData.playerExp = PlayerDataManager.Instance.playerExp;
+                saveData.playerData.playerExpToNext = PlayerDataManager.Instance.playerExpToNext;
+                saveData.playerData.playerCurrentHP = PlayerDataManager.Instance.playerCurrentHP;
+                saveData.playerData.playerMaxHP = PlayerDataManager.Instance.playerMaxHP;
             }
 
             // セーブ時刻を記録
@@ -271,13 +274,14 @@ namespace SaveSystem
                 GameManager.Instance.currentFloor = saveData.currentFloor;
                 GameManager.Instance.gameOver = saveData.gameOver;
                 GameManager.Instance.gameClear = saveData.gameClear;
-                
-                // プレイヤーデータ
-                GameManager.Instance.playerLevel = saveData.playerData.playerLevel;
-                GameManager.Instance.playerExp = saveData.playerData.playerExp;
-                GameManager.Instance.playerExpToNext = saveData.playerData.playerExpToNext;
-                GameManager.Instance.playerCurrentHP = saveData.playerData.playerCurrentHP;
-                GameManager.Instance.playerMaxHP = saveData.playerData.playerMaxHP;
+            }
+            
+            // PlayerDataManagerにプレイヤーデータを適用
+            if (PlayerDataManager.Instance != null)
+            {
+                PlayerDataManager.Instance.SetPlayerLevel(saveData.playerData.playerLevel);
+                PlayerDataManager.Instance.SetPlayerHP(saveData.playerData.playerCurrentHP, saveData.playerData.playerMaxHP);
+                // 経験値はPlayerDataManagerが自動的に管理するため、直接設定は不要
             }
 
             Debug.Log("SaveManager: セーブデータを適用しました");

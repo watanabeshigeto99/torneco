@@ -16,8 +16,19 @@ public class SelectedCardUI : MonoBehaviour
     public Color normalColor = Color.white;
     public Color hoverColor = Color.red;
     
+    [Header("Card Size Settings")]
+    public Vector2 defaultCardSize = new Vector2(100, 150);
+    public Vector2 largeCardSize = new Vector2(120, 180);
+    public Vector2 smallCardSize = new Vector2(80, 120);
+    
     private CardDataSO cardData;
     private Action<CardDataSO> onRemoveCallback;
+    private RectTransform rectTransform;
+    
+    private void Awake()
+    {
+        rectTransform = GetComponent<RectTransform>();
+    }
     
     /// <summary>
     /// 選択されたカードをセットアップ
@@ -32,18 +43,58 @@ public class SelectedCardUI : MonoBehaviour
     }
     
     /// <summary>
+    /// カードサイズを変更
+    /// </summary>
+    public void SetCardSize(Vector2 size)
+    {
+        if (rectTransform != null)
+        {
+            rectTransform.sizeDelta = size;
+        }
+    }
+    
+    /// <summary>
+    /// デフォルトサイズに設定
+    /// </summary>
+    public void SetDefaultSize()
+    {
+        SetCardSize(defaultCardSize);
+    }
+    
+    /// <summary>
+    /// 大きいサイズに設定
+    /// </summary>
+    public void SetLargeSize()
+    {
+        SetCardSize(largeCardSize);
+    }
+    
+    /// <summary>
+    /// 小さいサイズに設定
+    /// </summary>
+    public void SetSmallSize()
+    {
+        SetCardSize(smallCardSize);
+    }
+    
+    /// <summary>
     /// 表示を更新
     /// </summary>
     private void UpdateDisplay()
     {
         if (cardData == null) return;
         
-        // アイコン
+        // アイコンのみ表示（テキストは非表示）
         if (cardIcon != null && cardData.icon != null)
         {
             cardIcon.sprite = cardData.icon;
         }
         
+        // テキスト要素は非表示にするため、更新しない
+        // カード名とカードタイプのテキストは画像で表示するため無効化
+        
+        // 以下は画像表示のためコメントアウト
+        /*
         // カード名
         if (cardNameText != null)
         {
@@ -55,6 +106,7 @@ public class SelectedCardUI : MonoBehaviour
         {
             cardTypeText.text = GetCardTypeString(cardData.type);
         }
+        */
     }
     
     /// <summary>

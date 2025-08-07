@@ -44,6 +44,11 @@ public class CardUI : MonoBehaviour
     {
         if (cardData == null) return;
         
+        // 画像表示のため、テキスト表示は無効化
+        // レベルラベルとレベルアイコンは非表示
+        
+        // 以下は画像表示のためコメントアウト
+        /*
         // レベルラベルを更新
         if (levelLabel != null)
         {
@@ -69,6 +74,7 @@ public class CardUI : MonoBehaviour
         {
             levelIcon.SetActive(cardData.level > 1);
         }
+        */
         
         // レベルアップ演出をチェック
         if (cardData.level > previousLevel)

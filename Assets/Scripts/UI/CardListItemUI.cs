@@ -101,13 +101,18 @@ public class CardListItemUI : MonoBehaviour
     {
         if (cardData == null) return;
         
-        // アイコン
+        // アイコンのみ表示（テキストは非表示）
         if (cardIcon != null)
         {
             cardIcon.sprite = cardData.icon;
             cardIcon.enabled = cardData.icon != null;
         }
         
+        // テキスト要素は非表示にするため、更新しない
+        // カード名、カードタイプ、カード効果のテキストは画像で表示するため無効化
+        
+        // 以下は画像表示のためコメントアウト
+        /*
         // カード名
         if (cardNameText != null)
         {
@@ -125,6 +130,7 @@ public class CardListItemUI : MonoBehaviour
         {
             cardPowerText.text = GetCardEffectString(cardData);
         }
+        */
     }
     
     /// <summary>

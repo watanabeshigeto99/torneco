@@ -36,6 +36,9 @@ public class DeckBuilderUI : MonoBehaviour
     public int maxDeckSize = 10;
     public int minDeckSize = 5;
     
+    [Header("Card Size Settings")]
+    public Vector2 selectedCardSize = new Vector2(120, 180);
+    
     [Header("Floor Display")]
     public TextMeshProUGUI floorInfoText;
     
@@ -237,6 +240,13 @@ public class DeckBuilderUI : MonoBehaviour
             if (selectedCardUI != null)
             {
                 selectedCardUI.Setup(card, OnSelectedCardClicked);
+                
+                // カードサイズを設定
+                var rectTransform = selectedCard.GetComponent<RectTransform>();
+                if (rectTransform != null)
+                {
+                    rectTransform.sizeDelta = selectedCardSize;
+                }
             }
         }
         

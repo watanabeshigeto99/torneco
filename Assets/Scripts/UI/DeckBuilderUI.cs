@@ -48,7 +48,7 @@ public class DeckBuilderUI : MonoBehaviour
     
     private List<CardDataSO> availableCards = new List<CardDataSO>();
     private List<CardDataSO> selectedDeck = new List<CardDataSO>();
-    private CardType currentFilter = CardType.Attack;
+    private CardType? currentFilter = null; // null = 全カード表示
     
     private void Start()
     {
@@ -124,7 +124,7 @@ public class DeckBuilderUI : MonoBehaviour
         
         // フィルターボタンのイベントを設定
         if (allCardsButton != null)
-            allCardsButton.onClick.AddListener(() => SetCardFilter(CardType.Attack)); // 全カード表示
+            allCardsButton.onClick.AddListener(() => SetCardFilter(null)); // 全カード表示
         
         if (attackCardsButton != null)
             attackCardsButton.onClick.AddListener(() => SetCardFilter(CardType.Attack));
@@ -292,21 +292,21 @@ public class DeckBuilderUI : MonoBehaviour
     /// </summary>
     private List<CardDataSO> GetFilteredCards()
     {
-        Debug.Log($"DeckBuilderUI: フィルタリング実行 - 利用可能カード: {availableCards.Count}枚, 現在のフィルター: {currentFilter}");
+        Debug.Log($"DeckBuilderUI: フィルタリング実行 - 利用可能カード: {availableCards.Count}枚, 現在のフィルター: {(currentFilter.HasValue ? currentFilter.Value.ToString() : "全カード")}");
         
-        if (currentFilter == CardType.Attack && allCardsButton != null)
+        if (!currentFilter.HasValue)
         {
             // 全カード表示の場合
             Debug.Log($"DeckBuilderUI: 全カード表示 - {availableCards.Count}枚");
             return availableCards;
         }
         
-        var filteredCards = availableCards.Where(card => card.type == currentFilter).ToList();
-        Debug.Log($"DeckBuilderUI: フィルタリング結果 - {filteredCards.Count}枚 ({currentFilter}タイプ)");
+        var filteredCards = availableCards.Where(card => card.type == currentFilter.Value).ToList();
+        Debug.Log($"DeckBuilderUI: フィルタリング結果 - {filteredCards.Count}枚 ({currentFilter.Value}タイプ)");
         return filteredCards;
     }
     
-    private void SetCardFilter(CardType filterType)
+    private void SetCardFilter(CardType? filterType)
     {
         currentFilter = filterType;
         PlayButtonClickSE();

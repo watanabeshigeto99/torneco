@@ -16,19 +16,19 @@ MonoBehaviour:
   - {fileID: 11400000, guid: 2f38be29e98822e43860c5598b0cff11, type: 2}
   - {fileID: 11400000, guid: 944bb98aede80674486db6cb242fd035, type: 2}
   - {fileID: 11400000, guid: d897d358c7104764e88be2363986487c, type: 2}
-  - {fileID: 11400000, guid: 2f38be29e98822e43860c5598b0cff11, type: 2}
-  - {fileID: 11400000, guid: 944bb98aede80674486db6cb242fd035, type: 2}
-  - {fileID: 11400000, guid: d897d358c7104764e88be2363986487c, type: 2}
-  - {fileID: 11400000, guid: 2f38be29e98822e43860c5598b0cff11, type: 2}
+  - {fileID: 11400000, guid: 5e2ec64f3373ef6418c53962186b6a2b, type: 2}
+  - {fileID: 11400000, guid: 3d7e50ef74771ad43bb72f6a3801713f, type: 2}
+  - {fileID: 11400000, guid: 678b67edb6eb9ce4bb1417545a80abdb, type: 2}
+  - {fileID: 11400000, guid: f07302fcc3da01848a1d592b0210e427, type: 2}
   attackCards:
   - {fileID: 11400000, guid: 2f38be29e98822e43860c5598b0cff11, type: 2}
-  - {fileID: 11400000, guid: 2f38be29e98822e43860c5598b0cff11, type: 2}
-  - {fileID: 11400000, guid: 2f38be29e98822e43860c5598b0cff11, type: 2}
+  - {fileID: 11400000, guid: 5e2ec64f3373ef6418c53962186b6a2b, type: 2}
+  - {fileID: 11400000, guid: 678b67edb6eb9ce4bb1417545a80abdb, type: 2}
+  - {fileID: 11400000, guid: f07302fcc3da01848a1d592b0210e427, type: 2}
   moveCards:
   - {fileID: 11400000, guid: d897d358c7104764e88be2363986487c, type: 2}
-  - {fileID: 11400000, guid: d897d358c7104764e88be2363986487c, type: 2}
+  - {fileID: 11400000, guid: 3d7e50ef74771ad43bb72f6a3801713f, type: 2}
   healCards:
-  - {fileID: 11400000, guid: 944bb98aede80674486db6cb242fd035, type: 2}
   - {fileID: 11400000, guid: 944bb98aede80674486db6cb242fd035, type: 2}
   maxDeckSize: 10
   minDeckSize: 5

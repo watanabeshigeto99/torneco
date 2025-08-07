@@ -354,7 +354,18 @@ public class GridManager : MonoBehaviour
         if (Player.Instance != null && Player.Instance.gridPosition == pos)
             return true;
 
-        // 敵の位置チェック（キャッシュされたallEnemiesを使用）
+        // 修正: 敵の位置チェックを改善（EnemyManagerから最新の敵リストを取得）
+        if (EnemyManager.Instance != null)
+        {
+            var enemies = EnemyManager.Instance.GetEnemies();
+            foreach (var enemy in enemies)
+            {
+                if (enemy != null && enemy.gridPosition == pos)
+                    return true;
+            }
+        }
+
+        // フォールバック: キャッシュされたallEnemiesを使用
         if (allEnemies != null)
         {
             foreach (var enemy in allEnemies)
@@ -417,7 +428,7 @@ public class GridManager : MonoBehaviour
         }
         
         // 敵の参照も保存（既に生成されている場合があるため）
-        allEnemies = FindObjectsOfType<Enemy>();
+        UpdateEnemiesCache();
         
         // 有効なタイル数をカウント
         int validTileCount = 0;
@@ -438,6 +449,13 @@ public class GridManager : MonoBehaviour
         }
         
         Debug.Log("GridManager: オブジェクト参照保存完了");
+    }
+    
+    // 修正: 敵キャッシュを更新するメソッドを追加
+    public void UpdateEnemiesCache()
+    {
+        allEnemies = FindObjectsOfType<Enemy>();
+        Debug.Log($"GridManager: 敵キャッシュ更新 - {allEnemies?.Length ?? 0}体の敵を検出");
     }
     
     // 新しいタイル表示制御システム

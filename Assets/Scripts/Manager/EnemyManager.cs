@@ -128,10 +128,14 @@ public class EnemyManager : MonoBehaviour
                 // プレイヤーとの距離をチェック
                 float distanceFromPlayer = Vector2Int.Distance(pos, playerPos);
                 
+                // 修正: 他の敵との重複チェックを追加
+                bool isOccupiedByOtherEnemy = IsPositionOccupiedByOtherEnemy(pos);
+                
                 // 条件を満たすかチェック
                 if (distanceFromPlayer >= minDist && 
                     distanceFromPlayer <= maxDist && 
-                    GridManager.Instance.IsWalkable(pos))
+                    GridManager.Instance.IsWalkable(pos) &&
+                    !isOccupiedByOtherEnemy)
                 {
                     validPositionFound = true;
                 }
@@ -200,6 +204,19 @@ public class EnemyManager : MonoBehaviour
         Debug.Log($"EnemyManager: 敵スポーン完了 スポーン数: {spawnedCount}");
     }
     
+    // 修正: 他の敵との重複チェックメソッドを追加
+    private bool IsPositionOccupiedByOtherEnemy(Vector2Int pos)
+    {
+        foreach (var enemy in enemies)
+        {
+            if (enemy != null && enemy.gridPosition == pos)
+            {
+                return true;
+            }
+        }
+        return false;
+    }
+    
     // 敵のデータを選択
     private EnemyDataSO SelectEnemyData(int enemyIndex)
     {
@@ -259,15 +276,15 @@ public class EnemyManager : MonoBehaviour
         
         Debug.Log($"EnemyManager: 敵ターン実行完了 アクティブ敵数: {activeEnemies}");
         
-        // 死亡した敵をリストから削除
-        // int beforeCount = enemies.Count; // This line was removed as per the new_code
-        // enemies.RemoveAll(e => e == null); // This line was removed as per the new_code
-        // int afterCount = enemies.Count; // This line was removed as per the new_code
+        // 修正: 死亡した敵をリストから削除（コメントアウトを解除）
+        int beforeCount = enemies.Count;
+        enemies.RemoveAll(e => e == null || e.IsDead);
+        int afterCount = enemies.Count;
         
-        // if (beforeCount != afterCount) // This line was removed as per the new_code
-        // { // This line was removed as per the new_code
-        //     Debug.Log($"EnemyManager: 死亡した敵を削除 {beforeCount} → {afterCount}"); // This line was removed as per the new_code
-        // } // This line was removed as per the new_code
+        if (beforeCount != afterCount)
+        {
+            Debug.Log($"EnemyManager: 死亡した敵を削除 {beforeCount} → {afterCount}");
+        }
         
         // 敵のターン終了後に視界範囲を更新
         if (Player.Instance != null && GridManager.Instance != null)
@@ -299,6 +316,26 @@ public class EnemyManager : MonoBehaviour
         else
         {
             Debug.LogWarning("EnemyManager: 既に登録済みの敵です");
+        }
+    }
+    
+    // 修正: 敵の登録解除メソッドを追加
+    public void UnregisterEnemy(Enemy enemy)
+    {
+        if (enemy == null)
+        {
+            Debug.LogError("EnemyManager: 登録解除しようとした敵がnullです");
+            return;
+        }
+        
+        if (enemies.Contains(enemy))
+        {
+            enemies.Remove(enemy);
+            Debug.Log($"EnemyManager: 敵を登録解除 位置: {enemy.gridPosition}");
+        }
+        else
+        {
+            Debug.LogWarning("EnemyManager: 登録されていない敵です");
         }
     }
     

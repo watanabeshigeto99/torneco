@@ -271,10 +271,12 @@ public class Enemy : Unit
         
         Vector2Int newPos = gridPosition + dir;
 
-        if (GridManager.Instance.IsInsideGrid(newPos) && !GridManager.Instance.IsOccupied(newPos))
+        // 修正: 他の敵との重複チェックを追加
+        if (GridManager.Instance.IsInsideGrid(newPos) && !GridManager.Instance.IsOccupied(newPos) && !IsPositionOccupiedByOtherEnemy(newPos))
         {
             Vector2Int oldPos = gridPosition;
             
+            // 修正: gridPositionとtransform.positionを確実に同期
             gridPosition = newPos;
             transform.position = GridManager.Instance.GetWorldPosition(newPos);
             
@@ -305,10 +307,12 @@ public class Enemy : Unit
         Vector2Int direction = NormalizeVector2Int(playerPos - gridPosition);
         Vector2Int newPos = gridPosition + direction;
 
-        if (GridManager.Instance.IsInsideGrid(newPos) && !GridManager.Instance.IsOccupied(newPos))
+        // 修正: 他の敵との重複チェックを追加
+        if (GridManager.Instance.IsInsideGrid(newPos) && !GridManager.Instance.IsOccupied(newPos) && !IsPositionOccupiedByOtherEnemy(newPos))
         {
             Vector2Int oldPos = gridPosition;
             
+            // 修正: gridPositionとtransform.positionを確実に同期
             gridPosition = newPos;
             transform.position = GridManager.Instance.GetWorldPosition(newPos);
             
@@ -330,6 +334,22 @@ public class Enemy : Unit
             // 追跡移動が失敗した場合、ランダム移動を試行
             MoveRandomly();
         }
+    }
+    
+    // 修正: 他の敵との重複チェックメソッドを追加
+    private bool IsPositionOccupiedByOtherEnemy(Vector2Int pos)
+    {
+        if (EnemyManager.Instance == null) return false;
+        
+        var enemies = EnemyManager.Instance.GetEnemies();
+        foreach (var enemy in enemies)
+        {
+            if (enemy != null && enemy != this && enemy.gridPosition == pos)
+            {
+                return true;
+            }
+        }
+        return false;
     }
     
     // Vector2Intを正規化するヘルパーメソッド
@@ -859,9 +879,17 @@ public class Enemy : Unit
         Destroy(damageEffect, 0.3f);
     }
 
+    // 修正: 死亡時にEnemyManagerから削除するようにオーバーライド
     protected override void Die()
     {
         string enemyName = enemyData != null ? enemyData.enemyName : "敵";
+        
+        // 修正: EnemyManagerから削除
+        if (EnemyManager.Instance != null)
+        {
+            EnemyManager.Instance.UnregisterEnemy(this);
+            Debug.Log($"Enemy: {enemyName}をEnemyManagerから削除しました");
+        }
         
         // プレイヤーに経験値を与える
         if (Player.Instance != null)

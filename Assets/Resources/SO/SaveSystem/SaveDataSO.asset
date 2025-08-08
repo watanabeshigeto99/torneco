@@ -10,12 +10,15 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 0000000000000000e000000000000000, type: 0}
-  m_Name: SaveEventChannel
+  m_Name: SaveDataSO
   m_EditorClassIdentifier: 
-  OnSaveRequested: []
-  OnLoadRequested: []
-  OnSaveCompleted: []
-  OnLoadCompleted: []
-  OnSaveFailed: []
-  OnLoadFailed: []
-  OnAutoSaveTriggered: [] 
+  score: 0
+  currentFloor: 1
+  gameOver: 0
+  gameClear: 0
+  playerLevel: 1
+  playerExp: 0
+  playerExpToNext: 10
+  playerMaxHP: 20
+  playerCurrentHP: 20
+  playerMaxLevel: 10 

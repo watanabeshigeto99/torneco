@@ -1,28 +1,29 @@
 using UnityEngine;
-using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEditor;
 
 /// <summary>
-/// 自動セットアップマネージャー
-/// 責務：シーンの自動セットアップのみ
+/// SOアセットの自動設定専用マネージャー
+/// 責務：SOアセットの自動検出と設定
 /// </summary>
-[DefaultExecutionOrder(-50)]
+[DefaultExecutionOrder(-99)]
 public class AutoSetupManager : MonoBehaviour
 {
     public static AutoSetupManager Instance { get; private set; }
     
     [Header("Auto Setup Settings")]
     public bool enableAutoSetup = true;
-    public bool enableDebugLogs = true;
+    public bool enableEventChannelSetup = true;
+    public bool enableDataObjectSetup = true;
     
-    // Managerキャッシュシステム
-    private static Dictionary<System.Type, MonoBehaviour> cachedManagers = new Dictionary<System.Type, MonoBehaviour>();
+    [Header("Auto Setup Results")]
+    public bool eventChannelsSetup = false;
+    public bool dataObjectsSetup = false;
+    public bool managersSetup = false;
     
-    // イベント定義
-    public static event System.Action OnAutoSetupCompleted;
-    public static event System.Action<string> OnSetupStepCompleted;
+    // 設定済みアセットの追跡
+    private Dictionary<string, bool> setupStatus = new Dictionary<string, bool>();
     
     private void Awake()
     {
@@ -35,44 +36,10 @@ public class AutoSetupManager : MonoBehaviour
         
         DontDestroyOnLoad(gameObject);
         
-        InitializeAutoSetupManager();
-    }
-    
-    /// <summary>
-    /// AutoSetupManagerの初期化
-    /// </summary>
-    private void InitializeAutoSetupManager()
-    {
         if (enableAutoSetup)
         {
             StartAutoSetup();
         }
-    }
-    
-    /// <summary>
-    /// キャッシュされたManagerを取得
-    /// </summary>
-    public static T GetCachedManager<T>() where T : MonoBehaviour
-    {
-        if (cachedManagers.TryGetValue(typeof(T), out var manager))
-        {
-            return manager as T;
-        }
-        
-        var found = FindObjectOfType<T>();
-        if (found != null)
-        {
-            cachedManagers[typeof(T)] = found;
-        }
-        return found;
-    }
-    
-    /// <summary>
-    /// キャッシュをクリア
-    /// </summary>
-    public static void ClearCache()
-    {
-        cachedManagers.Clear();
     }
     
     /// <summary>
@@ -83,16 +50,21 @@ public class AutoSetupManager : MonoBehaviour
         Debug.Log("AutoSetupManager: 自動設定を開始します");
         
         // イベントチャンネルの設定
-        SetupEventChannels();
+        if (enableEventChannelSetup)
+        {
+            SetupEventChannels();
+        }
         
         // データオブジェクトの設定
-        SetupDataObjects();
+        if (enableDataObjectSetup)
+        {
+            SetupDataObjects();
+        }
         
         // マネージャーの設定
         SetupManagers();
         
         Debug.Log("AutoSetupManager: 自動設定が完了しました");
-        OnAutoSetupCompleted?.Invoke();
     }
     
     /// <summary>
@@ -123,7 +95,7 @@ public class AutoSetupManager : MonoBehaviour
             SetupUIEventChannel(uiEventChannel);
         }
         
-        OnSetupStepCompleted?.Invoke("Event Channels");
+        eventChannelsSetup = true;
         Debug.Log("AutoSetupManager: イベントチャンネルの設定が完了しました");
     }
     
@@ -155,7 +127,7 @@ public class AutoSetupManager : MonoBehaviour
             SetupDeckDataSO(deckDataSO);
         }
         
-        OnSetupStepCompleted?.Invoke("Data Objects");
+        dataObjectsSetup = true;
         Debug.Log("AutoSetupManager: データオブジェクトの設定が完了しました");
     }
     
@@ -180,7 +152,7 @@ public class AutoSetupManager : MonoBehaviour
         }
         
         // PlayerDataManagerの設定
-        var playerDataManager = FindObjectOfType<PlayerDataManager>();
+        var playerDataManager = FindObjectOfType<PlayerDataSystem.PlayerDataManager>();
         if (playerDataManager != null)
         {
             SetupPlayerDataManager(playerDataManager);
@@ -193,7 +165,7 @@ public class AutoSetupManager : MonoBehaviour
             SetupDeckManager(deckManager);
         }
         
-        OnSetupStepCompleted?.Invoke("Managers");
+        managersSetup = true;
         Debug.Log("AutoSetupManager: マネージャーの設定が完了しました");
     }
     
@@ -205,6 +177,7 @@ public class AutoSetupManager : MonoBehaviour
         if (GameManager.Instance != null)
         {
             GameManager.Instance.saveEventChannel = eventChannel;
+            setupStatus["SaveEventChannel"] = true;
             Debug.Log("AutoSetupManager: SaveEventChannelをGameManagerに設定しました");
         }
         
@@ -230,6 +203,7 @@ public class AutoSetupManager : MonoBehaviour
         if (GameManager.Instance != null)
         {
             GameManager.Instance.deckEventChannel = eventChannel;
+            setupStatus["DeckEventChannel"] = true;
             Debug.Log("AutoSetupManager: DeckEventChannelをGameManagerに設定しました");
         }
         
@@ -255,6 +229,7 @@ public class AutoSetupManager : MonoBehaviour
         if (GameManager.Instance != null)
         {
             GameManager.Instance.uiEventChannel = eventChannel;
+            setupStatus["UIEventChannel"] = true;
             Debug.Log("AutoSetupManager: UIEventChannelをGameManagerに設定しました");
         }
     }
@@ -273,6 +248,7 @@ public class AutoSetupManager : MonoBehaviour
             if (field != null)
             {
                 field.SetValue(saveManager, saveData);
+                setupStatus["SaveDataSO"] = true;
                 Debug.Log("AutoSetupManager: SaveDataSOをSaveManagerに設定しました");
             }
         }
@@ -283,15 +259,16 @@ public class AutoSetupManager : MonoBehaviour
     /// </summary>
     private void SetupPlayerDataSO(PlayerDataSystem.PlayerDataSO playerData)
     {
-        var playerDataManager = FindObjectOfType<PlayerDataManager>();
+        var playerDataManager = FindObjectOfType<PlayerDataSystem.PlayerDataManager>();
         if (playerDataManager != null)
         {
             // PlayerDataManagerのplayerDataフィールドを設定
-            var field = typeof(PlayerDataManager).GetField("playerData", 
+            var field = typeof(PlayerDataSystem.PlayerDataManager).GetField("playerData", 
                 System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
             if (field != null)
             {
                 field.SetValue(playerDataManager, playerData);
+                setupStatus["PlayerDataSO"] = true;
                 Debug.Log("AutoSetupManager: PlayerDataSOをPlayerDataManagerに設定しました");
             }
         }
@@ -311,6 +288,7 @@ public class AutoSetupManager : MonoBehaviour
             if (field != null)
             {
                 field.SetValue(deckManager, deckData);
+                setupStatus["DeckDataSO"] = true;
                 Debug.Log("AutoSetupManager: DeckDataSOをDeckManagerに設定しました");
             }
         }
@@ -327,11 +305,14 @@ public class AutoSetupManager : MonoBehaviour
             var gameManager = GameManager.Instance;
             
             // 新しいマネージャーの参照を設定
+            if (gameManager.newGameManager == null)
+                gameManager.newGameManager = FindObjectOfType<GameManagerNew>();
+            
             if (gameManager.gameStateManager == null)
                 gameManager.gameStateManager = FindObjectOfType<GameStateManager>();
             
             if (gameManager.playerDataManager == null)
-                gameManager.playerDataManager = FindObjectOfType<PlayerDataManager>();
+                gameManager.playerDataManager = FindObjectOfType<PlayerDataSystem.PlayerDataManager>();
             
             if (gameManager.floorManager == null)
                 gameManager.floorManager = FindObjectOfType<FloorManager>();
@@ -339,6 +320,7 @@ public class AutoSetupManager : MonoBehaviour
             if (gameManager.systemIntegrationManager == null)
                 gameManager.systemIntegrationManager = FindObjectOfType<SystemIntegrationManager>();
             
+            setupStatus["GameManager"] = true;
             Debug.Log("AutoSetupManager: GameManagerの設定が完了しました");
         }
     }
@@ -349,15 +331,17 @@ public class AutoSetupManager : MonoBehaviour
     private void SetupSaveManager(SaveSystem.SaveManager saveManager)
     {
         // SaveManagerの設定（必要に応じて）
+        setupStatus["SaveManager"] = true;
         Debug.Log("AutoSetupManager: SaveManagerの設定が完了しました");
     }
     
     /// <summary>
     /// PlayerDataManagerの設定
     /// </summary>
-    private void SetupPlayerDataManager(PlayerDataManager playerDataManager)
+    private void SetupPlayerDataManager(PlayerDataSystem.PlayerDataManager playerDataManager)
     {
         // PlayerDataManagerの設定（必要に応じて）
+        setupStatus["PlayerDataManager"] = true;
         Debug.Log("AutoSetupManager: PlayerDataManagerの設定が完了しました");
     }
     
@@ -367,6 +351,7 @@ public class AutoSetupManager : MonoBehaviour
     private void SetupDeckManager(DeckSystem.DeckManager deckManager)
     {
         // DeckManagerの設定（必要に応じて）
+        setupStatus["DeckManager"] = true;
         Debug.Log("AutoSetupManager: DeckManagerの設定が完了しました");
     }
     
@@ -409,13 +394,13 @@ public class AutoSetupManager : MonoBehaviour
     {
         var status = new List<string>();
         
-        status.Add($"Event Channels: {(cachedManagers.ContainsKey(typeof(SaveSystem.SaveEventChannel)) ? "✅" : "❌")}");
-        status.Add($"Data Objects: {(cachedManagers.ContainsKey(typeof(SaveSystem.SaveDataSO)) ? "✅" : "❌")}");
-        status.Add($"Managers: {(cachedManagers.ContainsKey(typeof(GameManager)) ? "✅" : "❌")}");
+        status.Add($"Event Channels: {(eventChannelsSetup ? "✅" : "❌")}");
+        status.Add($"Data Objects: {(dataObjectsSetup ? "✅" : "❌")}");
+        status.Add($"Managers: {(managersSetup ? "✅" : "❌")}");
         
-        foreach (var kvp in cachedManagers)
+        foreach (var kvp in setupStatus)
         {
-            status.Add($"{kvp.Key.Name}: {(kvp.Value != null ? "✅" : "❌")}");
+            status.Add($"{kvp.Key}: {(kvp.Value ? "✅" : "❌")}");
         }
         
         return string.Join("\n", status);
@@ -427,7 +412,10 @@ public class AutoSetupManager : MonoBehaviour
     public void ReRunAutoSetup()
     {
         Debug.Log("AutoSetupManager: 自動設定を再実行します");
-        cachedManagers.Clear(); // キャッシュをクリア
+        setupStatus.Clear();
+        eventChannelsSetup = false;
+        dataObjectsSetup = false;
+        managersSetup = false;
         StartAutoSetup();
     }
     

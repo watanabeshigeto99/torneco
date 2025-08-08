@@ -289,9 +289,9 @@ public class Enemy : Unit
             hasMovedThisTurn = true;
             
             // 敵の移動後に視界範囲を更新
-            if (Player.Instance != null && VisionManager.Instance != null)
+            if (Player.Instance != null && GridManager.Instance != null)
             {
-                VisionManager.Instance.UpdateTileVisibility(Player.Instance.GetPosition());
+                GridManager.Instance.UpdateTileVisibility(Player.Instance.GetPosition());
             }
         }
     }
@@ -324,9 +324,9 @@ public class Enemy : Unit
             
             hasMovedThisTurn = true;
             
-            if (Player.Instance != null && VisionManager.Instance != null)
+            if (Player.Instance != null && GridManager.Instance != null)
             {
-                VisionManager.Instance.UpdateTileVisibility(Player.Instance.GetPosition());
+                GridManager.Instance.UpdateTileVisibility(Player.Instance.GetPosition());
             }
         }
         else

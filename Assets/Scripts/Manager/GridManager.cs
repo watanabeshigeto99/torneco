@@ -3,10 +3,6 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 
-/// <summary>
-/// グリッド管理専用クラス
-/// 責務：グリッド生成、座標変換、タイル管理のみ
-/// </summary>
 [DefaultExecutionOrder(-90)]
 public class GridManager : MonoBehaviour
 {
@@ -27,7 +23,7 @@ public class GridManager : MonoBehaviour
     public static event Action<Enemy[]> OnEnemiesSpawned;
     public static event Action<GameObject> OnExitSpawned;
     public static event Action OnGridInitialized;
-    public static event Action OnAllObjectsInitialized;
+    public static event Action OnAllObjectsInitialized; // 全オブジェクト初期化完了イベント
 
     [Header("Grid Settings")]
     public int width = 10;
@@ -38,10 +34,26 @@ public class GridManager : MonoBehaviour
     [Header("Prefabs")]
     public GameObject playerPrefab;
     public GameObject exitPrefab;
+
+    [Header("Vision Settings")]
+    [Range(1, 10)]
+    [Tooltip("プレイヤーを中心とした視界範囲（マス数）")]
+    public int visionRange = 8; // 視界範囲（プレイヤーからの距離）
+    
+    [Tooltip("視界範囲をデバッグログに表示")]
+    public bool showVisionRange = true; // 視界範囲を視覚的に表示
+    
+    [Header("Tile Visibility Settings")]
+    [Tooltip("通常表示範囲（プレイヤー周囲のマス数）")]
+    public int normalVisibilityRange = 1; // プレイヤー周囲1マス = 周囲8マス
+    
+    [Tooltip("半透明表示範囲（通常表示範囲の外側のマス数）")]
+    public int transparentVisibilityRange = 2; // 通常表示範囲の外側2マス = さらに16マス
     
     private Tile[] allTiles;
+    private Enemy[] allEnemies;
     private GameObject exitObject;
-    public Vector2Int exitPosition;
+    public Vector2Int exitPosition; // Exitの位置を記録（publicに変更）
     
     // ミニマップ用のTile管理Dict
     public Dictionary<Vector2Int, Tile> tileDict = new();
@@ -55,16 +67,12 @@ public class GridManager : MonoBehaviour
 
     private void Awake()
     {
-#if UNITY_EDITOR
         Debug.Log("GridManager: Awake開始");
-#endif
         
         // Singletonパターンの実装
         if (Instance != null && Instance != this)
         {
-#if UNITY_EDITOR
             Debug.LogWarning("GridManager: 重複するGridManagerインスタンスを破棄");
-#endif
             Destroy(gameObject);
             return;
         }
@@ -79,23 +87,17 @@ public class GridManager : MonoBehaviour
             tileDict = new Dictionary<Vector2Int, Tile>();
         }
         
-#if UNITY_EDITOR
         Debug.Log("GridManager: Awake完了");
-#endif
     }
 
     private void Start()
     {
         // 基本的な初期化処理
-#if UNITY_EDITOR
         Debug.Log("GridManager: 初期化開始");
-#endif
         
         if (tilePrefab == null)
         {
-#if UNITY_EDITOR
             Debug.LogError("GridManager: tilePrefabが設定されていません");
-#endif
             return;
         }
         
@@ -312,13 +314,15 @@ public class GridManager : MonoBehaviour
         {
             EnemyManager.Instance.SpawnEnemies();
             
-                    // 敵生成完了イベントを発行
-        var enemies = FindObjectsOfType<Enemy>();
-        if (enemies != null)
-        {
-            OnEnemiesSpawned?.Invoke(enemies);
-            Debug.Log("GridManager: 敵生成完了イベント発行");
-        }
+            // 敵生成後にallEnemiesを更新
+            allEnemies = FindObjectsOfType<Enemy>();
+            
+            // 敵生成完了イベントを発行
+            if (allEnemies != null)
+            {
+                OnEnemiesSpawned?.Invoke(allEnemies);
+                Debug.Log("GridManager: 敵生成完了イベント発行");
+            }
             
             Debug.Log("GridManager: 敵スポーン完了");
         }
@@ -361,8 +365,7 @@ public class GridManager : MonoBehaviour
             }
         }
 
-        // フォールバック: FindObjectsOfTypeを使用
-        var allEnemies = FindObjectsOfType<Enemy>();
+        // フォールバック: キャッシュされたallEnemiesを使用
         if (allEnemies != null)
         {
             foreach (var enemy in allEnemies)
@@ -406,17 +409,11 @@ public class GridManager : MonoBehaviour
         return IsExitPosition(pos) && IsInsideGrid(pos);
     }
 
-    // 視界範囲内かどうかをチェック（VisionManagerに委譲）
+    // 視界範囲内かどうかをチェック
     public bool IsInVisionRange(Vector2Int position, Vector2Int playerPosition)
     {
-        if (VisionManager.Instance != null)
-        {
-            return VisionManager.Instance.IsInVisionRange(position, playerPosition);
-        }
-        
-        // フォールバック: デフォルトの視界範囲
         int distance = Mathf.Max(Mathf.Abs(position.x - playerPosition.x), Mathf.Abs(position.y - playerPosition.y));
-        return distance <= 8; // デフォルトの視界範囲
+        return distance <= visionRange;
     }
 
     // 全オブジェクトの参照を保存
@@ -443,8 +440,7 @@ public class GridManager : MonoBehaviour
             }
         }
         
-        var enemies = FindObjectsOfType<Enemy>();
-        Debug.Log($"GridManager: タイル数: {validTileCount}/{allTiles?.Length ?? 0}, 敵数: {enemies?.Length ?? 0}");
+        Debug.Log($"GridManager: タイル数: {validTileCount}/{allTiles?.Length ?? 0}, 敵数: {allEnemies?.Length ?? 0}");
         
         // exitObjectはSpawnExitで既に設定済み
         if (exitObject == null)
@@ -458,8 +454,8 @@ public class GridManager : MonoBehaviour
     // 修正: 敵キャッシュを更新するメソッドを追加
     public void UpdateEnemiesCache()
     {
-        var enemies = FindObjectsOfType<Enemy>();
-        Debug.Log($"GridManager: 敵キャッシュ更新 - {enemies?.Length ?? 0}体の敵を検出");
+        allEnemies = FindObjectsOfType<Enemy>();
+        Debug.Log($"GridManager: 敵キャッシュ更新 - {allEnemies?.Length ?? 0}体の敵を検出");
     }
     
     // 新しいタイル表示制御システム
@@ -490,25 +486,53 @@ public class GridManager : MonoBehaviour
         }
 
         // 敵の表示/非表示を更新（新しい表示制御システムに合わせる）
-        var currentEnemies = FindObjectsOfType<Enemy>();
-        Debug.Log($"GridManager: 敵の透明度更新開始 - 敵数: {currentEnemies.Length}");
-        foreach (Enemy enemy in currentEnemies)
+        if (allEnemies != null)
         {
-            if (enemy != null)
+            Debug.Log($"GridManager: 敵の透明度更新開始 - 敵数: {allEnemies.Length}");
+            foreach (Enemy enemy in allEnemies)
             {
-                Vector2Int enemyPos = enemy.gridPosition;
-                Tile.VisibilityState visibility = GetTileVisibilityState(enemyPos, playerPosition);
-                
-                // 非表示の場合のみSetActive(false)、それ以外は表示
-                bool shouldBeVisible = (visibility != Tile.VisibilityState.Hidden);
-                enemy.gameObject.SetActive(shouldBeVisible);
-                
-                // 透明度も更新（タイルの透明度に依存せず、直接計算）
-                if (shouldBeVisible)
+                if (enemy != null)
                 {
-                    float alpha = (visibility == Tile.VisibilityState.Transparent) ? 0.4f : 1.0f;
-                    UpdateSpriteTransparency(enemy.gameObject, alpha);
-                    Debug.Log($"GridManager: 敵透明度更新 - 位置: {enemyPos}, 状態: {visibility}, 透明度: {alpha}");
+                    Vector2Int enemyPos = enemy.gridPosition;
+                    Tile.VisibilityState visibility = GetTileVisibilityState(enemyPos, playerPosition);
+                    
+                    // 非表示の場合のみSetActive(false)、それ以外は表示
+                    bool shouldBeVisible = (visibility != Tile.VisibilityState.Hidden);
+                    enemy.gameObject.SetActive(shouldBeVisible);
+                    
+                    // 透明度も更新（タイルの透明度に依存せず、直接計算）
+                    if (shouldBeVisible)
+                    {
+                        float alpha = (visibility == Tile.VisibilityState.Transparent) ? 0.4f : 1.0f;
+                        UpdateSpriteTransparency(enemy.gameObject, alpha);
+                        Debug.Log($"GridManager: 敵透明度更新 - 位置: {enemyPos}, 状態: {visibility}, 透明度: {alpha}");
+                    }
+                }
+            }
+        }
+        else
+        {
+            // allEnemiesがnullの場合は、FindObjectsOfTypeで再取得
+            Enemy[] currentEnemies = FindObjectsOfType<Enemy>();
+            Debug.Log($"GridManager: allEnemiesがnull - 再取得した敵数: {currentEnemies.Length}");
+            foreach (Enemy enemy in currentEnemies)
+            {
+                if (enemy != null)
+                {
+                    Vector2Int enemyPos = enemy.gridPosition;
+                    Tile.VisibilityState visibility = GetTileVisibilityState(enemyPos, playerPosition);
+                    
+                    // 非表示の場合のみSetActive(false)、それ以外は表示
+                    bool shouldBeVisible = (visibility != Tile.VisibilityState.Hidden);
+                    enemy.gameObject.SetActive(shouldBeVisible);
+                    
+                    // 透明度も更新
+                    if (shouldBeVisible)
+                    {
+                        float alpha = (visibility == Tile.VisibilityState.Transparent) ? 0.4f : 1.0f;
+                        UpdateSpriteTransparency(enemy.gameObject, alpha);
+                        Debug.Log($"GridManager: 敵透明度更新（再取得） - 位置: {enemyPos}, 状態: {visibility}, 透明度: {alpha}");
+                    }
                 }
             }
         }
@@ -525,22 +549,29 @@ public class GridManager : MonoBehaviour
         }
         
         // 視界範囲を視覚的に表示（デバッグ用）
-        if (VisionManager.Instance != null)
+        if (showVisionRange)
         {
-            VisionManager.Instance.ShowVisionRangeDebug(playerPosition);
+            ShowVisionRangeDebug(playerPosition);
         }
     }
     
-    // タイルの表示状態を判定（VisionManagerに委譲）
+    // タイルの表示状態を判定
     private Tile.VisibilityState GetTileVisibilityState(Vector2Int tilePos, Vector2Int playerPos)
     {
-        if (VisionManager.Instance != null)
-        {
-            return VisionManager.Instance.GetTileVisibilityState(tilePos, playerPos);
-        }
+        int distance = Mathf.Max(Mathf.Abs(tilePos.x - playerPos.x), Mathf.Abs(tilePos.y - playerPos.y));
         
-        // フォールバック: デフォルトの表示状態
-        return Tile.VisibilityState.Visible;
+        if (distance <= normalVisibilityRange)
+        {
+            return Tile.VisibilityState.Visible; // 通常表示
+        }
+        else if (distance <= normalVisibilityRange + transparentVisibilityRange)
+        {
+            return Tile.VisibilityState.Transparent; // 半透明表示
+        }
+        else
+        {
+            return Tile.VisibilityState.Hidden; // 非表示
+        }
     }
 
     // 視界範囲を更新（既存メソッド - 後方互換性のため保持）
@@ -550,12 +581,30 @@ public class GridManager : MonoBehaviour
         UpdateTileVisibility(playerPosition);
     }
     
-    // 視界範囲を視覚的に表示（デバッグ用）- VisionManagerに委譲
+    // 視界範囲を視覚的に表示（デバッグ用）
     private void ShowVisionRangeDebug(Vector2Int playerPosition)
     {
-        if (VisionManager.Instance != null)
+        // 視界範囲の境界を計算
+        int minX = playerPosition.x - visionRange;
+        int maxX = playerPosition.x + visionRange;
+        int minY = playerPosition.y - visionRange;
+        int maxY = playerPosition.y + visionRange;
+        
+        // プレイヤーを中心とした視界範囲の確認
+        for (int x = minX; x <= maxX; x++)
         {
-            VisionManager.Instance.ShowVisionRangeDebug(playerPosition);
+            for (int y = minY; y <= maxY; y++)
+            {
+                Vector2Int pos = new Vector2Int(x, y);
+                if (IsInVisionRange(pos, playerPosition))
+                {
+                    // 視界範囲内の位置をログに表示（デバッグ用）
+                    if (x == minX || x == maxX || y == minY || y == maxY)
+                    {
+                        Debug.Log($"視界境界: {pos}");
+                    }
+                }
+            }
         }
     }
 
@@ -867,6 +916,7 @@ public class GridManager : MonoBehaviour
         
         // 配列をクリア
         allTiles = null;
+        allEnemies = null;
         
         // ミニマップ用のTile管理Dictもクリア
         if (tileDict != null)
@@ -986,8 +1036,8 @@ public class GridManager : MonoBehaviour
         }
         
         // 敵参照を保存
-        var enemies = FindObjectsOfType<Enemy>();
-        Debug.Log($"GridManager: {enemies.Length}体の敵を検出");
+        allEnemies = FindObjectsOfType<Enemy>();
+        Debug.Log($"GridManager: {allEnemies.Length}体の敵を検出");
         
         // Exit参照を保存（既に生成されている場合）
         if (exitObject == null)
@@ -1126,9 +1176,9 @@ public class GridManager : MonoBehaviour
         {
             // EnemyManagerを使用して敵を生成
             EnemyManager.Instance.SpawnEnemies();
-            var enemies = FindObjectsOfType<Enemy>();
-            OnEnemiesSpawned?.Invoke(enemies);
-            Debug.Log($"GridManager: 敵生成完了 - {enemies.Length}体");
+            allEnemies = FindObjectsOfType<Enemy>();
+            OnEnemiesSpawned?.Invoke(allEnemies);
+            Debug.Log($"GridManager: 敵生成完了 - {allEnemies.Length}体");
         }
         else
         {
@@ -1187,9 +1237,9 @@ public class GridManager : MonoBehaviour
                  }
              }
             
-            var enemies = FindObjectsOfType<Enemy>();
-            OnEnemiesSpawned?.Invoke(enemies);
-            Debug.Log($"GridManager: 手動敵生成完了 - {enemies.Length}体");
+            allEnemies = FindObjectsOfType<Enemy>();
+            OnEnemiesSpawned?.Invoke(allEnemies);
+            Debug.Log($"GridManager: 手動敵生成完了 - {allEnemies.Length}体");
         }
         
         yield return null;

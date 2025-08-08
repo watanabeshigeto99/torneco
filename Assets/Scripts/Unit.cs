@@ -43,7 +43,7 @@ public class Unit : MonoBehaviour
         transform.position = GridManager.Instance.GetWorldPosition(startPos);
     }
     
-    public virtual void TakeDamage(int damage)
+    public virtual void TakeDamage(int damage, Unit source = null)
     {
         if (IsDead) return;
         
@@ -69,25 +69,24 @@ public class Unit : MonoBehaviour
     {
         // 死亡イベントを発行
         OnUnitDied?.Invoke(this);
+        
+        // デフォルトではGameObjectを破棄
+        Destroy(gameObject);
     }
     
     public virtual void MoveTo(Vector2Int pos)
     {
-        if (!GridManager.Instance.IsInsideGrid(pos) || !GridManager.Instance.IsWalkable(pos))
-            return;
-        
         Vector2Int oldPos = gridPosition;
         gridPosition = pos;
         transform.position = GridManager.Instance.GetWorldPosition(pos);
         
         // 移動イベントを発行
-        OnUnitMoved?.Invoke(this, pos);
+        OnUnitMoved?.Invoke(this, oldPos);
     }
     
     public virtual void Move(Vector2Int delta)
     {
-        Vector2Int newPos = gridPosition + delta;
-        MoveTo(newPos);
+        MoveTo(gridPosition + delta);
     }
     
     public virtual Vector2Int GetPosition()
@@ -97,18 +96,10 @@ public class Unit : MonoBehaviour
     
     public virtual void SetPosition(Vector2Int newPos)
     {
-        if (GridManager.Instance.IsInsideGrid(newPos))
-        {
-            Vector2Int oldPos = gridPosition;
-            gridPosition = newPos;
-            transform.position = GridManager.Instance.GetWorldPosition(newPos);
-            
-            // 移動イベントを発行
-            OnUnitMoved?.Invoke(this, newPos);
-        }
+        gridPosition = newPos;
+        transform.position = GridManager.Instance.GetWorldPosition(newPos);
     }
     
-    // 攻撃メソッド
     public virtual void Attack(Unit target, int damage)
     {
         if (target == null || target.IsDead) return;
@@ -116,25 +107,22 @@ public class Unit : MonoBehaviour
         // 攻撃イベントを発行
         OnUnitAttacked?.Invoke(this, damage);
         
-        // 目標にダメージを与える
-        target.TakeDamage(damage);
+        // ターゲットにダメージを与える
+        target.TakeDamage(damage, this);
     }
     
-    // 共通のユニット名取得メソッド
     public virtual string GetUnitName()
     {
-        return "Unit";
+        return gameObject.name;
     }
     
-    // 攻撃範囲を取得（デフォルトは隣接マス）
     public virtual int GetAttackRange()
     {
-        return 1;
+        return 1; // デフォルトは1マス
     }
     
-    // ターンリセット
     public virtual void ResetTurn()
     {
-        // 派生クラスでオーバーライド
+        // ターンリセット時の処理（必要に応じてオーバーライド）
     }
 } 

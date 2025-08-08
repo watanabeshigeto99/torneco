@@ -711,6 +711,63 @@ RectTransform:
   m_AnchoredPosition: {x: 0, y: 0}
   m_SizeDelta: {x: 0, y: 0}
   m_Pivot: {x: 0, y: 0}
+--- !u!1 &283014287
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 283014289}
+  - component: {fileID: 283014288}
+  m_Layer: 0
+  m_Name: Post Processing Setup
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &283014288
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 283014287}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 030def28e87df674ba40576b5b3b6b8e, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  enableBloom: 1
+  bloomThreshold: 0.9
+  bloomIntensity: 1.5
+  bloomScatter: 0.7
+  bloomTint: {r: 1, g: 1, b: 1, a: 1}
+  enableVignette: 1
+  vignetteIntensity: 0.3
+  vignetteSmoothness: 0.2
+  vignetteColor: {r: 0, g: 0, b: 0, a: 1}
+  enableColorAdjustments: 1
+  saturation: 1
+  contrast: 1
+  brightness: 0
+--- !u!4 &283014289
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 283014287}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &328460006
 GameObject:
   m_ObjectHideFlags: 0
@@ -2341,6 +2398,64 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &1312789252
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1312789254}
+  - component: {fileID: 1312789253}
+  m_Layer: 0
+  m_Name: Lighting Manager
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &1312789253
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1312789252}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a476b7bbd4e55a64998d2146ba204fa2, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  characterLight: {fileID: 9016790875124957544, guid: 6b252a14355110a49a6e5078d945639f, type: 3}
+  characterLightIntensity: 1.3
+  characterLightColor: {r: 1, g: 0.9, b: 0.7, a: 1}
+  treasureLight: {fileID: 0}
+  treasureLightIntensity: 2
+  treasureLightColor: {r: 1, g: 1, b: 0.8, a: 1}
+  entranceLight: {fileID: 8480474197339999960, guid: dc4c1c78a3c53804daf28e52abb357c2, type: 3}
+  entranceLightIntensity: 1.5
+  visionConeLight: {fileID: 0}
+  visionConeIntensity: 1.5
+  visionConeOuterAngle: 45
+  explosionLightPrefab: {fileID: 0}
+  explosionLightDuration: 1
+  explosionLightIntensity: 3
+--- !u!4 &1312789254
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1312789252}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1336276800
 GameObject:
   m_ObjectHideFlags: 0
@@ -3210,6 +3325,71 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1616469594}
   m_CullTransparentMesh: 1
+--- !u!1 &1618065843
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1618065845}
+  - component: {fileID: 1618065844}
+  m_Layer: 0
+  m_Name: Lighting System Setup
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &1618065844
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1618065843}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2c2cab9217337e94f9e684ae1393b9c2, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  createGlobalLight: 1
+  globalLightIntensity: 0.6
+  globalLightColor: {r: 1, g: 0.95, b: 0.9, a: 1}
+  createCharacterLight: 1
+  characterTransform: {fileID: 4565523965818173709, guid: 6b252a14355110a49a6e5078d945639f, type: 3}
+  characterLightIntensity: 1.3
+  characterLightColor: {r: 1, g: 0.9, b: 0.7, a: 1}
+  createTreasureLight: 1
+  treasureTransform: {fileID: 0}
+  treasureLightIntensity: 2
+  treasureLightColor: {r: 1, g: 1, b: 0.8, a: 1}
+  createVisionCone: 1
+  visionConeTransform: {fileID: 0}
+  visionConeIntensity: 1.5
+  visionConeOuterAngle: 45
+  setupPostProcessing: 1
+  bloomThreshold: 0.9
+  bloomIntensity: 1.5
+  vignetteIntensity: 0.3
+  setupMaterials: 1
+  useLitMaterials: 1
+--- !u!4 &1618065845
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1618065843}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1712295235
 GameObject:
   m_ObjectHideFlags: 0
@@ -4091,3 +4271,6 @@ SceneRoots:
   - {fileID: 903026005}
   - {fileID: 1373497121}
   - {fileID: 279088662}
+  - {fileID: 1618065845}
+  - {fileID: 1312789254}
+  - {fileID: 283014289}

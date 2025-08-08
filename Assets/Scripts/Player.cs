@@ -600,6 +600,8 @@ public class Player : Unit
             attackEffect.Play();
         }
         
+
+        
         // 後半：元の位置へ戻る
         elapsed = 0f;
         while (elapsed < halfDuration)
@@ -622,30 +624,7 @@ public class Player : Unit
     // 攻撃エフェクト再生
     private void PlayAttackEffect(Vector2Int targetPos)
     {
-        Vector3 worldPos = GridManager.Instance.GetWorldPosition(targetPos);
-        
-        // ヒットエフェクトを生成
-        GameObject hitEffect = new GameObject("HitEffect");
-        hitEffect.transform.position = worldPos;
-        
-        // パーティクルシステムを追加
-        ParticleSystem hitParticles = hitEffect.AddComponent<ParticleSystem>();
-        var main = hitParticles.main;
-        main.startLifetime = 0.5f;
-        main.startSpeed = 2f;
-        main.startSize = 0.2f;
-        main.maxParticles = 10;
-        
-        var emission = hitParticles.emission;
-        emission.rateOverTime = 20;
-        
-        var shape = hitParticles.shape;
-        shape.enabled = true;
-        shape.shapeType = ParticleSystemShapeType.Sphere;
-        shape.radius = 0.5f;
-        
-        // 0.5秒後に削除
-        Destroy(hitEffect, 0.5f);
+        // エフェクトは削除済み
     }
     
     // 空振りエフェクト再生
@@ -769,9 +748,9 @@ public class Player : Unit
         }
     }
 
-    public override void TakeDamage(int damage)
+    public override void TakeDamage(int damage, Unit source = null)
     {
-        base.TakeDamage(damage);
+        base.TakeDamage(damage, source);
         
         if (UIManager.Instance != null)
         {

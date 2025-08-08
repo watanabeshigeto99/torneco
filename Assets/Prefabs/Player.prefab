@@ -104,13 +104,14 @@ MonoBehaviour:
   currentHP: 10
   gridPosition: {x: 0, y: 0}
   spriteRenderer: {fileID: 8776528461156607410}
-  level: 1
-  exp: 0
-  expToNext: 10
-  maxLevel: 10
-  levelTable: {fileID: 11400000, guid: 56789012345678901234567890123456, type: 2}
+  flashEffect: {fileID: 0}
   moveEffect: {fileID: 0}
   attackEffect: {fileID: 0}
   moveAnimationDuration: 0.3
   attackAnimationDuration: 0.2
   jumpHeight: 0.5
+  level: 1
+  exp: 0
+  expToNext: 10
+  maxLevel: 10
+  levelTable: {fileID: 11400000, guid: 56789012345678901234567890123456, type: 2}

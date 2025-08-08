@@ -545,6 +545,8 @@ public class Enemy : Unit
             attackEffect.Play();
         }
         
+
+        
         // 攻撃エフェクトを生成
         CreateAttackEffect(targetWorldPos, Color.red);
         
@@ -687,26 +689,7 @@ public class Enemy : Unit
     // 攻撃エフェクト生成
     private void CreateAttackEffect(Vector3 position, Color color)
     {
-        GameObject effect = new GameObject("EnemyAttackEffect");
-        effect.transform.position = position;
-        
-        ParticleSystem particles = effect.AddComponent<ParticleSystem>();
-        var main = particles.main;
-        main.startLifetime = 0.5f;
-        main.startSpeed = 1.5f;
-        main.startSize = 0.2f;
-        main.maxParticles = 15;
-        main.startColor = color;
-        
-        var emission = particles.emission;
-        emission.rateOverTime = 25;
-        
-        var shape = particles.shape;
-        shape.enabled = true;
-        shape.shapeType = ParticleSystemShapeType.Sphere;
-        shape.radius = 0.4f;
-        
-        Destroy(effect, 0.5f);
+        // エフェクトは削除済み
     }
     
     // 遠距離攻撃エフェクト生成
@@ -754,7 +737,7 @@ public class Enemy : Unit
         }
         
         bullet.position = endPos;
-        CreateAttackEffect(endPos, Color.blue);
+        // エフェクトは削除済み
     }
     
     // 範囲攻撃エフェクト生成
@@ -818,9 +801,9 @@ public class Enemy : Unit
         Destroy(effect, 0.8f);
     }
 
-    public override void TakeDamage(int damage)
+    public override void TakeDamage(int damage, Unit source = null)
     {
-        base.TakeDamage(damage);
+        base.TakeDamage(damage, source);
         
         // 敵のダメージログを追加
         if (UIManager.Instance != null)

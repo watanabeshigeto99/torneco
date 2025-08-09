@@ -19,6 +19,7 @@ public class EnemyManager : MonoBehaviour
     
     // イベント定義
     public static event Action<Enemy[]> OnEnemiesSpawned;
+    public event Action OnEnemyListChanged; // 敵リスト変更イベントを追加
 
     public GameObject enemyPrefab;
     public int enemyCount = 3; // デフォルトは3体
@@ -312,6 +313,7 @@ public class EnemyManager : MonoBehaviour
         {
             enemies.Add(enemy);
             Debug.Log($"EnemyManager: 敵を登録 位置: {enemy.gridPosition}");
+            OnEnemyListChanged?.Invoke(); // イベントを発行
         }
         else
         {
@@ -332,6 +334,7 @@ public class EnemyManager : MonoBehaviour
         {
             enemies.Remove(enemy);
             Debug.Log($"EnemyManager: 敵を登録解除 位置: {enemy.gridPosition}");
+            OnEnemyListChanged?.Invoke(); // イベントを発行
         }
         else
         {

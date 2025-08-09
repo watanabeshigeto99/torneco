@@ -100,11 +100,23 @@ public class MiniMapManager : MonoBehaviour
     private void SubscribeToEvents()
     {
         GridManager.OnAllObjectsInitialized += OnAllObjectsInitialized;
+        
+        // EnemyManagerのイベントを購読
+        if (EnemyManager.Instance != null)
+        {
+            EnemyManager.Instance.OnEnemyListChanged += RefreshMiniMap;
+        }
     }
     
     private void UnsubscribeFromEvents()
     {
         GridManager.OnAllObjectsInitialized -= OnAllObjectsInitialized;
+        
+        // EnemyManagerのイベントを購読解除
+        if (EnemyManager.Instance != null)
+        {
+            EnemyManager.Instance.OnEnemyListChanged -= RefreshMiniMap;
+        }
     }
 
     private void OnAllObjectsInitialized()
@@ -114,6 +126,17 @@ public class MiniMapManager : MonoBehaviour
         if (GridManager.Instance != null)
         {
             GenerateMiniMap(GridManager.Instance.width, GridManager.Instance.height);
+        }
+        
+        // EnemyManagerのイベントを購読（初期化完了後に再度試行）
+        if (EnemyManager.Instance != null)
+        {
+            EnemyManager.Instance.OnEnemyListChanged += RefreshMiniMap;
+            Debug.Log("MiniMapManager: EnemyManagerのイベントを購読しました");
+        }
+        else
+        {
+            Debug.LogWarning("MiniMapManager: EnemyManager.Instanceが見つかりません");
         }
     }
 
@@ -301,5 +324,17 @@ public class MiniMapManager : MonoBehaviour
                 Destroy(tile.gameObject);
         }
         miniMapTiles.Clear();
+    }
+
+    // ミニマップを即座に更新するメソッド
+    private void RefreshMiniMap()
+    {
+        if (Player.Instance != null && EnemyManager.Instance != null && GridManager.Instance != null)
+        {
+            List<Vector2Int> enemies = EnemyManager.Instance.GetAllEnemyPositions();
+            Vector2Int exitPos = GridManager.Instance.exitPosition;
+            UpdateMiniMap(Player.Instance.gridPosition, enemies, exitPos);
+            Debug.Log($"MiniMapManager: 敵リスト変更によりミニマップを更新 - プレイヤー: {Player.Instance.gridPosition}, 敵数: {enemies.Count}, Exit: {exitPos}");
+        }
     }
 } 

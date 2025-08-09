@@ -1,5 +1,6 @@
 using UnityEngine;
 using System;
+using System.Collections.Generic;
 
 namespace PlayerDataSystem
 {
@@ -27,6 +28,10 @@ namespace PlayerDataSystem
         public int attack = 5;
         public int defense = 2;
         public int gold = 0;
+        public int shards = 0; // 強化用シャード
+        
+        [Header("Card Collection")]
+        public List<CardInstance> ownedCards = new List<CardInstance>();
         
         [Header("Settings")]
         public float levelUpMultiplier = 1.5f;
@@ -37,6 +42,8 @@ namespace PlayerDataSystem
         public event Action<int> OnLevelUp;
         public event Action<int> OnExpGained;
         public event Action<int, int> OnHPChanged;
+        public event Action<CardInstance> OnCardAdded;
+        public event Action<CardInstance> OnCardUpgraded;
         
         /// <summary>
         /// プレイヤーデータの初期化
@@ -51,8 +58,135 @@ namespace PlayerDataSystem
             attack = 5;
             defense = 2;
             gold = 0;
+            shards = 0;
+            ownedCards = new List<CardInstance>();
             
             Debug.Log("PlayerDataSO: プレイヤーデータを初期化しました");
+        }
+        
+        /// <summary>
+        /// カードインスタンスを取得
+        /// </summary>
+        public CardInstance GetCardInstance(string cardId)
+        {
+            return ownedCards.Find(card => card.cardId == cardId);
+        }
+        
+        /// <summary>
+        /// カードインスタンスを追加
+        /// </summary>
+        public void AddCardInstance(CardInstance cardInstance)
+        {
+            if (cardInstance == null) return;
+            
+            var existingCard = GetCardInstance(cardInstance.cardId);
+            if (existingCard != null)
+            {
+                Debug.LogWarning($"PlayerDataSO: カード {cardInstance.cardId} は既に所持しています");
+                return;
+            }
+            
+            ownedCards.Add(cardInstance);
+            OnCardAdded?.Invoke(cardInstance);
+            OnDataChanged?.Invoke(this);
+            
+            Debug.Log($"PlayerDataSO: カード {cardInstance.cardId} を追加しました");
+        }
+        
+        /// <summary>
+        /// カードインスタンスを更新
+        /// </summary>
+        public void UpdateCardInstance(CardInstance cardInstance)
+        {
+            if (cardInstance == null) return;
+            
+            var existingCard = GetCardInstance(cardInstance.cardId);
+            if (existingCard == null)
+            {
+                AddCardInstance(cardInstance);
+                return;
+            }
+            
+            int previousLevel = existingCard.level;
+            existingCard.level = cardInstance.level;
+            
+            if (existingCard.level > previousLevel)
+            {
+                OnCardUpgraded?.Invoke(existingCard);
+            }
+            
+            OnDataChanged?.Invoke(this);
+            
+            Debug.Log($"PlayerDataSO: カード {cardInstance.cardId} を更新しました (Lv.{previousLevel} → Lv.{existingCard.level})");
+        }
+        
+        /// <summary>
+        /// カードインスタンスを削除
+        /// </summary>
+        public void RemoveCardInstance(string cardId)
+        {
+            var card = GetCardInstance(cardId);
+            if (card != null)
+            {
+                ownedCards.Remove(card);
+                OnDataChanged?.Invoke(this);
+                
+                Debug.Log($"PlayerDataSO: カード {cardId} を削除しました");
+            }
+        }
+        
+        /// <summary>
+        /// ゴールドを追加
+        /// </summary>
+        public void AddGold(int amount)
+        {
+            gold += amount;
+            OnDataChanged?.Invoke(this);
+            Debug.Log($"PlayerDataSO: ゴールドを {amount} 追加しました (合計: {gold})");
+        }
+        
+        /// <summary>
+        /// ゴールドを消費
+        /// </summary>
+        public bool SpendGold(int amount)
+        {
+            if (gold >= amount)
+            {
+                gold -= amount;
+                OnDataChanged?.Invoke(this);
+                Debug.Log($"PlayerDataSO: ゴールドを {amount} 消費しました (残高: {gold})");
+                return true;
+            }
+            
+            Debug.LogWarning($"PlayerDataSO: ゴールドが不足しています (必要: {amount}, 所持: {gold})");
+            return false;
+        }
+        
+        /// <summary>
+        /// シャードを追加
+        /// </summary>
+        public void AddShards(int amount)
+        {
+            shards += amount;
+            OnDataChanged?.Invoke(this);
+            Debug.Log($"PlayerDataSO: シャードを {amount} 追加しました (合計: {shards})");
+        }
+        
+        /// <summary>
+        /// シャードを消費
+        /// </summary>
+        public bool SpendShards(int amount)
+        {
+            if (shards >= amount)
+            {
+                shards -= amount;
+                OnDataChanged?.Invoke(this);
+                Debug.Log($"PlayerDataSO: シャードを {amount} 消費しました (残高: {shards})");
+                return true;
+            }
+            
+            Debug.LogWarning($"PlayerDataSO: シャードが不足しています (必要: {amount}, 所持: {shards})");
+            return false;
         }
         
         /// <summary>
@@ -112,9 +246,8 @@ namespace PlayerDataSystem
             if (oldCurrent != currentHP || oldMax != maxHP)
             {
                 OnHPChanged?.Invoke(currentHP, maxHP);
+                OnDataChanged?.Invoke(this);
             }
-            
-            OnDataChanged?.Invoke(this);
         }
         
         /// <summary>
@@ -122,10 +255,16 @@ namespace PlayerDataSystem
         /// </summary>
         public void TakeDamage(int damage)
         {
-            int actualDamage = Mathf.Max(0, damage - defense);
-            SetHP(currentHP - actualDamage);
+            if (damage <= 0) return;
             
-            Debug.Log($"PlayerDataSO: {actualDamage}ダメージを受けました (防御力: {defense})");
+            int oldHP = currentHP;
+            currentHP = Mathf.Max(0, currentHP - damage);
+            
+            if (oldHP != currentHP)
+            {
+                OnHPChanged?.Invoke(currentHP, maxHP);
+                OnDataChanged?.Invoke(this);
+            }
         }
         
         /// <summary>
@@ -133,39 +272,44 @@ namespace PlayerDataSystem
         /// </summary>
         public void Heal(int healAmount)
         {
-            SetHP(currentHP + healAmount);
+            if (healAmount <= 0) return;
             
-            Debug.Log($"PlayerDataSO: {healAmount}回復しました");
+            int oldHP = currentHP;
+            currentHP = Mathf.Min(maxHP, currentHP + healAmount);
+            
+            if (oldHP != currentHP)
+            {
+                OnHPChanged?.Invoke(currentHP, maxHP);
+                OnDataChanged?.Invoke(this);
+            }
         }
         
         /// <summary>
-        /// レベルの設定
+        /// レベルを設定
         /// </summary>
         public void SetLevel(int newLevel)
         {
-            if (newLevel != level)
+            if (newLevel < 1 || newLevel > maxLevel) return;
+            
+            if (level != newLevel)
             {
-                level = Mathf.Clamp(newLevel, 1, maxLevel);
+                level = newLevel;
                 OnLevelUp?.Invoke(level);
                 OnDataChanged?.Invoke(this);
             }
         }
         
         /// <summary>
-        /// 経験値の設定
+        /// 経験値を設定
         /// </summary>
         public void SetExperience(int exp)
         {
-            if (exp != experience)
-            {
-                experience = Mathf.Max(0, exp);
-                OnExpGained?.Invoke(0);
-                OnDataChanged?.Invoke(this);
-            }
+            experience = Mathf.Max(0, exp);
+            OnDataChanged?.Invoke(this);
         }
         
         /// <summary>
-        /// 攻撃力の設定
+        /// 攻撃力を設定
         /// </summary>
         public void SetAttack(int newAttack)
         {
@@ -174,35 +318,12 @@ namespace PlayerDataSystem
         }
         
         /// <summary>
-        /// 防御力の設定
+        /// 防御力を設定
         /// </summary>
         public void SetDefense(int newDefense)
         {
             defense = Mathf.Max(0, newDefense);
             OnDataChanged?.Invoke(this);
-        }
-        
-        /// <summary>
-        /// ゴールドの追加
-        /// </summary>
-        public void AddGold(int amount)
-        {
-            gold += amount;
-            OnDataChanged?.Invoke(this);
-        }
-        
-        /// <summary>
-        /// ゴールドの消費
-        /// </summary>
-        public bool SpendGold(int amount)
-        {
-            if (gold >= amount)
-            {
-                gold -= amount;
-                OnDataChanged?.Invoke(this);
-                return true;
-            }
-            return false;
         }
         
         /// <summary>
@@ -230,7 +351,7 @@ namespace PlayerDataSystem
         }
         
         /// <summary>
-        /// 最大レベルに達しているかチェック
+        /// 最大レベルかチェック
         /// </summary>
         public bool IsMaxLevel()
         {
@@ -238,29 +359,19 @@ namespace PlayerDataSystem
         }
         
         /// <summary>
-        /// プレイヤーデータの情報を取得
+        /// プレイヤー情報を取得
         /// </summary>
         public string GetPlayerInfo()
         {
-            return $"Player: {playerName}, Level: {level}/{maxLevel}, HP: {currentHP}/{maxHP}, " +
-                   $"Exp: {experience}/{experienceToNext}, Attack: {attack}, Defense: {defense}, Gold: {gold}";
+            return $"Lv.{level} {playerName} (HP: {currentHP}/{maxHP})";
         }
         
         /// <summary>
-        /// プレイヤーデータの詳細情報を取得
+        /// 詳細情報を取得
         /// </summary>
         public string GetDetailedInfo()
         {
-            return $"=== Player Data ===\n" +
-                   $"Name: {playerName}\n" +
-                   $"Level: {level}/{maxLevel}\n" +
-                   $"Experience: {experience}/{experienceToNext} ({GetExpPercentage():P1})\n" +
-                   $"HP: {currentHP}/{maxHP} ({GetHPPercentage():P1})\n" +
-                   $"Attack: {attack}\n" +
-                   $"Defense: {defense}\n" +
-                   $"Gold: {gold}\n" +
-                   $"Alive: {IsAlive()}\n" +
-                   $"Max Level: {IsMaxLevel()}";
+            return $"Lv.{level} {playerName}\nHP: {currentHP}/{maxHP}\nExp: {experience}/{experienceToNext}\nGold: {gold}\nShards: {shards}\nCards: {ownedCards.Count}";
         }
     }
 } 

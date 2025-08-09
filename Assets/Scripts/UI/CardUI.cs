@@ -16,6 +16,10 @@ public class CardUI : MonoBehaviour
     public ParticleSystem enhanceEffect; // 強化エフェクト
     public float enhanceAnimationDuration = 0.5f;
     
+    [Header("Upgrade Button")]
+    public Button upgradeButton; // 強化ボタン
+    public GameObject upgradeButtonContainer; // 強化ボタンのコンテナ
+    
     private CardDataSO cardData;
     private int previousLevel = 1;
 
@@ -28,6 +32,9 @@ public class CardUI : MonoBehaviour
         // レベル表示を更新
         UpdateLevelDisplay();
         
+        // 強化ボタンの設定
+        SetupUpgradeButton();
+        
         button.onClick.RemoveAllListeners();
         button.onClick.AddListener(() => {
             // 効果音再生
@@ -37,6 +44,51 @@ public class CardUI : MonoBehaviour
             }
             onClick?.Invoke(cardData);
         });
+    }
+    
+    /// <summary>
+    /// 強化ボタンの設定
+    /// </summary>
+    private void SetupUpgradeButton()
+    {
+        if (upgradeButton == null) return;
+        
+        // 強化機能が有効な場合のみ表示
+        bool showUpgradeButton = CardUpgradeFeature.IsEnabled;
+        
+        if (upgradeButtonContainer != null)
+        {
+            upgradeButtonContainer.SetActive(showUpgradeButton);
+        }
+        else if (upgradeButton != null)
+        {
+            upgradeButton.gameObject.SetActive(showUpgradeButton);
+        }
+        
+        if (showUpgradeButton)
+        {
+            upgradeButton.onClick.RemoveAllListeners();
+            upgradeButton.onClick.AddListener(OnUpgradeButtonClicked);
+        }
+    }
+    
+    /// <summary>
+    /// 強化ボタンクリック
+    /// </summary>
+    private void OnUpgradeButtonClicked()
+    {
+        if (cardData == null) return;
+        
+        // 強化モーダルを表示
+        var upgradeModal = FindObjectOfType<CardUpgradeModal>();
+        if (upgradeModal != null)
+        {
+            upgradeModal.ShowModal(cardData);
+        }
+        else
+        {
+            Debug.LogWarning("CardUI: CardUpgradeModalが見つかりません");
+        }
     }
     
     // レベル表示を更新

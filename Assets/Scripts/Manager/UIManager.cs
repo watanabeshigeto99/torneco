@@ -253,17 +253,32 @@ public class UIManager : MonoBehaviour
     
     public void AddLog(string message)
     {
-        if (logText != null)
+        // 新しいバトルログシステムを使用
+        if (BattleLogManager.Instance != null)
         {
-            // 新しいログを追加
-            string newLog = $"[{System.DateTime.Now:HH:mm:ss}] {message}\n";
-            logText.text = newLog + logText.text;
-            
-            // 最大行数を制限
-            string[] lines = logText.text.Split('\n');
-            if (lines.Length > maxLogLines)
+            BattleLogManager.Instance.AddLogEntry(
+                0, // 現在のターン（後でTurnManagerから取得）
+                message,
+                BattleLogManager.LogSeverity.INFO,
+                BattleLogManager.LogTags.SYSTEM,
+                BattleLogManager.LogSource.SYSTEM
+            );
+        }
+        else
+        {
+            // フォールバック: 従来のログ方式
+            if (logText != null)
             {
-                logText.text = string.Join("\n", lines, 0, maxLogLines);
+                // 新しいログを追加
+                string newLog = $"[{System.DateTime.Now:HH:mm:ss}] {message}\n";
+                logText.text = newLog + logText.text;
+                
+                // 最大行数を制限
+                string[] lines = logText.text.Split('\n');
+                if (lines.Length > maxLogLines)
+                {
+                    logText.text = string.Join("\n", lines, 0, maxLogLines);
+                }
             }
         }
     }

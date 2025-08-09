@@ -30,11 +30,17 @@ public class Unit : MonoBehaviour
     public static event Action<Unit, int> OnUnitDamaged;
     public static event Action<Unit> OnUnitDied;
     
+    // キャッシュされたコンポーネント
+    private DamageVFX _damageVFX;
+    
     protected virtual void Awake()
     {
         currentHP = maxHP;
         if (spriteRenderer == null)
             spriteRenderer = GetComponent<SpriteRenderer>();
+        
+        // DamageVFXコンポーネントをキャッシュ
+        _damageVFX = GetComponent<DamageVFX>();
     }
     
     public virtual void Initialize(Vector2Int startPos)
@@ -51,6 +57,18 @@ public class Unit : MonoBehaviour
         
         // ダメージイベントを発行
         OnUnitDamaged?.Invoke(this, damage);
+        
+        // DamageVFXの再生（キャッシュされたコンポーネントを使用）
+        Vector2 hitDirection = Vector2.zero;
+        if (source != null)
+        {
+            hitDirection = (transform.position - source.transform.position).normalized;
+        }
+        
+        if (_damageVFX != null)
+        {
+            _damageVFX.Play(hitDirection);
+        }
         
         if (IsDead)
         {

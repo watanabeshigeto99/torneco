@@ -11,6 +11,7 @@ GameObject:
   - component: {fileID: 4565523965818173709}
   - component: {fileID: 8776528461156607410}
   - component: {fileID: 5232604722977942986}
+  - component: {fileID: -8530514500616605787}
   m_Layer: 0
   m_Name: Player
   m_TagString: Player
@@ -104,7 +105,6 @@ MonoBehaviour:
   currentHP: 10
   gridPosition: {x: 0, y: 0}
   spriteRenderer: {fileID: 8776528461156607410}
-  flashEffect: {fileID: 0}
   moveEffect: {fileID: 0}
   attackEffect: {fileID: 0}
   moveAnimationDuration: 0.3
@@ -115,3 +115,25 @@ MonoBehaviour:
   expToNext: 10
   maxLevel: 10
   levelTable: {fileID: 11400000, guid: 56789012345678901234567890123456, type: 2}
+--- !u!114 &-8530514500616605787
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 9016790875124957544}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 12cb9a669b2b39b4388e0d8e11207b6b, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  targetSprite: {fileID: 8776528461156607410}
+  flashColor: {r: 1, g: 0.2, b: 0.2, a: 1}
+  flashDuration: 0.12
+  knockbackDistance: 0.12
+  knockbackTime: 0.06
+  hitStop: 0.06
+  cam: {fileID: 0}
+  shakeTime: 0.12
+  shakeStrength: 0.08
+  hitSpark: {fileID: 3264716367300863930, guid: 72d54cd0e9a0bc948a9ab3cea1865818, type: 3}

@@ -339,6 +339,13 @@ public class GridManager : MonoBehaviour
         return new Vector3(gridPos.x * tileSpacing, gridPos.y * tileSpacing, 0);
     }
 
+    public Vector2Int GetGridPosition(Vector3 worldPos)
+    {
+        int x = Mathf.RoundToInt(worldPos.x / tileSpacing);
+        int y = Mathf.RoundToInt(worldPos.y / tileSpacing);
+        return new Vector2Int(x, y);
+    }
+
     public bool IsInsideGrid(Vector2Int pos)
     {
         return pos.x >= 0 && pos.x < width && pos.y >= 0 && pos.y < height;

@@ -426,6 +426,12 @@ public class Enemy : Unit
             int damage = GetEnhancedAttackPower();
             string enemyName = enemyData != null ? enemyData.enemyName : "敵";
             
+            // 攻撃SEを再生
+            if (attackSE != null && SoundManager.Instance != null)
+            {
+                SoundManager.Instance.PlaySound(attackSE);
+            }
+            
             // 攻撃演出を実行（アクティブな場合のみ）
             if (gameObject.activeInHierarchy)
             {
@@ -450,6 +456,12 @@ public class Enemy : Unit
         {
             int damage = GetEnhancedAttackPower();
             string enemyName = enemyData != null ? enemyData.enemyName : "敵";
+            
+            // 攻撃SEを再生
+            if (attackSE != null && SoundManager.Instance != null)
+            {
+                SoundManager.Instance.PlaySound(attackSE);
+            }
             
             // 攻撃演出を実行（アクティブな場合のみ）
             if (gameObject.activeInHierarchy)
@@ -476,6 +488,12 @@ public class Enemy : Unit
             int damage = GetEnhancedAttackPower();
             string enemyName = enemyData != null ? enemyData.enemyName : "敵";
             
+            // 攻撃SEを再生
+            if (attackSE != null && SoundManager.Instance != null)
+            {
+                SoundManager.Instance.PlaySound(attackSE);
+            }
+            
             // 攻撃演出を実行（アクティブな場合のみ）
             if (gameObject.activeInHierarchy)
             {
@@ -500,6 +518,12 @@ public class Enemy : Unit
         {
             int damage = GetEnhancedAttackPower() * 2;
             string enemyName = enemyData != null ? enemyData.enemyName : "敵";
+            
+            // 攻撃SEを再生
+            if (attackSE != null && SoundManager.Instance != null)
+            {
+                SoundManager.Instance.PlaySound(attackSE);
+            }
             
             // 攻撃演出を実行（アクティブな場合のみ）
             if (gameObject.activeInHierarchy)

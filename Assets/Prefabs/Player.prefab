@@ -110,6 +110,10 @@ MonoBehaviour:
   moveAnimationDuration: 0.3
   attackAnimationDuration: 0.2
   jumpHeight: 0.5
+  attackSE: {fileID: 0}
+  damageSE: {fileID: 8300000, guid: 43ccb826f46ea6444bbf55fea93f290f, type: 3}
+  deathSE: {fileID: 8300000, guid: 56ace9d001f6c37439181e9d6c71b6af, type: 3}
+  exitSE: {fileID: 8300000, guid: 3310741e00381504e9f74df7a1e321a1, type: 3}
   level: 1
   exp: 0
   expToNext: 10
@@ -133,7 +137,6 @@ MonoBehaviour:
   knockbackDistance: 0.12
   knockbackTime: 0.06
   hitStop: 0.06
-  cam: {fileID: 0}
   shakeTime: 0.12
   shakeStrength: 0.08
   hitSpark: {fileID: 3264716367300863930, guid: 72d54cd0e9a0bc948a9ab3cea1865818, type: 3}

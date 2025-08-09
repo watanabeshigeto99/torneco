@@ -24,6 +24,12 @@ public class Unit : MonoBehaviour
     public float attackAnimationDuration = 0.2f;
     public float jumpHeight = 0.5f;
     
+    [Header("Sound Effects")]
+    public AudioClip attackSE;              // 攻撃時のSE
+    public AudioClip damageSE;              // ダメージを受けた時のSE
+    public AudioClip deathSE;               // 死亡時のSE
+    public AudioClip exitSE;                // Exit到達時のSE（Player専用）
+    
     // イベント定義
     public static event Action<Unit, Vector2Int> OnUnitMoved;
     public static event Action<Unit, int> OnUnitAttacked;
@@ -58,6 +64,12 @@ public class Unit : MonoBehaviour
         // ダメージイベントを発行
         OnUnitDamaged?.Invoke(this, damage);
         
+        // ダメージSEを再生
+        if (damageSE != null && SoundManager.Instance != null)
+        {
+            SoundManager.Instance.PlaySound(damageSE);
+        }
+        
         // DamageVFXの再生（キャッシュされたコンポーネントを使用）
         Vector2 hitDirection = Vector2.zero;
         if (source != null)
@@ -85,6 +97,12 @@ public class Unit : MonoBehaviour
     
     protected virtual void Die()
     {
+        // 死亡SEを再生
+        if (deathSE != null && SoundManager.Instance != null)
+        {
+            SoundManager.Instance.PlaySound(deathSE);
+        }
+        
         // 死亡イベントを発行
         OnUnitDied?.Invoke(this);
         
@@ -121,6 +139,12 @@ public class Unit : MonoBehaviour
     public virtual void Attack(Unit target, int damage)
     {
         if (target == null || target.IsDead) return;
+        
+        // 攻撃SEを再生
+        if (attackSE != null && SoundManager.Instance != null)
+        {
+            SoundManager.Instance.PlaySound(attackSE);
+        }
         
         // 攻撃イベントを発行
         OnUnitAttacked?.Invoke(this, damage);

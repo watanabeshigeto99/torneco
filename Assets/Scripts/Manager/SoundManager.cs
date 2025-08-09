@@ -135,6 +135,22 @@ public class SoundManager : MonoBehaviour
         }
     }
 
+    /// <summary>
+    /// AudioClipを直接指定してSEを再生
+    /// </summary>
+    public void PlaySound(AudioClip clip)
+    {
+        if (clip != null && seSource != null)
+        {
+            seSource.PlayOneShot(clip);
+            Debug.Log($"SoundManager: SE '{clip.name}' を再生");
+        }
+        else
+        {
+            Debug.LogError($"SoundManager: AudioClipがnullまたはseSourceがnullです");
+        }
+    }
+
     public void PlayBGM(AudioClip clip)
     {
         if (bgmSource == null || clip == null) return;

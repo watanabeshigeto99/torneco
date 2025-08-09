@@ -316,6 +316,12 @@ public class Player : Unit
             hasExited = true; // 重複防止フラグを設定
             Debug.Log("Player: Exitに到達！経験値を獲得して次の階層に進みます");
             
+            // Exit到達SEを再生
+            if (exitSE != null && SoundManager.Instance != null)
+            {
+                SoundManager.Instance.PlaySound(exitSE);
+            }
+            
             GainExp(5);
             
             if (UIManager.Instance != null)

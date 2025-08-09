@@ -111,6 +111,10 @@ MonoBehaviour:
   moveAnimationDuration: 0.4
   attackAnimationDuration: 0.3
   jumpHeight: 0.3
+  attackSE: {fileID: 8300000, guid: 43ccb826f46ea6444bbf55fea93f290f, type: 3}
+  damageSE: {fileID: 8300000, guid: f8df84db35f02864fa737e22ffd67120, type: 3}
+  deathSE: {fileID: 8300000, guid: 0e6c7a4c3688ac743b758c54631919f3, type: 3}
+  exitSE: {fileID: 8300000, guid: 3310741e00381504e9f74df7a1e321a1, type: 3}
   enemyData: {fileID: 0}
   growthData: {fileID: 11400000, guid: 12345678901234567890123456789012, type: 2}
 --- !u!61 &592896338848859457
@@ -177,7 +181,6 @@ MonoBehaviour:
   knockbackDistance: 0.12
   knockbackTime: 0.06
   hitStop: 0.06
-  cam: {fileID: 0}
   shakeTime: 0.12
   shakeStrength: 0.08
   hitSpark: {fileID: 3264716367300863930, guid: 72d54cd0e9a0bc948a9ab3cea1865818, type: 3}

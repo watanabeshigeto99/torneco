@@ -1814,7 +1814,7 @@ MonoBehaviour:
   enemyDeathSE: {fileID: 8300000, guid: 0e6c7a4c3688ac743b758c54631919f3, type: 3}
   levelUpSE: {fileID: 8300000, guid: a79c63c829dcc9d40849c90d46f9b7db, type: 3}
   enhanceSE: {fileID: 8300000, guid: 354a0da51c2fe3d4d9283583a1b3ce8b, type: 3}
-  buttonClickSE: {fileID: 8300000, guid: 22aceaba4c7630247b9aed46559f92cd, type: 3}
+  buttonClickSE: {fileID: 8300000, guid: 09c92b0d286e1714ca8e4da71aae7bf6, type: 3}
   cardHoverSE: {fileID: 8300000, guid: f4bfc8894e9f06c449503fbe7847404f, type: 3}
   cardAddSE: {fileID: 8300000, guid: 1d5dcc3698256a94098f724866c9e124, type: 3}
   cardRemoveSE: {fileID: 8300000, guid: 1132c4bff8d1b4e4db79849b4d8f8874, type: 3}
